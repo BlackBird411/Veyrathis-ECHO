@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Echo Orbit</title>
+    <title>Orbit Survivor</title>
     <style>
         body {
             margin: 0;
-            background: #080810;
+            background-color: #0b0e14;
             color: #fff;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             overflow: hidden;
@@ -18,277 +18,307 @@
         }
         #gameContainer {
             position: relative;
-            box-shadow: 0 0 30px rgba(0, 180, 255, 0.2);
-            border-radius: 10px;
+            box-shadow: 0 0 30px rgba(0, 255, 204, 0.2);
+            border-radius: 8px;
             overflow: hidden;
         }
         canvas {
             display: block;
-            background: radial-gradient(circle, #101428 0%, #050510 100%);
+            background: radial-gradient(circle, #151a26 0%, #0b0e14 100%);
         }
         #ui {
             position: absolute;
-            top: 20px;
-            left: 20px;
+            top: 10px;
+            left: 10px;
             pointer-events: none;
+            font-size: 16px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.8);
         }
-        .stat {
-            font-size: 18px;
-            margin-bottom: 5px;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            text-shadow: 0 0 8px rgba(255,255,255,0.5);
+        #upgradeScreen {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(11, 14, 20, 0.85);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            display: none;
         }
-        #shots { color: #ff5577; }
-        #score { color: #00ffcc; }
+        .btn {
+            background: #00ffcc;
+            color: #0b0e14;
+            border: none;
+            padding: 12px 24px;
+            margin: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: 0.2s;
+            width: 250px;
+        }
+        .btn:hover {
+            background: #ffffff;
+            transform: scale(1.05);
+        }
+        #gameOver {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(20, 10, 10, 0.9);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            display: none;
+        }
     </style>
 </head>
 <body>
 
 <div id="gameContainer">
+    <canvas id="gameCanvas" width="800" height="600"></canvas>
     <div id="ui">
-        <div class="stat" id="shots">Shots: 5</div>
-        <div class="stat" id="score">Score: 0</div>
+        <div>Score: <span id="scoreVal">0</span></div>
+        <div>Level: <span id="levelVal">1</span></div>
+        <div style="width: 200px; height: 10px; background: #333; margin-top: 5px; border-radius: 5px; overflow:hidden;">
+            <div id="expBar" style="width: 0%; height: 100%; background: #00ffcc;"></div>
+        </div>
     </div>
-    <canvas id="gameCanvas" width="600" height="600"></canvas>
+
+    <!-- Upgrade System -->
+    <div id="upgradeScreen">
+        <h2 style="color: #00ffcc;">LEVEL UP! Choose an Upgrade</h2>
+        <button class="btn" onclick="applyUpgrade('count')">+1 Orbiting Blade</button>
+        <button class="btn" onclick="applyUpgrade('speed')">Increase Rotation Speed</button>
+        <button class="btn" onclick="applyUpgrade('size')">Increase Blade Size</button>
+    </div>
+
+    <!-- Game Over Screen -->
+    <div id="gameOver">
+        <h1 style="color: #ff3366; font-size: 48px;">CORE DESTROYED</h1>
+        <p>You survived to Level <span id="finalLevel">1</span></p>
+        <button class="btn" style="background: #ff3366; color: white;" onclick="resetGame()">Try Again</button>
+    </div>
 </div>
 
 <script>
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
-const scoreEl = document.getElementById('score');
-const shotsEl = document.getElementById('shots');
 
-let score = 0;
-let shots = 5;
-const centerX = canvas.width / 2;
-const centerY = canvas.height / 2;
+// Game State
+let game = {
+    score: 0,
+    level: 1,
+    exp: 0,
+    expNeeded: 10,
+    running: true,
+    spawnRate: 1500, // ms
+    lastSpawn: 0
+};
 
-let projectiles = [];
+// Player Core
+const core = {
+    x: canvas.width / 2,
+    y: canvas.height / 2,
+    radius: 20,
+    hp: 1
+};
+
+// Upgradable Orbiters
+const orbit = {
+    radius: 100,
+    speed: 0.03,
+    angle: 0,
+    count: 1,
+    bladeRadius: 8
+};
+
+let enemies = [];
+let gems = [];
 let particles = [];
-let rings = [];
 
-// Synthesizer for retro retro/sci-fi sound effects without audio files
-const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-function playSound(freq, type, duration) {
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
-    osc.type = type;
-    osc.frequency.value = freq;
-    gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + duration);
-    osc.connect(gain);
-    gain.connect(audioCtx.destination);
-    osc.start();
-    osc.stop(audioCtx.currentTime + duration);
-}
-
-// Generate target rings
-function initGame() {
-    rings = [];
-    const ringCount = 4;
-    for (let i = 0; i < ringCount; i++) {
-        let radius = 80 + i * 55;
-        let speed = (0.01 + (i * 0.005)) * (Math.random() > 0.5 ? 1 : -1);
-        let targets = [];
-        let targetCount = 8 + (i * 4);
-        
-        for (let j = 0; j < targetCount; j++) {
-            targets.push({
-                angle: (j / targetCount) * Math.PI * 2,
-                active: true,
-                color: `hsl(${i * 60 + 180}, 90%, 60%)`
-            });
-        }
-        rings.push({ radius, speed, targets });
-    }
-}
-
-// Click to shoot
-canvas.addEventListener('click', (e) => {
-    if (shots <= 0 && projectiles.length === 0) return;
-    if (shots > 0) {
-        const rect = canvas.getBoundingClientRect();
-        const mouseX = e.clientX - rect.left;
-        const mouseY = e.clientY - rect.top;
-        
-        // Calculate angle from center to mouse click
-        const angle = Math.atan2(mouseY - centerY, mouseX - centerX);
-        
-        projectiles.push({
-            x: centerX,
-            y: centerY,
-            vx: Math.cos(angle) * 5,
-            vy: Math.sin(angle) * 5,
-            radius: 6,
-            isEcho: false
-        });
-        
-        shots--;
-        shotsEl.innerText = `Shots: ${shots}`;
-        playSound(300, 'sine', 0.2);
-    }
+// Track mouse for dynamic orbit scaling
+let targetOrbitRadius = 100;
+canvas.addEventListener('mousemove', (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+    const dist = Math.hypot(mouseX - core.x, mouseY - core.y);
+    targetOrbitRadius = Math.max(40, Math.min(250, dist));
 });
 
+function spawnEnemy() {
+    const angle = Math.random() * Math.PI * 2;
+    const dist = Math.max(canvas.width, canvas.height) / 2 + 20;
+    enemies.push({
+        x: core.x + Math.cos(angle) * dist,
+        y: core.y + Math.sin(angle) * dist,
+        radius: 12 + Math.random() * 8,
+        speed: 1 + Math.random() * 1.5,
+        color: `hsl(${Math.random() * 40 + 340}, 80%, 60%)`
+    });
+}
+
 function createExplosion(x, y, color) {
-    playSound(150, 'triangle', 0.4);
-    for (let i = 0; i < 12; i++) {
+    for(let i=0; i<8; i++) {
         particles.push({
-            x: x,
-            y: y,
+            x, y,
             vx: (Math.random() - 0.5) * 4,
             vy: (Math.random() - 0.5) * 4,
             radius: Math.random() * 3 + 1,
-            color: color,
-            alpha: 1
+            alpha: 1,
+            color: color
         });
     }
 }
 
-function spawnEchoes(x, y, baseColor) {
-    for (let i = 0; i < 3; i++) {
-        let angle = Math.random() * Math.PI * 2;
-        projectiles.push({
-            x: x,
-            y: y,
-            vx: Math.cos(angle) * 3.5,
-            vy: Math.sin(angle) * 3.5,
-            radius: 4,
-            isEcho: true,
-            color: baseColor
-        });
-    }
+function applyUpgrade(type) {
+    if (type === 'count') orbit.count++;
+    if (type === 'speed') orbit.speed += 0.01;
+    if (type === 'size') orbit.bladeRadius += 2;
+    
+    document.getElementById('upgradeScreen').style.display = 'none';
+    game.running = true;
+    animate();
 }
 
-function update() {
-    // Rotate rings
-    rings.forEach(ring => {
-        ring.targets.forEach(t => {
-            t.angle += ring.speed;
-        });
-    });
-
-    // Update projectiles
-    for (let pIdx = projectiles.length - 1; pIdx >= 0; pIdx--) {
-        let p = projectiles[pIdx];
-        p.x += p.vx;
-        p.y += p.vy;
-
-        // Apply a slight gravity pull towards the center core to warp trajectories
-        let dx = centerX - p.x;
-        let dy = centerY - p.y;
-        let distToCenter = Math.sqrt(dx*dx + dy*dy);
-        if (distToCenter > 40) {
-            p.vx += (dx / distToCenter) * 0.04;
-            p.vy += (dy / distToCenter) * 0.04;
-        }
-
-        // Check collisions with targets
-        let hit = false;
-        rings.forEach(ring => {
-            ring.targets.forEach(t => {
-                if (!t.active) return;
-                
-                let tx = centerX + Math.cos(t.angle) * ring.radius;
-                let ty = centerY + Math.sin(t.angle) * ring.radius;
-                
-                let tDx = p.x - tx;
-                let tDy = p.y - ty;
-                let tDist = Math.sqrt(tDx*tDx + tDy*tDy);
-
-                if (tDist < p.radius + 10) {
-                    t.active = false;
-                    hit = true;
-                    score += p.isEcho ? 20 : 10;
-                    scoreEl.innerText = `Score: ${score}`;
-                    createExplosion(tx, ty, t.color);
-                    spawnEchoes(tx, ty, t.color);
-                }
-            });
-        });
-
-        // Remove if hit or out of bounds
-        if (hit || p.x < 0 || p.x > canvas.width || p.y < 0 || p.y > canvas.height) {
-            projectiles.splice(pIdx, 1);
-        }
+function checkLevelUp() {
+    if (game.exp >= game.expNeeded) {
+        game.exp -= game.expNeeded;
+        game.level++;
+        game.expNeeded = Math.floor(game.expNeeded * 1.4);
+        game.spawnRate = Math.max(400, game.spawnRate - 100);
+        
+        document.getElementById('levelVal').innerText = game.level;
+        document.getElementById('upgradeScreen').style.display = 'flex';
+        game.running = false;
     }
-
-    // Update particles
-    for (let i = particles.length - 1; i >= 0; i--) {
-        let pt = particles[i];
-        pt.x += pt.vx;
-        pt.y += pt.vy;
-        pt.alpha -= 0.02;
-        if (pt.alpha <= 0) particles.splice(i, 1);
-    }
+    document.getElementById('expBar').style.width = `${(game.exp / game.expNeeded) * 100}%`;
 }
 
-function draw() {
+function resetGame() {
+    enemies = []; gems = []; particles = [];
+    game = { score: 0, level: 1, exp: 0, expNeeded: 10, running: true, spawnRate: 1500, lastSpawn: 0 };
+    orbit.count = 1; orbit.speed = 0.03; orbit.bladeRadius = 8; targetOrbitRadius = 100;
+    document.getElementById('scoreVal').innerText = "0";
+    document.getElementById('levelVal').innerText = "1";
+    document.getElementById('expBar').style.width = "0%";
+    document.getElementById('gameOver').style.display = 'none';
+    animate();
+}
+
+function animate(timestamp = 0) {
+    if (!game.running) return;
+
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Draw Core
+    // Smoothly update orbit radius based on mouse distance
+    orbit.radius += (targetOrbitRadius - orbit.radius) * 0.1;
+    orbit.angle += orbit.speed;
+
+    // 1. Draw central core
     ctx.beginPath();
-    ctx.arc(centerX, centerY, 20, 0, Math.PI * 2);
-    ctx.fillStyle = '#1a2244';
-    ctx.strokeStyle = '#3b4f8c';
-    ctx.lineWidth = 3;
+    ctx.arc(core.x, core.y, core.radius, 0, Math.PI * 2);
+    ctx.fillStyle = '#00ffcc';
+    ctx.shadowBlur = 15;
+    ctx.shadowColor = '#00ffcc';
     ctx.fill();
-    ctx.stroke();
+    ctx.shadowBlur = 0; // reset
 
-    // Draw Rings & Targets
-    rings.forEach(ring => {
+    // 2. Draw & Calculate Blades
+    let bladePositions = [];
+    for (let i = 0; i < orbit.count; i++) {
+        const currentAngle = orbit.angle + (i * (Math.PI * 2 / orbit.count));
+        const bx = core.x + Math.cos(currentAngle) * orbit.radius;
+        const by = core.y + Math.sin(currentAngle) * orbit.radius;
+        bladePositions.push({x: bx, y: by});
+
         ctx.beginPath();
-        ctx.arc(centerX, centerY, ring.radius, 0, Math.PI * 2);
-        ctx.strokeStyle = 'rgba(255,255,255,0.04)';
-        ctx.lineWidth = 1;
-        ctx.stroke();
-
-        ring.targets.forEach(t => {
-            if (!t.active) return;
-            let tx = centerX + Math.cos(t.angle) * ring.radius;
-            let ty = centerY + Math.sin(t.angle) * ring.radius;
-
-            ctx.beginPath();
-            ctx.arc(tx, ty, 8, 0, Math.PI * 2);
-            ctx.fillStyle = t.color;
-            ctx.shadowBlur = 10;
-            ctx.shadowColor = t.color;
-            ctx.fill();
-            ctx.shadowBlur = 0; // reset
-        });
-    });
-
-    // Draw Projectiles
-    projectiles.forEach(p => {
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-        ctx.fillStyle = p.isEcho ? p.color : '#ffffff';
-        ctx.shadowBlur = 8;
-        ctx.shadowColor = ctx.fillStyle;
+        ctx.arc(bx, by, orbit.bladeRadius, 0, Math.PI * 2);
+        ctx.fillStyle = '#ffffff';
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = '#fff';
         ctx.fill();
         ctx.shadowBlur = 0;
-    });
+    }
 
-    // Draw Particles
-    particles.forEach(pt => {
-        ctx.save();
-        ctx.globalAlpha = pt.alpha;
+    // 3. Enemy Logic
+    if (timestamp - game.lastSpawn > game.spawnRate) {
+        spawnEnemy();
+        game.lastSpawn = timestamp;
+    }
+
+    for (let i = enemies.length - 1; i >= 0; i--) {
+        let e = enemies[i];
+        
+        // Move towards core
+        const angleToCore = Math.atan2(core.y - e.y, core.x - e.x);
+        e.x += Math.cos(angleToCore) * e.speed;
+        e.y += Math.sin(angleToCore) * e.speed;
+
+        // Draw enemy
         ctx.beginPath();
-        ctx.arc(pt.x, pt.y, pt.radius, 0, Math.PI * 2);
-        ctx.fillStyle = pt.color;
+        ctx.arc(e.x, e.y, e.radius, 0, Math.PI * 2);
+        ctx.fillStyle = e.color;
         ctx.fill();
-        ctx.restore();
-    });
-}
 
-function loop() {
-    update();
-    draw();
-    requestAnimationFrame(loop);
-}
+        // Collide with blades
+        let hit = false;
+        for (let b of bladePositions) {
+            if (Math.hypot(e.x - b.x, e.y - b.y) < e.radius + orbit.bladeRadius) {
+                hit = true;
+                break;
+            }
+        }
 
-initGame();
-loop();
-</script>
-</body>
-</html>
+        if (hit) {
+            createExplosion(e.x, e.y, e.color);
+            gems.push({x: e.x, y: e.y, radius: 4});
+            enemies.splice(i, 1);
+            game.score += 10;
+            document.getElementById('scoreVal').innerText = game.score;
+            continue;
+        }
+
+        // Collide with Core (Game Over)
+        if (Math.hypot(e.x - core.x, e.y - core.y) < e.radius + core.radius) {
+            game.running = false;
+            document.getElementById('finalLevel').innerText = game.level;
+            document.getElementById('gameOver').style.display = 'flex';
+        }
+    }
+
+    // 4. XP Gems Logic
+    for (let i = gems.length - 1; i >= 0; i--) {
+        let g = gems[i];
+        
+        // Attract gems dynamically if they get close to orbit or core
+        const distToCore = Math.hypot(core.x - g.x, core.y - g.y);
+        if (distToCore < orbit.radius + 30) {
+            const angle = Math.atan2(core.y - g.y, core.x - g.x);
+            g.x += Math.cos(angle) * 5;
+            g.y += Math.sin(angle) * 5;
+        }
+
+        ctx.beginPath();
+        ctx.arc(g.x, g.y, g.radius, 0, Math.PI * 2);
+        ctx.fillStyle = '#00ffcc';
+        ctx.fill();
+
+        if (distToCore < core.radius + g.radius) {
+            gems.splice(i, 1);
+            game.exp += 1;
+            checkLevelUp();
+        }
+    }
+
+    // 5. Particles Processing
+    for (let i = particles.length - 1; i >= 0; i--) {
+        let p = particles[i];
+        p.x += p.vx; p.y += p.vy; p.alpha -= 0.02;
+        ctx.save();
+        ctx.globalAlpha = p.alpha;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+        ctx.fillStyle = p.color;
+        ctx.fill();
