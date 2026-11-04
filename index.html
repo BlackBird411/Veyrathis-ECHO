@@ -123,9 +123,22 @@ nav{position:sticky;top:0;z-index:50;background:rgba(10,10,10,.93);backdrop-filt
 .vid a.vl{display:block;padding:28px;background:#111;color:#fff;text-decoration:none;font-weight:700}
 
 /* team */
-.level{display:flex;flex-wrap:wrap;justify-content:center;gap:24px}
-.vline{width:2px;height:40px;background:var(--red);margin:0 auto}
-.role{background:#fff;border:1px solid #e6e6e6;border-top:4px solid var(--red);padding:24px;min-width:250px;max-width:380px;flex:1 1 270px}
+.treewrap{overflow-x:auto;padding:4px 0 28px}
+.tree{width:max-content;min-width:100%}
+.tree ul{list-style:none;margin:0;padding:28px 0 0;display:flex;justify-content:center;position:relative}
+.tree>ul{padding-top:0}
+.tree li{position:relative;padding:28px 12px 0;display:flex;flex-direction:column;align-items:center}
+.tree>ul>li{padding-top:0}
+.tree li::before,.tree li::after{content:"";position:absolute;top:0;right:50%;width:50%;height:28px;border-top:2px solid var(--red)}
+.tree li::after{right:auto;left:50%;border-left:2px solid var(--red)}
+.tree>ul>li::before,.tree>ul>li::after{display:none}
+.tree li:only-child{padding-top:0}
+.tree li:only-child::before,.tree li:only-child::after{display:none}
+.tree li:first-child::before,.tree li:last-child::after{border:0}
+.tree li:last-child::before{border-right:2px solid var(--red);border-radius:0 8px 0 0}
+.tree li:first-child::after{border-radius:8px 0 0 0}
+.tree ul ul::before{content:"";position:absolute;top:0;left:50%;height:28px;border-left:2px solid var(--red)}
+.role{background:#fff;border:1px solid #e6e6e6;border-top:4px solid var(--red);padding:24px;width:264px;flex:none;text-align:left}
 .role h3{font-size:20px;letter-spacing:-.01em}
 .rep{color:#888;font-size:12px;text-transform:uppercase;letter-spacing:.08em;margin:4px 0 18px}
 .role h3+.ppl,.role h3+.tba{margin-top:16px}
@@ -188,6 +201,16 @@ dialog .err{color:var(--red);font-size:14px;min-height:20px;margin:0 0 10px}
   .hero{padding:110px 0 90px}
   .stat{border-left:0;border-top:1px solid #262626}
   .stat:first-child{border-top:0}
+  .treewrap{overflow:visible}
+  .treewrap .tree{width:auto}
+  .treewrap .tree ul{display:block;padding:0 0 0 20px;margin-left:14px;border-left:2px solid var(--red)}
+  .treewrap .tree>ul{margin-left:0;padding-left:0;border-left:0}
+  .treewrap .tree li,.treewrap .tree li:only-child{display:block;padding:18px 0 0}
+  .treewrap .tree>ul>li{padding-top:0}
+  .treewrap .tree li::before{display:block;content:"";position:absolute;left:-20px;top:44px;right:auto;width:20px;height:0;border:0;border-top:2px solid var(--red);border-radius:0}
+  .treewrap .tree li::after,.treewrap .tree ul ul::before{display:none}
+  .treewrap .tree>ul>li::before{display:none}
+  .treewrap .tree .role{width:100%}
 }
 </style>
 </head>
@@ -675,7 +698,6 @@ function roleCard(r) {
   r.people.forEach(function (pp, k) { if (!editing && !pp.name) return; ppl.push(person(ri, k, pp)); });
   var card = h("div", { class: "role" + (editing && !r.name ? " slot" : "") },
     T("h3", p + "name", "", "Role title"),
-    par ? h("div", { class: "rep" }, "Reports to " + (par.name || "—")) : null,
     ppl.length ? h("div", { class: "ppl" }, ppl) : h("div", { class: "tba" }, "To be announced"));
   if (editing) {
     var blocked = descendants(r.id).concat([r.id]);
@@ -702,20 +724,20 @@ function roleCard(r) {
   return card;
 }
 
+function treeNode(r) {
+  var kids = kidsOf(r.id).filter(function (k) { return editing || k.name; });
+  var li = h("li", null, roleCard(r));
+  if (kids.length) li.append(h("ul", null, kids.map(treeNode)));
+  return li;
+}
+
 function teamSec() {
-  var levels = [];
-  state.roles.forEach(function (r) {
-    if (!editing && !r.name) return;
-    var d = depth(r); (levels[d] = levels[d] || []).push(r);
-  });
-  var rows = [];
-  levels.forEach(function (lv) {
-    if (!lv) return;
-    if (rows.length) rows.push(h("div", { class: "vline" }));
-    rows.push(h("div", { class: "level" }, lv.map(roleCard)));
+  var tops = state.roles.filter(function (r) {
+    return (!r.parent || !byId(r.parent)) && (editing || r.name);
   });
   return h("section", { class: "soft", id: "team" }, h("div", { class: "wrap" },
-    head("site.teamHead"), rows,
+    head("site.teamHead"),
+    h("div", { class: "treewrap" }, h("div", { class: "tree" }, h("ul", null, tops.map(treeNode)))),
     editing ? h("div", { class: "addrow" }, h("button", { type: "button", class: "btn sm line", on: { click: function () {
       state.roles.push({ id: newId(), name: "", parent: null, people: [] }); touch();
     } } }, "+ Add top-level role")) : null));
