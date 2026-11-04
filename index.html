@@ -139,6 +139,86 @@ nav{position:sticky;top:0;z-index:50;background:rgba(10,10,10,.93);backdrop-filt
 .pclose:hover{background:var(--red)}
 @media(prefers-reduced-motion:reduce){#annpop[open],.badge{animation:none}}
 
+/* mobile menu */
+.burger{display:none;flex-direction:column;justify-content:center;gap:5px;width:42px;height:42px;background:none;border:0;cursor:pointer;padding:10px}
+.burger span{display:block;height:2px;background:#fff;transition:transform .2s,opacity .2s}
+nav.open .burger span:nth-child(1){transform:translateY(7px) rotate(45deg)}
+nav.open .burger span:nth-child(2){opacity:0}
+nav.open .burger span:nth-child(3){transform:translateY(-7px) rotate(-45deg)}
+.menu{display:none;position:absolute;left:0;right:0;top:100%;background:rgba(10,10,10,.98);border-bottom:1px solid #222;padding:6px 24px 18px;flex-direction:column;max-height:calc(100vh - 64px);overflow-y:auto}
+.menu a{color:#e5e5e5;text-decoration:none;padding:13px 0;border-bottom:1px solid #1d1d1d;font-weight:600;font-size:15px}
+
+/* speakers */
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 28px}
+.chip{font:inherit;font-size:13px;font-weight:700;padding:8px 16px;border:2px solid #111;background:transparent;color:#111;cursor:pointer;border-radius:999px}
+.chip:hover{border-color:var(--red);color:var(--red)}
+.chip.on{background:#111;color:#fff;border-color:#111}
+.spks{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:28px}
+.spk{display:flex;flex-direction:column;background:#fff;border:1px solid #e6e6e6;border-top:4px solid var(--red)}
+.spk .pic{aspect-ratio:4/5}
+.spk .noimg{aspect-ratio:4/5;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#161616,#3a0f0b);color:#fff;font-size:72px;font-weight:800}
+.spk .body{padding:20px;display:flex;flex-direction:column;gap:6px;flex:1}
+.spk h3{font-size:22px;letter-spacing:-.01em}
+.sev{color:var(--red);font-weight:800;font-size:12px;letter-spacing:.1em;text-transform:uppercase}
+.srole{color:#666;font-size:14px}
+.stalk{font-weight:700;font-style:italic;margin-top:4px}
+.sbio{margin:4px 0 0;font-size:14px;color:#555}
+.spk a.more{margin-top:auto;padding-top:10px;font-weight:700;color:var(--red);text-decoration:none;font-size:14px}
+
+/* sponsors */
+.tier{font-size:13px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#777;margin:40px 0 16px}
+.tier:first-child{margin-top:0}
+.sps{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:20px}
+.sps.edit{grid-template-columns:repeat(auto-fill,minmax(260px,1fr))}
+.sp{background:#fff;border:1px solid #e6e6e6;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:22px;min-height:140px;text-align:center;text-decoration:none;color:inherit;transition:transform .15s,box-shadow .15s}
+a.sp:hover{transform:translateY(-3px);box-shadow:0 10px 28px rgba(0,0,0,.08)}
+.sp img{max-width:100%;max-height:72px;object-fit:contain}
+.sp .sn{font-weight:700;font-size:15px}
+.stier{font-size:12px;color:#888;text-transform:uppercase;letter-spacing:.08em}
+.sp .fld{width:100%;text-align:left}
+.sp .ctl{justify-content:center}
+
+/* registration */
+.regs{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:28px;align-items:start}
+.reg{background:#fff;border:1px solid #e6e6e6;border-top:4px solid var(--red);padding:28px;display:flex;flex-direction:column;gap:10px}
+.reg h3{font-size:28px;letter-spacing:-.02em}
+.reg .when{color:#666;font-size:14px}
+.reg p{margin:0;color:#444;font-size:16px}
+.rmeta{display:flex;gap:8px;flex-wrap:wrap;margin:4px 0}
+.pill{font-size:12px;font-weight:700;padding:4px 10px;border-radius:999px;background:#f0f0f0;color:#333}
+.pill.ok{background:#e7f6ec;color:#146c2e}
+.pill.no{background:#fdeceb;color:#a3190f}
+.reg>.btn{align-self:flex-start;margin-top:6px}
+.btn[disabled]{opacity:.5;cursor:not-allowed}
+.radm{border-top:1px dashed #ddd;margin-top:6px;padding-top:6px}
+.thx{font-size:14px;color:#555;border:1px dashed #ccc;padding:8px;margin:4px 0 8px}
+.rfields{margin-top:8px}
+.rfields summary{cursor:pointer;font-weight:700;font-size:14px;padding:6px 0}
+.rfld{border:1px solid #e6e6e6;background:#fafafa;padding:10px 12px;margin:8px 0}
+.rfld .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.rfld .sel{width:auto;flex:1;min-width:140px}
+
+/* registration form dialog + responses viewer */
+#regdlg{max-width:520px;padding:28px;max-height:calc(100vh - 32px);overflow-y:auto;border-top:5px solid var(--red)}
+#regdlg h3{font-size:28px;letter-spacing:-.02em;margin-bottom:6px}
+#regdlg p{margin:0 0 6px;color:#555}
+#regdlg label.f{display:block;font-size:13px;font-weight:700;margin-top:16px;color:#222}
+#regdlg label.f input:not([type=checkbox]),#regdlg label.f select,#regdlg label.f textarea{display:block;width:100%;margin:6px 0 0;font:inherit;font-size:16px;padding:11px 12px;border:2px solid #111;border-radius:2px;background:#fff;color:#111}
+#regdlg label.f input:focus,#regdlg label.f select:focus,#regdlg label.f textarea:focus{outline:none;border-color:var(--red)}
+#regdlg label.ck2{display:flex;gap:10px;align-items:flex-start;font-weight:600}
+#regdlg label.ck2 input{width:auto;margin:3px 0 0;padding:0}
+#regdlg .req{color:var(--red)}
+#regdlg .err{margin:14px 0 0}
+#regdlg .cta{margin-top:12px}
+.hp{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden;opacity:0}
+#respdlg{max-width:1000px;width:calc(100% - 32px);padding:24px;max-height:calc(100vh - 32px);overflow:auto}
+#respdlg h3{font-size:24px}
+.rtw{overflow-x:auto;margin:14px 0;border:1px solid #e6e6e6}
+.rt{border-collapse:collapse;width:100%;font-size:13px}
+.rt th,.rt td{padding:8px 10px;border-bottom:1px solid #eee;text-align:left;white-space:nowrap;vertical-align:top}
+.rt th{background:#f5f5f5}
+.rt td.wr{white-space:pre-wrap;min-width:180px}
+
 /* events */
 .grid3{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:28px}
 .ev{background:#fff;border:1px solid #e6e6e6;border-top:4px solid var(--red);display:flex;flex-direction:column}
@@ -256,6 +336,18 @@ dialog .err{color:var(--red);font-size:14px;min-height:20px;margin:0 0 10px}
 .crow>label{font-size:12px;color:#555;min-width:78px}
 .crow .chk{display:flex;gap:6px;align-items:center;min-width:0;color:#111;font-size:13px}
 .sm.on{background:#111;color:#fff;border-color:#111}
+@media(max-width:1100px){
+  .links a.lk{display:none}
+  .links a.lk.news{display:inline-flex}
+  .links{gap:16px}
+  .burger{display:flex}
+  nav.open .menu{display:flex}
+}
+@media(max-width:700px){
+  .logo{font-size:18px}
+  .links{gap:10px}
+  .loginbtn{display:none}
+}
 @media(max-width:860px){
   .lk{display:none}
   .links a.lk.news{display:inline-flex}
@@ -293,6 +385,9 @@ dialog .err{color:var(--red);font-size:14px;min-height:20px;margin:0 0 10px}
   </div>
 </dialog>
 <dialog id="lb"><img alt=""></dialog>
+
+<dialog id="regdlg" aria-label="Registration form"><div id="regbox"></div></dialog>
+<dialog id="respdlg" aria-label="Responses"><div id="respbox"></div></dialog>
 
 <dialog id="annpop" aria-label="Announcements">
   <button class="pclose" id="annx" type="button" aria-label="Close">×</button>
@@ -376,6 +471,24 @@ var DEFAULTS = {
     lead: "The latest news about our upcoming events, speakers and ways to get involved."
   },
   announcements: [],
+  regHead: {
+    eyebrow: "Join us",
+    title: "Registration",
+    lead: "Reserve your seat, volunteer, or apply to be part of TEDxMSAUniversity."
+  },
+  registrations: [],
+  speakersHead: {
+    eyebrow: "On our stage",
+    title: "Speakers",
+    lead: "The voices behind our talks, from our latest edition and the ones before it."
+  },
+  speakers: [],
+  sponsorsHead: {
+    eyebrow: "Our partners",
+    title: "Sponsors & partners",
+    lead: "TEDxMSAUniversity is made possible by the organizations that believe in ideas worth spreading."
+  },
+  sponsors: [],
   eventsHead: {
     eyebrow: "Our story",
     title: "Past events",
@@ -422,6 +535,7 @@ var DEFAULTS = {
     heading: "Let’s talk",
     text: "Want to speak, sponsor, volunteer or join the team? Write to us and we’ll get back to you.",
     email: "tedx@msa.edu.eg",
+    phone: "",
     instagram: "https://www.instagram.com/tedxmsauniversity_/",
     facebook: "https://www.facebook.com/share/194jyepnv9/?mibextid=wwXIfr",
     address: "MSA University – 6th of October Campus\n26 July Mehwar Road intersection with Wahat Road, 6th October City, Egypt"
@@ -520,8 +634,8 @@ function T(tag, path, cls, ph, multi) {
   return e;
 }
 
-function INP(path, label, ph) {
-  var i = h("input", { type: "text", placeholder: ph || "" });
+function INP(path, label, ph, type) {
+  var i = h("input", { type: type || "text", placeholder: ph || "" });
   i.value = get(path) || "";
   i.addEventListener("input", function () { set(path, i.value.trim()); });
   return h("label", { class: "fld" }, label, i);
