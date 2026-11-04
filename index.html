@@ -210,6 +210,9 @@ a.sp:hover{transform:translateY(-3px);box-shadow:0 10px 28px rgba(0,0,0,.08)}
 #regdlg .req{color:var(--red)}
 #regdlg .err{margin:14px 0 0}
 #regdlg .cta{margin-top:12px}
+  #regdlg .fgrp{display:block;font-size:13px;font-weight:700;margin-top:16px;color:#222}
+#regdlg .fgrp .hint{display:block;font-weight:400;color:#555;margin-top:4px;font-size:13px}
+#regdlg .fgrp label.f{margin-top:8px;font-weight:600}
 .hp{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden;opacity:0}
 #respdlg{max-width:1000px;width:calc(100% - 32px);padding:24px;max-height:calc(100vh - 32px);overflow:auto}
 #respdlg h3{font-size:24px}
@@ -1393,7 +1396,7 @@ function footer() {
 /* ---------- registration ---------- */
 var FIELD_TYPES = [["text", "Short answer"], ["textarea", "Long answer"], ["email", "Email"], ["phone", "Phone"], ["select", "Dropdown"], ["file", "Photo upload"], ["checkbox", "Checkbox"]];
 var REG_TPL = { title: "", when: "", desc: "", open: true, button: "Register", thanks: "You are registered. We emailed you a QR code. Show that email to the ushers at the entrance, otherwise you will not be let in.", fields: [] };
-var FLD_TPL = { label: "", type: "text", required: true, options: "", showQ: "", showEq: "" };
+var FLD_TPL = { label: "", type: "text", required: true, options: "", showQ: "", showEq: "", count: "1", hint: "" }; function photoCount(f) { var n = parseInt(f.count, 10); return n >= 1 && n <= 5 ? n : 1; }
 
 function optList(s) { return String(s || "").split(",").map(function (x) { return x.trim(); }).filter(Boolean); }
 
@@ -1422,7 +1425,9 @@ function fieldEditor(fp, form, fi) {
   return h("div", { class: "rfld" },
     INP(p + "label", "Question", "e.g. Full name"),
     h("div", { class: "row" }, typeSel, CK(f, "required", "Required", true)),
-    f.type === "select" ? INP(p + "options", "Options, separated by commas", "MSA student, Outcomer") : null,
+       f.type === "select" ? INP(p + "options", "Options, separated by commas", "MSA student, Outcomer") : null,
+    f.type === "file" ? INP(p + "count", "How many photos are required (1 to 5)", "1", "number") : null,
+    f.type === "file" ? INP(p + "hint", "What the photos should show (people will see this)", "e.g. Front and back of your university ID, text clearly readable") : null,
     cond,
     ctl(fp, fi));
 }
@@ -1434,8 +1439,21 @@ function openReg(form) {
   var hp = h("input", { class: "hp", type: "text", tabindex: "-1", autocomplete: "off", "aria-hidden": "true" });
   var send = h("button", { class: "btn", type: "button" }, form.button || "Register");
   function sync() { wraps.forEach(function (w) { w.el.style.display = (w.f.showQ && vals[w.f.showQ] !== w.f.showEq) ? "none" : ""; }); }
-
-  function field(f) {
+  function fileField(f) {
+    var n = photoCount(f);
+    var req = f.required ? h("span", { class: "req" }, " *") : null;
+    var wrap = h("div", { class: "fgrp" }, h("span", null, f.label, req),
+      h("small", { class: "hint" }, "Upload " + n + " photo" + (n > 1 ? "s" : "") + (f.hint ? ": " + f.hint : "")));
+    files[f.id] = [];
+    for (var i = 0; i < n; i++) (function (i) {
+      var c = h("input", { type: "file", accept: "image/*" });
+      c.addEventListener("change", function () { files[f.id][i] = c.files[0] || null; });
+      wrap.append(h("label", { class: "f" }, n > 1 ? "Photo " + (i + 1) + " of " + n : null, c));
+    })(i);
+    return wrap;
+  }
+   function field(f) {
+    if (f.type === "file") return fileField(f);
     var req = f.required ? h("span", { class: "req" }, " *") : null, c;
     var lab = h("label", { class: "f" + (f.type === "checkbox" ? " ck2" : "") });
     if (f.type === "textarea") c = h("textarea", { rows: "3", maxlength: "2000" });
@@ -1461,10 +1479,12 @@ function openReg(form) {
     var fd = new FormData(), ans = {}, jobs = [], bad = "";
     form.fields.forEach(function (f) {
       if (bad || !f.label || (f.showQ && vals[f.showQ] !== f.showEq)) return;
-      if (f.type === "file") {
-        var file = files[f.id];
-        if (file) jobs.push(shrink(file, 1600).then(function (b) { fd.append("f_" + f.id, b, "id.jpg"); }));
-        else if (f.required) bad = "Please add a photo: " + f.label;
+        if (f.type === "file") {
+        var need = photoCount(f), got = (files[f.id] || []).slice(0, need);
+        if (f.required && got.filter(Boolean).length < need) { bad = "Please add " + need + " photo" + (need > 1 ? "s" : "") + ": " + f.label; return; }
+        got.forEach(function (file, i) {
+          if (file) jobs.push(shrink(file, 1600).then(function (b) { fd.append("f_" + f.id + "_" + i, b, "id.jpg"); }));
+        });
         return;
       }
       var v = String(vals[f.id] || "").trim();
