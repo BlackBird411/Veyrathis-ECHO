@@ -1,561 +1,231 @@
-<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
-<title>Manager Mode</title>
-<meta name="claude:viewport-fit-sides" content="cover">
-<style>
-/* Layout: one column, parchment-and-ink ledger look carried over from the MGT200 original; the 8-step table is the centrepiece of every card. */
-:root{--bg:#fff;--ink:#1c1c1c;--card:#fff;--mute:#595959;--line:#d9d2bd;--soft:#f7f2e2;--a:#2e6b3f;--bad:#a3262f;--gold:#c9a227;--p:#8a6a12;--on:#fff;--hd:#1c1c1c;--hdt:#fff;--ongold:#1c1c1c}
-@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#151515;--ink:#f1ede0;--card:#1e1e1e;--mute:#b5b0a0;--line:#4a4433;--soft:#262318;--a:#7fd19a;--bad:#ff8c94;--gold:#d9b445;--p:#d9b445;--on:#151515;color-scheme:dark}}
-:root[data-theme="dark"]{--bg:#151515;--ink:#f1ede0;--card:#1e1e1e;--mute:#b5b0a0;--line:#4a4433;--soft:#262318;--a:#7fd19a;--bad:#ff8c94;--gold:#d9b445;--p:#d9b445;--on:#151515;color-scheme:dark}
-*{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);font:18px/1.55 "Times New Roman",Times,serif}
-.top{background:var(--hd);color:var(--hdt);padding-block:12px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));border-bottom:4px solid var(--gold)}
-.top span{margin-left:14px;opacity:.8}
-.w{max-width:640px;margin:0 auto;padding-block:14px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
-h1{font-size:clamp(28px,7vw,38px);line-height:1.05;margin:.3em 0 .2em;font-weight:700;padding-bottom:6px;border-bottom:2px solid var(--gold);text-wrap:balance}
-h2{font-size:21px;margin:.9em 0 .3em;font-weight:700;text-wrap:balance}
-p{margin:.4em 0}
-.mute{color:var(--mute);font-size:15px}
-small{font-size:13px}
-.card,.hero{background:var(--card);border:2px solid var(--line);border-radius:2px;padding:16px}
-.tag{font-size:14px;font-style:italic;color:var(--mute);display:flex;flex-wrap:wrap;gap:4px 10px;align-items:center}
-.stp{font-style:normal;font-weight:700;color:var(--p);letter-spacing:.05em;text-transform:uppercase;font-size:12px;border:1px solid var(--p);padding:0 6px}
-.scene{display:flex;justify-content:center;align-items:center;gap:14px;height:120px;margin:10px 0;background:var(--soft);border:1px solid var(--line);font-size:50px;overflow:hidden}
-.scene span{display:inline-block;animation:bob 3.2s ease-in-out infinite}
-@keyframes bob{50%{transform:translateY(-10px) rotate(5deg)}}
-.hud{display:flex;justify-content:space-between;align-items:baseline;margin:4px 2px 0;font-weight:700;gap:12px}
-.sc{font-variant-numeric:tabular-nums;white-space:nowrap}.sc em{font-style:normal}
-.sub{margin:0 2px 8px;font-size:14px;color:var(--mute)}
-.rk{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 2px 10px;font-size:15px}
-.rn{font-weight:700;white-space:nowrap}
-.rk .bar{flex:1 1 90px;margin:0}
-.rk .bar i{background:var(--gold)}
-.rx{white-space:nowrap}
-.ms{display:grid;grid-template-columns:1fr 1fr;gap:8px 14px;margin-bottom:12px}
-.mt{position:relative;font-size:14px;font-weight:700}
-.bar{height:8px;background:var(--line);border-radius:2px;overflow:hidden;margin-top:3px}
-.bar i{display:block;height:100%;background:var(--a);border-radius:2px;transition:width .8s cubic-bezier(.2,.9,.3,1.2),background .3s}
-.bar i.lo{background:var(--bad)}
-#clk{transition:none}
-.cl{display:flex;align-items:center;gap:10px;margin:0 2px 10px}
-.cl .bar{flex:1;margin:0}
-.cl span{width:34px;text-align:right;font-variant-numeric:tabular-nums}
-.ll{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 12px}
-.lf{font:inherit;font-size:14px;font-weight:700;color:var(--ink);background:var(--card);border:1px solid var(--line);padding:6px 10px;cursor:pointer;border-radius:2px;display:inline-flex;gap:6px;align-items:center;min-height:40px}
-.lf em{font-style:normal;background:var(--soft);border:1px solid var(--line);padding:0 6px;font-variant-numeric:tabular-nums}
-.lf:hover:not(:disabled){border-color:var(--p);background:var(--soft)}
-.lf:disabled{opacity:.45;cursor:default}
-.opt{display:block;width:100%;text-align:left;margin:8px 0;padding:13px 15px;font:inherit;font-weight:400;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:2px;cursor:pointer;transition:border-color .15s,background .15s}
-.opt:hover:not(:disabled){background:var(--soft);border-color:var(--p)}
-.opt:focus-visible,.go:focus-visible,input:focus-visible,.lf:focus-visible,.chip:focus-visible,.mode:focus-visible,.rowb:focus-visible,summary:focus-visible{outline:3px solid var(--p);outline-offset:2px}
-.opt:disabled{cursor:default;opacity:.55}
-.opt.good{opacity:1;border-color:var(--a);background:color-mix(in srgb,var(--a) 18%,var(--card))}
-.opt.mid{opacity:1;border-color:var(--gold)}.opt.bad{opacity:1;border-color:var(--bad)}
-.opt.ans{opacity:1;border-style:dashed;border-color:var(--a)}
-.opt.gone{opacity:.3;text-decoration:line-through}
-.go{display:block;font:inherit;font-weight:700;font-size:18px;background:var(--p);color:var(--on);border:0;border-radius:2px;padding:13px 22px;cursor:pointer;width:100%;margin-top:10px}
-.go.alt{background:var(--card);color:var(--ink);border:1px solid var(--line)}
-.go.sm{font-size:15px;padding:8px 14px;width:auto;margin:8px 0 0}
-input:not([type="checkbox"]){width:100%;font:inherit;padding:12px 14px;border-radius:2px;border:2px solid var(--line);background:var(--bg);color:var(--ink);margin:4px 0 2px}
-.two{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px}
-.fld{display:block;min-width:0}
-@media(max-width:480px){.two{grid-template-columns:1fr}}
-.modes{display:grid;gap:10px;margin:14px 0}
-.mode{display:block;width:100%;text-align:left;font:inherit;background:var(--card);color:var(--ink);border:1px solid var(--line);padding:12px 14px;cursor:pointer;border-radius:2px}
-.mode:hover{background:var(--soft);border-color:var(--p)}
-.mode b{display:block;font-size:20px}
-.mode span{display:block;color:var(--mute);font-size:15px;line-height:1.35;margin:2px 0 4px}
-.mode small{color:var(--p);font-weight:700;letter-spacing:.06em;text-transform:uppercase}
-.sw{display:flex;gap:10px;align-items:flex-start;font-size:16px;margin:8px 0 14px;cursor:pointer;line-height:1.4}
-.sw input{width:20px;height:20px;margin:2px 0 0;accent-color:var(--p);flex:none}
-.proc{margin:12px 0;border:1px solid var(--line);background:var(--card)}
-.proc>summary{padding:10px 12px;cursor:pointer;font-weight:700;font-size:16px;background:var(--soft)}
-.proc[open]{padding-bottom:12px}
-.proc[open]>summary{border-bottom:1px solid var(--line);margin-bottom:8px}
-.proc>:not(summary){margin-left:12px;margin-right:12px}
-.bonus{background:var(--gold);color:var(--ongold);font-size:12px;padding:1px 6px;margin-left:8px;letter-spacing:.05em;text-transform:uppercase}
-.tw{overflow-x:auto;max-width:100%}
-table{border-collapse:collapse;width:100%}
-.steps th,.steps td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top;font-size:15px}
-.steps th{width:34px;font-variant-numeric:tabular-nums;color:var(--mute);font-weight:700}
-.steps td{min-width:0}
-.steps .mean{display:none;color:var(--mute);font-size:14px;line-height:1.35;margin-top:2px}
-.steps.all .mean,.steps tr.on .mean,.steps tr.show .mean{display:block}
-.steps tr.on{background:color-mix(in srgb,var(--gold) 24%,var(--card))}
-.steps tr.on th{color:var(--ink)}
-.steps tr.good{background:color-mix(in srgb,var(--a) 20%,var(--card))}
-.steps tr.bad{background:color-mix(in srgb,var(--bad) 18%,var(--card))}
-.steps td.stt{width:72px;text-align:right;font-size:13px}
-.here{font-variant:small-caps;letter-spacing:.04em;font-weight:700;color:var(--p)}
-.okc{color:var(--a);font-weight:700;font-size:17px}.noc{color:var(--bad);font-weight:700;font-size:17px}
-.rowb{font:inherit;font-weight:700;color:var(--ink);background:none;border:0;padding:0;text-align:left;cursor:pointer;width:100%;min-height:24px}
-.rowb:hover:not(:disabled){text-decoration:underline;text-decoration-color:var(--p)}
-.rowb:disabled{cursor:default}
-.steps tr.hid b,.q{color:var(--mute)}
-.mx th,.mx td{padding:6px 8px;border:1px solid var(--line);text-align:right;font-variant-numeric:tabular-nums;font-size:15px;white-space:nowrap}
-.mx th:first-child,.mx td:first-child{text-align:left}
-.mx thead th{background:var(--soft)}
-.brief{margin:12px 0;padding:12px 14px;background:var(--soft);border:1px dashed var(--p)}
-.brief b{font-variant:small-caps;letter-spacing:.05em;color:var(--p)}
-.brief p{margin:.3em 0 0;font-size:16px}
-.res{margin-top:12px;padding:14px;background:var(--soft);border:2px solid var(--line);border-radius:2px}
-.rh{display:flex;align-items:center;gap:12px}
-.stamp{display:inline-grid;place-items:center;width:38px;height:38px;border:2px solid currentColor;font-weight:700;font-size:22px;border-radius:2px;flex:none;background:var(--card);transform:rotate(-4deg)}
-.stamp.sm{width:26px;height:26px;font-size:15px;border-width:1px;transform:none}
-.g-S{color:var(--p)}.g-A{color:var(--a)}.g-B{color:var(--ink)}.g-C{color:var(--mute)}.g-D{color:var(--bad)}
-.chips{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
-.chip{font:inherit;font-size:15px;font-weight:700;color:var(--ink);background:var(--card);border:1px solid var(--line);padding:8px 12px;cursor:pointer;border-radius:2px;min-height:40px}
-.chip:hover{border-color:var(--p);background:var(--soft)}
-.situ{font-size:20px;font-style:italic;margin:.6em 0}
-.in{animation:in .45s ease-out}
-@keyframes in{from{opacity:0;transform:translateY(14px)}}
-.sk{animation:sk .45s}
-@keyframes sk{20%{transform:translateX(-9px)}40%{transform:translateX(9px)}60%{transform:translateX(-6px)}80%{transform:translateX(5px)}}
-.fl{position:absolute;right:0;top:-4px;font-weight:700;pointer-events:none;animation:fl 1.2s ease-out forwards}
-.fl.u{color:var(--a)}.fl.d{color:var(--bad)}
-@keyframes fl{to{transform:translateY(-26px);opacity:0}}
-.cf{position:fixed;top:-30px;font-size:26px;pointer-events:none;z-index:9;animation:fall 1.5s ease-in forwards}
-@keyframes fall{to{transform:translateY(110vh) rotate(var(--r));opacity:.3}}
-.promo{position:fixed;left:max(16px,env(safe-area-inset-left,0px));right:max(16px,env(safe-area-inset-right,0px));top:calc(env(safe-area-inset-top,0px) + 12px);max-width:420px;margin:0 auto;z-index:20;background:var(--hd);color:var(--hdt);border:2px solid var(--gold);padding:12px 16px;font-size:19px;text-align:center;animation:in .45s ease-out}
-.promo b{color:var(--gold);font-variant:small-caps;letter-spacing:.06em;margin-right:6px}
-.lb{margin:6px 0;padding:0;list-style:none}
-.lb li{display:flex;gap:10px;padding:8px 10px;border-bottom:1px solid var(--line);font-weight:700;align-items:center}
-.lb li.me{background:var(--soft);outline:1px solid var(--p)}
-.lb b{width:22px}
-.lb span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.lb small{display:block;font-weight:400;color:var(--mute)}
-.lb i{font-style:normal;font-variant-numeric:tabular-nums}
-.rep th,.rep td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:left;font-size:15px;vertical-align:top}
-.rep thead th{font-variant:small-caps;letter-spacing:.05em;color:var(--mute)}
-.rep tr.on{background:color-mix(in srgb,var(--gold) 24%,var(--card))}
-.rep td.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
-.rep small{display:block;color:var(--mute)}
-.badges{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin:8px 0}
-.bd{border:1px solid var(--line);padding:8px 10px;font-size:14px;line-height:1.3;background:var(--card);text-align:left;min-width:0}
-.bd b{display:block;font-size:15px}
-.bd .ic{font-size:22px}
-.bd small{display:block;color:var(--mute)}
-.bd.lock{opacity:.55}.bd.lock .ic{filter:grayscale(1)}
-.big{font-size:72px;font-weight:700;line-height:1;color:var(--p);font-variant-numeric:tabular-nums}
-.end{text-align:center}
-.end .lb,.end .tw,.end .proc,.end .badges{text-align:left}
-@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
-</style>
-<header class="top"><b>MGT200</b><span>Introduction to Management · Practice Simulation</span></header>
-<div class="w" id="app"></div>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TEDx Team Hierarchy</title>
+</head>
+<body>
+
+<h1>TEDx Team Hierarchy</h1>
+
+<div id="bar"></div>
+<p id="msg"></p>
+<hr>
+<div id="tree">Loading...</div>
+
 <script>
-const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)],A=$("#app");
-const MET=[["💰","Profit"],["😊","Morale"],["⚙️","Efficiency"],["🎯","Goals"]];
-/* Rank ladder. Points are for Career run; Case file and Step sprint use 65% of them. */
-const RK=[[0,"Intern","🧑‍🎓"],[100,"Trainee","📎"],[300,"Team leader","🧑‍🔧"],[550,"Supervisor","🦺"],[850,"Department manager","📋"],[1100,"Director","🏢"],[1300,"Vice president","💼"],[1500,"CEO","👑"]];
-const KM={career:1,case:.65,sprint:.65};
-const th=(i,k)=>Math.round(RK[i][0]*k/10)*10;
-const rkI=(s,k)=>{let r=0;for(let i=0;i<RK.length;i++)if(s>=th(i,k))r=i;return r};
-const GR=p=>p>=100?"S":p>=60?"A":p>=40?"B":p>=20?"C":"D";
-const STEPS=[
-["Identify the problem","A problem is the gap between where you are and where you want to be. Name that gap."],
-["Identify decision criteria","Decide which factors matter for this decision. They are the yardstick for every option."],
-["Allocate weights to the criteria","Give each criterion a weight, because some matter more than others."],
-["Develop alternatives","List every workable option. Do not judge them yet."],
-["Analyze alternatives","Rate each option against each criterion, multiply by the weights and add up."],
-["Select an alternative","Choose the option with the best total score."],
-["Implement the alternative","Put the decision into action and tell the people who are affected."],
-["Evaluate decision effectiveness","Check the results against the problem. If it is not solved, go back to an earlier step."]];
-const SIT=[
-["Orders are down and the owner asks why. You compare this month’s sales with the target.",1],
-["Customers complain, and you measure the gap between 95% on-time delivery and the actual 82%.",1],
-["You agree that price, quality and delivery speed will decide which supplier to pick.",2],
-["You list speed, battery life and price as the factors for choosing a team laptop.",2],
-["You decide quality counts twice as much as price.",3],
-["You give battery life a weight of 8 and price a weight of 4.",3],
-["The team lists five possible suppliers without debating any of them yet.",4],
-["You collect every option, including the odd ones, before judging any.",4],
-["You rate each supplier from 1 to 10 on every criterion and multiply by the weights.",5],
-["You work out a weighted score for each of three vendors.",5],
-["The totals are in, and you choose the supplier with the highest score.",6],
-["You pick the vendor with the best weighted total.",6],
-["You sign the contract and brief the warehouse team on the new process.",7],
-["You announce the decision and assign who does what by when.",7],
-["Three months on, you compare late deliveries with the goal.",8],
-["You check the results against the goal and find the problem is only half solved.",8]];
-const BADGES=[
-["perfect","🏛️","Perfect quarter","Pick the best move every time in a Career run or Case file."],
-["streak","🔥","Hot streak","Reach a streak of 5 best moves."],
-["purist","🧭","Process purist","Tap the right step every time, at least twice in one run."],
-["selfmade","🧠","Self-made manager","Finish with at least 8 best moves and no lifelines."],
-["quick","⚡","Quick on the draw","Finish a Career run with the clock on and 8 best moves."],
-["comeback","🛟","Comeback","Pull a meter from below 25 back up to 60."],
-["closed","📁","Case closed","Finish a Case file with 6 or more best moves."],
-["order","🔢","Sequence master","Put the 8 steps in order on the first try."],
-["board","👔","Boardroom material","Reach the rank of Director or higher."]];
-const LL=[["c","🎓","Consultant","Removes one wrong answer (costs 25 points)"],["t","📘","Textbook","Shows a briefing and the step (costs 15 points)"],["d","🤝","Delegate","Swaps in a new scenario (no points)"]];
-/* Scenario fields: p = decision step it tests (0 = none), b = briefing, n = note when p is 0, tb = ratings table. Options: [text, meter changes, points, explanation]. */
-const S=[
-{c:"Chapter 1 · Efficiency vs effectiveness",e:["🏭","📦","📉"],t:"The full warehouse",p:1,b:"Efficiency means doing things right. Effectiveness means doing the right things. Step 1 of a decision is naming the real gap between where you are and where you want to be.",s:"Your factory makes 1,000 phone cases a day at record-low cost, but the warehouse is full. Customers are asking for wireless chargers.",o:[
-["Squeeze costs even harder to make cases cheaper",[3,-5,10,-15],20,"Efficient, not effective: you’re doing things right, but not the right things."],
-["Switch the line to chargers using the same wasteful process",[5,0,-10,15],60,"Effective, not efficient: right goal, wasted resources."],
-["Switch to chargers and tighten the process while you do it",[15,5,10,20],100,"Effective and efficient: you hit the goal and used resources wisely."]]},
-{c:"Chapter 1 · Managerial skills",e:["🧑‍💼","🔧","😠"],t:"Stalled machine, angry team",p:0,b:"Katz names three skills: technical, human and conceptual. First-line managers lean on technical and human skills. Top managers lean on conceptual skills.",s:"You’re a first-line supervisor. A machine has stopped, and two operators are arguing about who broke it.",o:[
-["Fix the machine yourself and ignore the argument",[5,-10,10,0],40,"Technical skill alone leaves the conflict alive."],
-["Calm both operators, hear them out, then assign the repair",[5,15,5,5],100,"Human plus technical skill: what Katz says lower-level managers need most."],
-["Draft a five-year plant strategy",[-5,-5,-10,0],10,"Conceptual skill matters most at the top, not mid-breakdown."]]},
-{c:"Chapter 1 · Mintzberg’s roles",e:["🚨","📰","🏭"],t:"Product recall",p:0,b:"Mintzberg groups a manager’s ten roles into interpersonal, informational and decisional. A crisis calls on the disturbance handler and spokesperson roles.",s:"A batch of your product is recalled. Reporters are calling and staff are nervous.",o:[
-["Say nothing and hope it fades",[-20,-10,0,-15],0,"Silence fails the disturbance handler role."],
-["Issue a formal statement, start corrective measures, and brief your team",[-5,10,5,15],100,"Disturbance handler, spokesperson and disseminator in one move."],
-["Blame the supplier publicly",[-10,-5,0,-5],20,"You’re a spokesperson, but not a responsible one: trust drops."]]},
-{c:"Chapter 1 · Controlling",e:["📊","🔍","📱"],t:"Numbers below target",p:8,b:"Controlling means measuring results, comparing them with targets, and taking corrective action. Step 8 does the same for a single decision.",s:"Website traffic is up 12% (target 15%). Followers: 8,500 of 10,000. Email open rate beat its target. The campaign has six weeks left.",o:[
-["Cancel the campaign. It failed",[-5,-10,0,-10],20,"Controlling means compare and correct, not abandon."],
-["Move budget to the best channels and add influencer partners",[10,5,10,10],100,"Measure, compare with targets, then take corrective action."],
-["Wait until the end and review then",[0,0,-5,-5],10,"Waiting lets small gaps become big misses."]]},
-{c:"Chapter 2 · Weighted decision",e:["🚚","🏭","📦"],t:"Pick a supplier",p:5,tb:{h:["Supplier","Quality ×10","Price ×7","Delivery ×5"],r:[["Delta",6,10,9],["Pharos",9,7,8],["Nile Metals",8,8,6]]},b:"Step 5 rates every option against every criterion. Multiply each rating by its weight, then add the results for each option. The highest total wins in step 6.",s:"The weights are in the column headers, and ratings run from 1 to 10. Multiply each rating by its weight, then add.",o:[
-["Delta Supplies, the cheapest",[10,-5,-5,-5],40,"Delta totals 175. Cheap wins on price but loses on the heavy quality weight."],
-["Pharos Parts",[10,5,10,10],100,"Pharos totals 179, the highest. The weights decide, not gut feeling."],
-["Nile Metals",[0,0,0,0],20,"Nile Metals totals 166, the lowest of the three."]]},
-{c:"Chapter 2 · Programmed decisions",e:["🧾","💵","🙋"],t:"The refund request",p:0,n:"This is a programmed decision. A rule already exists, so you skip the long analysis in steps 2 to 5 and apply it.",b:"A programmed decision is routine and structured, so a policy, procedure or rule makes it. Save the full eight steps for problems with no rule.",s:"A customer wants an $80 refund. Policy says accept returns. The rule says managers approve refunds over $50. You’re the manager.",o:[
-["Check the documentation and approve it, as the procedure says",[0,5,10,10],100,"Structured, repeated problem: use the policy, procedure and rule."],
-["Call a three-day strategy meeting",[-5,-5,-15,0],10,"Overkill. Routine problems shouldn’t eat management time."],
-["Refuse it to protect profit",[-5,-10,0,-10],0,"You’d break your own policy and lose the customer."]]},
-{c:"Chapter 2 · Unstructured problems",e:["🤖","🌍","❓"],t:"A competitor with no precedent",p:4,b:"A non-programmed decision is new and unstructured, so no rule exists. Step 4 means gathering information and developing several alternatives, then using judgment.",s:"A brand-new kind of competitor appears. There’s no rulebook and the information is patchy.",o:[
-["Look up the matching rule in the policy manual",[-5,0,0,-10],10,"There’s no rule for a new problem. That’s what makes it unstructured."],
-["Gather what you can, brainstorm options, decide with judgment, review in three months",[5,10,0,15],100,"Non-programmed decision: custom solution, judgment and creativity."],
-["Copy exactly what your biggest rival did last year",[0,-5,0,0],30,"Imitation skips your own analysis."]]},
-{c:"Chapter 2 · Decision styles",e:["⏳","🤝","🧠"],t:"One hour left",p:6,b:"Decision styles differ in how much ambiguity a person tolerates and whether they lean on logic or intuition. Directive is fast, analytic wants more data, conceptual is creative, behavioral is people-focused. Step 6 is where you commit.",s:"A supplier’s big discount expires in 60 minutes. The facts are clear and the choice is simple.",o:[
-["Analytic: build a full model first",[-10,0,-5,-5],30,"Thorough, but you’d miss the deadline. Analytic can be slow."],
-["Directive: decide fast on the clear facts and sign",[15,0,10,5],100,"Directive shines when speed and clear information matter."],
-["Behavioral: poll everyone for consensus",[-5,5,-10,0],40,"Collaboration is great, but consensus takes time."]]},
-{c:"Chapter 2 · Evaluating the decision",e:["📉","😕","🔁"],t:"Three months later",p:8,b:"Step 8 asks whether the decision solved the problem. If it did not, go back to an earlier step and rework it.",s:"Your decision was implemented, but sales are flat and the team is unhappy.",o:[
-["Defend it. Changing course looks weak",[-5,-10,0,-10],10,"Step 8 judges a decision by its outcomes, not by pride."],
-["Go back to an earlier step: recheck criteria and weights, reassess alternatives",[10,10,5,15],100,"Evaluate, learn, loop back. Good decision-making is a cycle."],
-["Blame the team",[-10,-15,-5,-10],0,"Blame doesn’t fix the problem."]]},
-{c:"Chapter 3 · SMART goals",e:["🎯","📅","🛍️"],t:"Write the sales goal",p:0,b:"SMART goals are Specific, Measurable, Achievable, Relevant and Time-bound.",s:"Your boss asks you to set the goal for the sales team this quarter.",o:[
-["“Boost sales as much as possible”",[0,0,0,-5],20,"Not specific, not measurable, no deadline."],
-["“Raise sales 10% in Egypt by 31 March using the two new product lines”",[10,5,5,20],100,"Specific, measurable, achievable, relevant and time-bound."],
-["“Become the world’s number one retailer next year”",[-5,-10,-5,-10],10,"Not achievable with your resources."]]},
-{c:"Chapter 3 · Goal-setting approaches",e:["🤝","📋","🧑‍💻"],t:"Goal season",p:0,b:"Traditional goal setting works top-down. Management by objectives (MBO) sets goals together, cascades them and reviews progress.",s:"It’s goal-setting time. Your team is skilled and wants a say.",o:[
-["Hand down goals from the top, no discussion",[5,-10,5,5],50,"Traditional top-down: clear targets, but little employee involvement."],
-["Agree objectives with each person, aligned to company goals, and review progress together",[5,15,5,15],100,"MBO: participative, cascading and more motivating."],
-["Skip goals this year",[-10,0,-10,-20],0,"Without goals there’s nothing to plan or control against."]]},
-{c:"Chapter 3 · Types of plans",e:["🌪️","🚢","📦"],t:"Shipping chaos ahead",p:4,b:"Step 4 lists every workable option. Static plans suit stable conditions. Scenario plans prepare for several possible futures.",s:"Strikes and storms could hit your global supply chain. Nobody knows which, or when.",o:[
-["A detailed static plan that assumes everything stays stable",[-10,0,0,-10],10,"Static plans suit predictable conditions."],
-["Scenario plans: alternative suppliers, stock levels and logistics for each disruption",[10,5,5,15],100,"Scenario planning is flexible and built for uncertainty."],
-["A one-line directional slogan",[0,0,-5,0],30,"Directional plans are flexible but too vague for a crisis."]]},
-{c:"Chapter 1 · Management levels",e:["🏢","🌉","👷"],t:"Who decides what?",p:0,b:"Top managers set strategy, middle managers turn it into tactics, and first-line managers run daily operations.",s:"A five-year expansion plan needs approval, and today’s shift schedule needs fixing. Who handles which?",o:[
-["Top managers fix the schedule, first-line managers set the expansion",[-5,-5,-10,-10],0,"Reversed. Top managers set direction; first-line managers run daily work."],
-["Top managers set the expansion, first-line managers fix the schedule, middle managers link the two",[5,5,10,15],100,"Strategic, tactical and operational levels each own a different time horizon."],
-["Only the CEO decides everything",[-5,-15,-10,0],20,"A bottleneck. Managers exist to share coordination."]]},
-{c:"Chapter 1 · Organizing",e:["🧩","🗂️","👥"],t:"Launch in six weeks",p:7,b:"Step 7 puts a decision into action. Organizing sets up who does what, who reports to whom, and how the work is tracked.",s:"You have content, social media, advertising and analytics teams for a launch six weeks away.",o:[
-["Let everyone start and sort out roles later",[-5,-10,-15,-5],10,"Organizing decides what, who and how before work starts."],
-["Assign tasks by expertise, set reporting lines and pick tracking tools",[5,10,10,10],100,"Dividing work, delegating and setting reporting lines is organizing."],
-["Do it all yourself to keep control",[-5,-15,-10,0],20,"A manager’s job is helping others do their work."]]},
-{c:"Chapter 1 · Leading",e:["🏆","💬","⚔️"],t:"Launch-week morale",p:7,b:"Leading means motivating people, resolving conflict and communicating. In step 7 people carry out the decision, so leading decides whether it works.",s:"The team is exhausted during a high-pressure launch, and two leads disagree on the creative direction.",o:[
-["Order everyone to work harder",[0,-15,-5,0],10,"Leading means motivating and communicating, not only directing."],
-["Recognize good work, mediate the disagreement and restate the shared goal",[5,20,5,10],100,"Motivating, resolving conflict and aligning people: leading."],
-["Ignore the disagreement until after launch",[-5,-10,-5,-5],20,"Unresolved conflict drags into the launch."]]},
-{c:"Chapter 1 · Decisional roles",e:["💰","🤝","📑"],t:"One budget, three requests",p:3,b:"Step 3 gives each criterion a weight so that priorities decide the outcome. Resource allocator and negotiator are two of Mintzberg’s decisional roles.",s:"Three departments each ask for the full annual budget, and a supplier wants a long contract.",o:[
-["Split the budget evenly without looking at priorities",[0,0,-5,-5],40,"Allocation should follow priorities."],
-["Allocate by priority against objectives, and negotiate the contract for better prices",[10,5,5,10],100,"Resource allocator and negotiator: decisional roles."],
-["Approve the largest request",[-5,-5,-5,-5],20,"The size of the ask isn’t a decision criterion."]]},
-{c:"Chapter 2 · Identifying the problem",e:["🔎","📉","🗣️"],t:"“Sales are bad”",p:1,b:"Step 1: a problem is the gap between the existing state and the desired state. Define that gap with numbers before you act.",s:"The owner says sales are bad. You have the authority and the data to act, and there’s pressure to fix it.",o:[
-["Launch a big discount right away",[-10,0,-5,-10],20,"You treated a vague symptom as the problem."],
-["Define the gap between actual and desired sales, by product and month",[5,5,5,15],100,"A problem is the gap between existing and desired states. Define it first."],
-["Replace the sales manager",[-10,-15,-5,-5],10,"Premature: the problem isn’t defined yet."]]},
-{c:"Chapter 2 · Criteria and weights",e:["⚖️","💻","🛒"],t:"Laptops for the team",p:3,b:"Step 2 lists the criteria and step 3 weights them. Weights turn your priorities into numbers you can compare.",s:"Your team codes all day and the budget is flexible. You’re choosing between laptop models.",o:[
-["Treat price, speed and battery as equally important",[0,0,-5,-5],40,"Equal weights ignore your real priorities."],
-["Weight performance highest, battery next, price lowest, then score each model",[5,10,10,10],100,"Weights turn priorities into numbers you can compare."],
-["Buy the one a friend recommended",[-5,0,-5,-5],20,"No criteria, no process."]]},
-{c:"Chapter 2 · Developing alternatives",e:["💡","📝","🚫"],t:"Late deliveries",p:4,b:"Step 4 lists every option you can think of without judging any. Evaluation comes in step 5.",s:"The team is solving a late-delivery problem and someone proposes an odd idea.",o:[
-["Shoot the idea down immediately",[0,-10,-5,-5],20,"Step 4 lists alternatives without evaluating them."],
-["List every idea first and evaluate them later against the criteria",[5,10,5,10],100,"Develop alternatives without judgment, then analyze."],
-["Take the first idea that sounds fine",[0,0,-5,-5],30,"You skipped weighing alternatives."]]},
-{c:"Chapter 2 · Decision styles",e:["📊","🧮","🌫️"],t:"Messy data",p:5,b:"Step 5 analyzes the options with the data you have. Analytic decision makers tolerate ambiguity and want more data and options before they decide.",s:"A major market-entry decision comes with incomplete, conflicting reports. You have two weeks.",o:[
-["Directive: pick quickly on limited information",[-10,0,0,-10],30,"Fast, but risks missing crucial details on a complex decision."],
-["Analytic: compare several sources and adjust as the data changes",[10,0,5,15],100,"Analytic suits complex problems: comfortable with ambiguity and data-driven."],
-["Conceptual: follow a hunch with no analysis",[-5,0,-5,-5],40,"Creative, but too risky for a costly decision without data."]]},
-{c:"Chapter 3 · Types of goals",e:["🏢","🧑‍💼","🧍"],t:"Which level of goal?",p:0,b:"Strategic goals are long-term and organization-wide. Tactical goals belong to a department. Operational goals are short-term and belong to a team.",s:"“The sales team will contact 50 potential customers each week.” What kind of goal is this?",o:[
-["Strategic goal, set by top management",[-5,0,-5,-5],10,"Strategic goals are long-term and organization-wide."],
-["Operational goal, set by first-line managers",[5,5,5,10],100,"Short-term, day-to-day and team-level: operational."],
-["Tactical goal, set by the board",[0,0,0,-5],30,"Tactical goals are department-level, set by middle managers."]]},
-{c:"Chapter 3 · Time frame",e:["🔭","🗓️","🏁"],t:"A ten-year ambition",p:0,b:"Plans differ by time frame: short-term (under a year), intermediate, and long-term (beyond three years). Strategic plans cover the whole organization.",s:"The board wants to expand globally within ten years. Which plan is this?",o:[
-["A short-term operational plan",[-5,0,-5,-5],10,"Short-term plans cover less than a year."],
-["A long-term strategic plan, with tactical and operational plans beneath it",[5,5,5,15],100,"Beyond three years and organization-wide: long-term, strategic."],
-["A single-use project plan",[0,0,0,-5],30,"This sets organization-wide direction, not one event."]]},
-{c:"Chapter 3 · Specificity",e:["🧭","📋","🏭"],t:"How detailed?",p:0,b:"Specific plans have clear objectives with no room for interpretation. Directional plans set general guidelines and stay flexible.",s:"Marketing wants more brand awareness and should be free to experiment. Production must make exactly 1,000 units a day.",o:[
-["Specific plan for marketing, directional plan for production",[-10,-5,-10,-10],0,"Reversed."],
-["Directional plan for marketing, specific plan for production",[5,10,10,10],100,"Directional plans stay flexible; specific plans leave no room for interpretation."],
-["Specific plans for both",[-5,-10,5,0],40,"A rigid marketing plan kills experimentation."]]},
-{c:"Chapter 3 · Frequency of use",e:["🧑‍💼","📄","🔁"],t:"Monthly hiring, one office move",p:0,b:"Single-use plans cover a one-time situation. Standing plans guide activities that repeat.",s:"You hire new staff every month, and a one-time office move is coming.",o:[
-["Standing plan for hiring, single-use plan for the move",[5,5,10,10],100,"Standing plans guide repeated activities; single-use plans suit one-off projects."],
-["Single-use plan for hiring, standing plan for the move",[-5,-5,-10,-5],0,"Reversed."],
-["No written plans: decide case by case",[-10,-5,-10,-10],20,"Without plans there’s no consistency."]]},
-{c:"Chapter 3 · Cascading goals",e:["⛰️","🎯","🔁"],t:"From top to desk",p:0,b:"Goals cascade down. Organizational goals become divisional, departmental and individual goals that line up with each other.",s:"Top management sets the goal “raise profitability.” How should it reach each employee?",o:[
-["Leave it at the top and let people work it out",[-5,-10,-5,-10],10,"Goals must cascade to be useful."],
-["Translate it into divisional, departmental and individual goals that align",[10,5,5,15],100,"Cascading links every level to the organization’s objective."],
-["Give each team a different, unrelated goal",[-5,-5,-10,-10],20,"Unaligned goals pull in different directions."]]}
-];
-/* Case files: one company taken through all eight steps. */
-const CASES=[
-{n:"Nile Express",steps:[
-{c:"Case file · Nile Express",e:["📞","📦","⏰"],t:"Customers are angry",p:1,b:"Step 1 names the problem as a gap in numbers: where you are against where you want to be. Define the gap before you reach for a fix.",s:"Nile Express delivers parcels across Greater Cairo. This quarter 18% of parcels arrived late, against a target of under 5%. Complaints have doubled in two months, and the owner wants it fixed.",o:[
-["Hire ten more drivers this week",[-10,0,-5,-5],20,"You jumped to a solution before naming the problem."],
-["State the gap: 18% late against a 5% target, then find where the delays begin",[5,5,5,15],100,"Step 1 puts the gap into numbers and points you at its source."],
-["Tell customers the delays are temporary",[-5,-5,0,-10],0,"That is a message, not a diagnosis."]]},
-{c:"Case file · Nile Express",e:["📏","🏭","📊"],t:"What counts as a good fix?",p:2,b:"Step 2 lists the factors the decision will be judged on. Criteria are the yardstick you hold every option against.",s:"The data shows most delays start at the sorting hub. Before comparing fixes, you decide what a good fix looks like.",o:[
-["Judge fixes on how much they cut late parcels, how fast they work, and what they cost",[5,5,5,10],100,"Good criteria cover what matters: the result, the speed and the cost."],
-["Judge fixes only on cost",[3,-5,-5,-5],30,"One criterion ignores whether the fix actually works."],
-["Skip criteria and pick whatever feels right",[-5,0,-5,-10],10,"Without criteria there is nothing to compare options against."]]},
-{c:"Case file · Nile Express",e:["⚖️","🥇","💰"],t:"What matters most?",p:3,b:"Step 3 gives each criterion a weight. A bigger number means it counts more in the final score.",s:"Your criteria are late-parcel reduction, speed and cost. The owner says lateness is the main issue, and money is tight but not critical.",o:[
-["Late-parcel reduction 10, speed 7, cost 4",[5,5,5,10],100,"The weights follow the owner’s priorities: results first, cost last."],
-["Give all three a weight of 5",[0,0,-5,-5],40,"Equal weights hide what actually matters most."],
-["Cost 10, speed 3, late-parcel reduction 2",[5,-5,-5,-10],10,"These weights aim the whole decision at the wrong goal."]]},
-{c:"Case file · Nile Express",e:["💡","📝","🧑‍🤝‍🧑"],t:"List the options",p:4,b:"Step 4 lists every workable option. Do not judge them yet, because analysis comes next.",s:"Your team gathers to list ways to fix the sorting hub. Someone suggests a second night shift, someone else new scanners, and a driver mentions route-planning software.",o:[
-["List all three and any others first, and judge them in the next step",[5,10,5,10],100,"Develop alternatives without judging, then analyze."],
-["Stop at the first idea, new scanners",[0,0,-5,-5],30,"One option is not a choice."],
-["Cross off any idea that sounds expensive",[0,-10,-5,-5],20,"Judging too early kills options before you can compare them."]]},
-{c:"Case file · Nile Express",e:["🧮","📊","🔍"],t:"Score the options",p:5,tb:{h:["Option","Late cut ×10","Speed ×7","Cost ×4"],r:[["New scanners",8,6,5],["Second night shift",7,9,4],["Route software",9,5,7]]},b:"Step 5 rates each option against each criterion. Multiply every rating by its weight, then add the results for each option.",s:"Ratings run from 1 to 10, and a higher cost rating means cheaper. The weights from step 3 are in the headers. How do you analyze the options?",o:[
-["Multiply each rating by its weight and add them up for each option",[5,5,10,10],100,"Weighted scoring uses both the ratings and what matters most."],
-["Add the ratings and ignore the weights",[0,0,-5,-5],30,"That treats cost the same as lateness."],
-["Pick the option with the single highest rating",[0,0,-5,-10],20,"One high number doesn’t tell you the whole picture."]]},
-{c:"Case file · Nile Express",e:["🏁","🧾","🤝"],t:"Make the call",p:6,b:"Step 6 picks the alternative with the best total. A friendly vendor is not one of your criteria.",s:"The weighted totals are in: New scanners 142, Second night shift 149, Route software 153. The owner prefers the scanners because the vendor is a friend.",o:[
-["Route software, which has the highest total",[10,5,10,15],100,"The scores decide. Personal preference isn’t a criterion."],
-["Second night shift, since it is close behind",[0,-5,0,-5],40,"Second place is still second place."],
-["New scanners, to keep the owner happy",[-5,-5,-5,-10],20,"You would be overriding your own analysis."]]},
-{c:"Case file · Nile Express",e:["🚀","🧑‍🔧","📣"],t:"Roll it out",p:7,b:"Step 7 puts the decision into action. People carry out decisions, so they need to know what, who and when.",s:"You choose the route software. The vendor can deliver in two weeks.",o:[
-["Brief drivers and dispatchers, name an owner, and set a start date",[5,10,10,10],100,"Implementation needs communication, ownership and a date."],
-["Install it quietly and let drivers find out on their own",[-5,-10,-5,-5],20,"Surprising the people who use it invites resistance."],
-["Wait until a quiet week with no disruption",[-10,0,-5,-10],30,"Delay lets the problem keep costing you."]]},
-{c:"Case file · Nile Express",e:["📈","🔁","🎯"],t:"Did it work?",p:8,b:"Step 8 compares the results with the original problem. If the gap remains, go back to an earlier step.",s:"Sixty days later, late parcels have fallen from 18% to 11%. The target is still under 5%.",o:[
-["Declare success because late parcels fell",[0,5,0,-5],40,"Progress, but the gap to the target remains."],
-["Compare with the 5% target, see the gap remains, and loop back to adjust",[10,5,5,20],100,"Evaluation asks whether the problem is solved. If not, loop back."],
-["Cancel the software and start over",[-10,-10,-10,-10],10,"You would throw away real progress."]]}
-]},
-{n:"Giza Fresh",steps:[
-{c:"Case file · Giza Fresh",e:["🥬","🏠","📈"],t:"Orders outgrow the garage",p:1,b:"Step 1 names the problem as a gap in numbers: where you are against where you want to be. Define the gap before you reach for a fix.",s:"Giza Fresh delivers groceries. Orders grew 40% this year, but the packing garage is full and 12% of orders go out with mistakes. The target is under 2%. The founder wants a plan.",o:[
-["State the gap: space cannot handle demand, and errors are 12% against a 2% target",[5,5,5,15],100,"Step 1 turns a vague worry into a clear gap."],
-["Tell the packers to be more careful",[-5,-10,0,-5],20,"You treated a symptom and blamed people."],
-["Stop taking new orders",[-15,-5,-5,-10],10,"That avoids the problem and gives up growth."]]},
-{c:"Case file · Giza Fresh",e:["📏","❄️","🏭"],t:"What should a warehouse offer?",p:2,b:"Step 2 lists the factors the decision will be judged on. Criteria are the yardstick you hold every option against.",s:"The answer is a bigger packing site. You sell fresh food, so you decide what the new site will be judged on.",o:[
-["Judge sites on cold storage, distance to customers, space to grow, and rent",[5,5,5,10],100,"These cover food safety, speed, growth and cost."],
-["Judge sites on rent alone",[3,-5,-5,-5],30,"The cheapest site may not keep food fresh."],
-["Judge sites on size alone",[0,0,-5,-5],20,"Size is one factor among several."]]},
-{c:"Case file · Giza Fresh",e:["⚖️","❄️","💰"],t:"Rank what matters",p:3,b:"Step 3 gives each criterion a weight. A bigger number means it counts more in the final score.",s:"Your criteria are cold storage, distance, space and rent. Food safety is non-negotiable, speed to customers comes next, and rent matters least.",o:[
-["Cold storage 10, distance 8, space 6, rent 5",[5,5,5,10],100,"The weights put food safety first and rent last."],
-["Rent 10, cold storage 3, distance 3, space 3",[5,-5,-5,-10],10,"These weights put the cheapest site ahead of safe food."],
-["Give all four a weight of 7",[0,0,-5,-5],40,"Equal weights ignore your priorities."]]},
-{c:"Case file · Giza Fresh",e:["🗺️","📝","🏢"],t:"Find the sites",p:4,b:"Step 4 lists every workable option. Do not judge them yet, because analysis comes next.",s:"Your team lists possible sites. A broker has offered three: a yard by the Corniche, a unit on the Ring Road, and a unit in Market Lane. One teammate thinks the Ring Road unit is too far and wants to drop it right away.",o:[
-["List all three first and judge them in the next step",[5,10,5,10],100,"Develop alternatives without judging, then analyze."],
-["Drop the Ring Road unit now to save time",[0,-5,-5,-5],20,"Judging during step 4 shuts options out too early."],
-["Visit one site and sign if it looks decent",[-5,0,-5,-10],10,"One option is not a choice."]]},
-{c:"Case file · Giza Fresh",e:["🧮","📊","🔍"],t:"Score the sites",p:5,tb:{h:["Site","Cold ×10","Distance ×8","Space ×6","Rent ×5"],r:[["Corniche Yard",9,8,5,4],["Ring Road Hub",7,5,9,7],["Market Lane",6,9,6,8]]},b:"Step 5 multiplies each rating by its weight and adds the results. For Corniche Yard that is 9×10 + 8×8 + 5×6 + 4×5.",s:"Ratings run from 1 to 10, and a higher rent rating means cheaper. The weights are in the headers. What is the weighted total for Corniche Yard?",o:[
-["204",[5,5,10,10],100,"9×10 + 8×8 + 5×6 + 4×5 = 90 + 64 + 30 + 20 = 204."],
-["26",[0,0,-5,-5],20,"That adds the ratings and ignores the weights."],
-["90",[0,0,-5,-5],30,"That is only the cold-storage part of the score."]]},
-{c:"Case file · Giza Fresh",e:["🏁","🧾","🌊"],t:"Choose the site",p:6,b:"Step 6 picks the alternative with the best total. A nice view is not one of your criteria.",s:"The totals are: Corniche Yard 204, Ring Road Hub 199, Market Lane 208. The founder loves the Corniche view.",o:[
-["Market Lane, which has the highest total",[10,5,10,15],100,"The weights decide, not the view."],
-["Corniche Yard, for the view",[-5,-5,-5,-10],30,"A view isn’t one of your criteria."],
-["Ring Road Hub, since it has the most space",[0,0,-5,-5],20,"Space is one criterion, weighted 6."]]},
-{c:"Case file · Giza Fresh",e:["🚚","🧑‍🔧","📣"],t:"Make the move",p:7,b:"Step 7 puts the decision into action. People carry out decisions, so they need to know what, who and when.",s:"You sign the lease for Market Lane. Packing has to move without missing deliveries.",o:[
-["Plan the move with team leads, set dates, and tell customers about timing",[5,10,10,10],100,"Implementation needs communication, ownership and dates."],
-["Move overnight without telling staff",[-5,-15,-5,-5],20,"Surprising the team invites resistance and mistakes."],
-["Delay the move until orders drop",[-10,0,-5,-10],30,"Delay lets the problem keep costing you."]]},
-{c:"Case file · Giza Fresh",e:["📈","🔁","🎯"],t:"Check the results",p:8,b:"Step 8 compares the results with the original problem. If a gap remains, go back to an earlier step.",s:"Six weeks after the move, errors are at 3% against a 2% target, cold storage works, and delivery times are a little slower.",o:[
-["Compare each result with its goal, keep what works, and adjust the remaining gap",[10,5,5,20],100,"Evaluation checks every goal and loops back where a gap remains."],
-["Ignore the data: you chose well",[-5,-5,-5,-10],10,"Step 8 judges outcomes, not confidence."],
-["Blame the packing team for the 1% gap",[-5,-15,-5,-5],0,"Blame doesn’t close the gap."]]}
-]}];
-let st,rows=[],db=null,uid=null,busy=0,clk=null;
-const esc=t=>String(t).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
-const LS=(k,v)=>{try{if(v===undefined)return JSON.parse(localStorage.getItem(k));localStorage.setItem(k,JSON.stringify(v))}catch(e){return null}};
-const sh=a=>[...a].sort(()=>Math.random()-.5);
-const cur=()=>st.mode==="career"?S[st.d[st.i]]:st.d[st.i];
-const chOf=q=>{const m=/Chapter (\d)/.exec(q.c||"");return m?+m[1]:0};
-const CS=()=>Object.assign({g:0,best:0,rk:0},LS("mm_stats")||{});
-const mx=t=>`<div class="tw"><table class="mx"><thead><tr>${t.h.map(x=>`<th>${x}</th>`).join("")}</tr></thead><tbody>${t.r.map(r=>`<tr>${r.map((x,i)=>i?`<td>${x}</td>`:`<th scope="row">${x}</th>`).join("")}</tr>`).join("")}</tbody></table></div>`;
+var SB_URL = "https://fdiounclxvaescxfkcnt.supabase.co";
+var SB_KEY = "sb_publishable_pTmK9ZuSQHh915Ke4IAhIA_ib2ip80H";
 
-/* ---------- 8-step table ---------- */
-function stepsTbl(o){o=o||{};const active=o.active||0,spot=o.spot,stat=o.stat,fill=o.fill;
-return `<div class="tw"><table class="steps${o.all?" all":""}" id="stp"><tbody>${STEPS.map((s,i)=>{const n=i+1,on=active===n,hid=fill&&!fill[i],sv=stat&&stat[i];
-const mark=sv==="ok"?'<span class="okc" aria-label="Best call">✓</span>':sv==="no"?'<span class="noc" aria-label="Missed">✗</span>':on?'<span class="here">You are here</span>':"";
-const nm=hid?'<span class="q">?</span>':esc(s[0]);
-const cell=spot&&!hid?`<button class="rowb" data-a="spot" data-k="${n}">${nm}</button>`:`<b>${nm}</b>`;
-return `<tr id="r${n}" class="${on?"on":""}${hid?" hid":""}"><th scope="row">${n}</th><td>${cell}<span class="mean">${hid?"":esc(s[1])}</span></td><td class="stt">${mark}</td></tr>`}).join("")}</tbody></table></div>`}
-function proc(q,spot){const note=spot?`<p class="mute" id="spm">Bonus: tap the step this scenario is testing before you answer. The right step earns +25.</p>`:q.p?"":`<p class="mute">${esc(q.n||"No single step here. This scenario tests a concept from the chapter, but every decision still moves through these eight steps.")}</p>`;
-return `<details class="proc"${q.p>0?" open":""}><summary>The 8-step decision process${spot?'<span class="bonus">+25 bonus</span>':""}</summary>${note}<div id="tbl">${stepsTbl({active:spot?0:q.p,spot,stat:st.mode==="case"?st.stat:null,all:st.all})}</div>${spot?"":'<button class="go alt sm" data-a="all">Show what each step means</button>'}</details>`}
-const briefHtml=q=>`<aside class="brief"><b>Briefing${q.p?` · Step ${q.p}, ${STEPS[q.p-1][0]}`:""}</b><p>${q.b}</p></aside>`;
+var roles = [];
+var password = null;   // kept in memory only, never stored
+var editing = false;
+var dirty = false;
 
-/* ---------- rank, HUD ---------- */
-function rkInfo(){const k=st.k,i=rkI(st.score,k),r=RK[i],nx=RK[i+1];
-return{r,pct:nx?Math.max(0,Math.min(100,Math.round(100*(st.score-th(i,k))/(th(i+1,k)-th(i,k))))):100,txt:nx?`${th(i+1,k)-st.score} to ${nx[1]}`:"Top rank"}}
-const rkHtml=()=>{const x=rkInfo();return `<div class="rk"><span class="rn" id="rkn">${x.r[2]} ${x.r[1]}</span><div class="bar"><i id="rkb" style="width:${x.pct}%"></i></div><span class="mute rx" id="rkx">${x.txt}</span></div>`};
-function rkUp(){const n=$("#rkn");if(!n)return;const x=rkInfo();n.textContent=x.r[2]+" "+x.r[1];$("#rkb").style.width=x.pct+"%";$("#rkx").textContent=x.txt}
-const stkTxt=()=>st.streak>=2?` · 🔥 ×${st.streak}`:"";
-const stkUp=()=>{const e=$("#stk");if(e)e.textContent=stkTxt()};
-const llHtml=()=>LL.filter(l=>l[0] in st.ll).map(l=>`<button class="lf" data-a="ll" data-k="${l[0]}" title="${l[3]}" aria-label="${l[2]}: ${l[3]}"${st.ll[l[0]]&&!busy?"":" disabled"}>${l[1]} ${l[2]} <em>${st.ll[l[0]]}</em></button>`).join("");
-const llUp=()=>{const e=$("#ll");if(e)e.innerHTML=llHtml()};
-const hud=()=>{const sp=st.mode==="sprint",p=sp?(st.ph==="order"?"Round 1 of 2":`Situation ${st.i+1} of 8`):`Decision ${st.i+1} of ${st.d.length}`,clock=sp?st.ph==="ask":st.pr;
-return `<div class="hud"><b>${esc(st.name)}</b><span class="sc">Score <em id="sc">${st.score}</em></span></div><div class="sub">${esc(st.co)} · ${p}<span id="stk">${stkTxt()}</span></div>${rkHtml()}${sp?"":`<div class="ms">${MET.map((m,i)=>`<div class="mt"><span>${m[0]} ${m[1]}</span><div class="bar"><i id="b${i}" class="${st.m[i]<25?"lo":""}" style="width:${st.m[i]}%"></i></div></div>`).join("")}</div>`}${st.ll&&!sp?`<div class="ll" id="ll">${llHtml()}</div>`:""}${clock?`<div class="cl"><div class="bar"><i id="clk" style="width:100%"></i></div><span class="mute" id="clt"></span></div>`:""}`};
+function api(path, opts) {
+  opts = opts || {};
+  opts.headers = Object.assign({
+    "apikey": SB_KEY,
+    "Content-Type": "application/json"
+  }, opts.headers || {});
+  return fetch(SB_URL + "/rest/v1/" + path, opts).then(function (r) {
+    return r.text().then(function (t) {
+      var j = t ? JSON.parse(t) : null;
+      if (!r.ok) throw new Error((j && (j.message || j.hint)) || "Request failed");
+      return j;
+    });
+  });
+}
 
-/* ---------- clock ---------- */
-function stopClock(){if(clk){clearInterval(clk.t);clk=null}}
-function startClock(sec,fn){stopClock();const T=sec*1000,e=Date.now()+T;
-clk={T,e,fn,t:setInterval(()=>{const r=Math.max(0,e-Date.now()),b=$("#clk"),x=$("#clt");if(b){b.style.width=100*r/T+"%";b.classList.toggle("lo",r<T*.25)}if(x)x.textContent=Math.ceil(r/1000)+"s";if(r<=0){const f=clk.fn;stopClock();f()}},100)}}
-const left=()=>clk?Math.max(0,clk.e-Date.now())/clk.T:0;
+function say(t) { document.getElementById("msg").textContent = t || ""; }
 
-/* ---------- effects ---------- */
-function bars(){st.m.forEach((v,i)=>{const b=$("#b"+i);if(!b)return;b.style.width=v+"%";b.classList.toggle("lo",v<25)})}
-function count(){const el=$("#sc");if(!el)return;const to=st.score,from=+el.textContent;let t0;const f=t=>{t0=t0||t;const p=Math.min(1,(t-t0)/600);el.textContent=Math.round(from+(to-from)*p);if(p<1)requestAnimationFrame(f)};requestAnimationFrame(f)}
-function floats(d){d.forEach((v,i)=>{if(!v)return;const b=$("#b"+i);if(!b)return;const s=document.createElement("span");s.className="fl "+(v>0?"u":"d");s.textContent=(v>0?"+":"")+v;b.closest(".mt").appendChild(s);setTimeout(()=>s.remove(),1300)})}
-function boom(){const E=["🎉","⭐","💰","✨"];for(let i=0;i<22;i++){const s=document.createElement("span");s.className="cf";s.textContent=E[i%4];s.style.cssText=`left:${Math.random()*96}vw;animation-delay:${Math.random()*.3}s;--r:${Math.random()*360}deg`;document.body.appendChild(s);setTimeout(()=>s.remove(),1900)}}
-function shake(){const c=$(".card");if(!c)return;c.classList.remove("sk");void c.offsetWidth;c.classList.add("sk")}
-function promo(){const r=RK[rkI(st.score,st.k)],d=document.createElement("div");d.className="promo";d.setAttribute("role","status");d.innerHTML=`<b>Promoted</b> ${r[2]} ${r[1]}`;document.body.appendChild(d);setTimeout(()=>d.remove(),2600)}
-function addScore(n){const r0=rkI(st.score,st.k);st.score+=n;count();rkUp();if(rkI(st.score,st.k)>r0)promo()}
+function newId() { return "r" + Date.now().toString(36) + Math.floor(Math.random() * 1000); }
 
-/* ---------- leaderboard ---------- */
-function lb(){const l=(db?rows:LS("mm_top")||[]).slice(0,8);
-return `<ol class="lb">${l.map((r,i)=>{const k=RK[rkI(r.best,1)];return `<li${r.id&&r.id===uid?' class="me"':''}><b>${i+1}</b><span>${esc(r.name)}<small>${k[2]} ${k[1]}</small></span><i>${r.best}</i></li>`}).join("")||"<li>No scores yet. Set the first one.</li>"}</ol><p class="mute">${db?"Shared with everyone who opens this link.":"Saved on this device only."}</p>`}
-async function save(t){const n=st.name;let top=LS("mm_top")||[];const e=top.find(r=>r.name===n);if(e){if(t>e.best)e.best=t}else top.push({name:n,best:t});top.sort((a,b)=>b.best-a.best);LS("mm_top",top.slice(0,20));
-if(db&&uid){try{const r=db.doc("scores/"+uid),o=(await r.get()).data();if(!o||o.best<t)await r.set({name:n,best:t,ts:Date.now()})}catch(e){}}}
+function el(tag, text) {
+  var e = document.createElement(tag);
+  if (text !== undefined) e.textContent = text;
+  return e;
+}
 
-/* ---------- home ---------- */
-function home(){stopClock();
-const c=CS(),got=LS("mm_badges")||[],seen=(LS("mm_seen")||[]).length,miss=(LS("mm_miss")||[]).length;
-const lad=RK.map((r,i)=>{const me=c.g&&i===c.rk;return `<tr${me?' class="on"':''}><td>${r[2]} ${r[1]}${me?"<small>Your best rank</small>":""}</td><td class="n">${th(i,1)}</td><td class="n">${th(i,.65)}</td></tr>`}).join("");
-const bd=BADGES.map(b=>{const g=got.includes(b[0]);return `<div class="bd${g?"":" lock"}"><span class="ic">${b[1]}</span><b>${b[2]}</b><small>${b[3]}</small><small>${g?"Earned":"Locked"}</small></div>`}).join("");
-A.innerHTML=`<div class="hero in"><div class="scene"><span>💼</span><span>📈</span><span>☕</span></div><h1>Manager Mode</h1>
-<p>Run a company through the decisions in Chapters 1 to 3. Earn points, climb from Intern to CEO, and learn the 8-step decision process as you play.</p>
-<div class="two"><label class="fld"><span class="mute">Your name</span><input id="nm" maxlength="16" placeholder="Your name" value="${esc(LS("mm_name")||"")}"></label><label class="fld"><span class="mute">Company name</span><input id="co" maxlength="22" placeholder="Your company" value="${esc(LS("mm_co")||"")}"></label></div>
-<div class="modes">
-<button class="mode" data-a="start" data-k="career"><b>Career run</b><span>12 random scenarios from Chapters 1 to 3. Four meters, ranks, lifelines and a shared leaderboard.</span><small>12 decisions · ranked</small></button>
-<button class="mode" data-a="start" data-k="case"><b>Case file</b><span>Take one company through all 8 decision steps. The table fills in as you go.</span><small>8 decisions · step by step</small></button>
-<button class="mode" data-a="start" data-k="sprint"><b>Step sprint</b><span>Put the 8 steps in order, then name the step in 8 quick-fire situations.</span><small>2 rounds · against the clock</small></button>
-</div>
-<label class="sw"><input type="checkbox" id="pr"${LS("mm_pr")?" checked":""}><span>Boardroom clock for Career run and Case file: 25 seconds per decision, with a speed bonus of up to +20 points.</span></label>
-<p class="mute">Seen so far: ${seen} of ${S.length} scenarios. To review: ${miss}. Runs played: ${c.g}.</p>
-<h2>Rank ladder</h2><div class="tw"><table class="rep"><thead><tr><th>Rank</th><th>Career run</th><th>Case, sprint</th></tr></thead><tbody>${lad}</tbody></table></div>
-<h2>Badges</h2><div class="badges">${bd}</div>
-<h2>Top managers</h2><div id="lb">${lb()}</div></div>`}
+function button(label, fn) {
+  var b = el("button", label);
+  b.type = "button";
+  b.onclick = fn;
+  return b;
+}
 
-/* ---------- start ---------- */
-function start(mode){
-const n=(($("#nm")?$("#nm").value:"")||(st&&st.name)||"").trim()||"Manager",co=(($("#co")?$("#co").value:"")||(st&&st.co)||"").trim()||n+" Industries";
-LS("mm_name",n);LS("mm_co",co);
-const b={mode,k:KM[mode],name:n,co,score:0,streak:0,i:0,m:[50,50,50,50],log:[],low:[0,0,0,0],pr:!!LS("mm_pr"),all:0,s:{ok:0,tot:0,sp:0,spOk:0,ll:0,maxS:0,o1:0}};
-if(mode==="career"){st=Object.assign(b,{d:deal(),ll:{c:2,t:2,d:1}});show()}
-else if(mode==="case"){const ci=LS("mm_case")===0?1:0;LS("mm_case",ci);st=Object.assign(b,{d:CASES[ci].steps,cs:CASES[ci],ll:{c:1,t:2},stat:Array(8).fill(null)});show()}
-else{st=Object.assign(b,{d:[],ph:"order",ord:{n:1,miss:0,ch:sh([1,2,3,4,5,6,7,8])}});sprintOrder()}}
-function deal(){const ids=S.map((_,i)=>i),sn=LS("mm_seen")||[];let d=sh(LS("mm_miss")||[]).slice(0,4);d=d.concat(sh(ids.filter(i=>!sn.includes(i)&&!d.includes(i)))).slice(0,12);if(d.length<12)d=d.concat(sh(ids.filter(i=>!d.includes(i)))).slice(0,12);return sh(d)}
+function byId(id) { return roles.filter(function (r) { return r.id === id; })[0]; }
+function children(id) { return roles.filter(function (r) { return r.parent === id; }); }
 
-/* ---------- career and case card ---------- */
-function show(){stopClock();
-const q=cur(),id=st.d[st.i];
-if(st.mode==="career"){let sn=LS("mm_seen")||[];if(!sn.includes(id))sn.push(id);LS("mm_seen",sn.length>=S.length?[]:sn)}
-q.x=sh(q.o);
-const brief=!!(q.b&&st.mode==="career"&&Math.random()<.35),spot=!!(st.mode==="career"&&q.p>0&&!brief&&Math.random()<.4);
-st.cq={pen:0,gone:[],spot,sd:0,brief};st.all=0;
-A.innerHTML=`${hud()}<div class="card in"><div class="tag">${q.c}${q.p&&!spot?`<span class="stp">Step ${q.p}</span>`:""}</div><div class="scene">${q.e.map((x,j)=>`<span style="animation-delay:${j*.25}s">${x}</span>`).join("")}</div><h2>${q.t}</h2><p>${q.s}</p>${q.tb?mx(q.tb):""}<div id="bf">${brief?briefHtml(q):""}</div>${proc(q,spot)}${q.x.map((o,k)=>`<button class="opt" data-a="pick" data-k="${k}"><b>${"ABC"[k]}.</b> ${o[0]}</button>`).join("")}<div id="rs"></div></div>`;
-busy=0;window.scrollTo(0,0);
-if(st.pr)startClock(25,timeout)}
-function toggleAll(b){st.all=st.all?0:1;const t=$("#stp");if(t)t.classList.toggle("all",!!st.all);b.textContent=st.all?"Hide explanations":"Show what each step means"}
-function spotPick(n){const q=cur(),c=st.cq;if(busy||!c||!c.spot||c.sd)return;c.sd=1;st.s.sp++;
-const ok=n===q.p,row=$("#r"+n);
-if(ok){st.s.spOk++;addScore(25);row.classList.add("good","show")}else row.classList.add("bad");
-$("#r"+q.p).classList.add("on","show");
-const s=$("#spm");if(s)s.textContent=ok?`Correct: step ${q.p}, ${STEPS[q.p-1][0]}. +25 points.`:`Not quite. This scenario was testing step ${q.p}, ${STEPS[q.p-1][0]}.`}
-function lifeline(k){if(busy||!st.ll[k])return;const q=cur(),c=st.cq;
-if(k==="c"){const best=Math.max(...q.o.map(x=>x[2])),cand=q.x.map((_,j)=>j).filter(j=>q.x[j][2]<best&&!c.gone.includes(j));if(!cand.length)return;
-const j=cand[Math.floor(Math.random()*cand.length)];c.gone.push(j);const b=$$(".opt")[j];b.disabled=true;b.classList.add("gone");c.pen+=25}
-else if(k==="t"){c.pen+=15;c.brief=true;$("#bf").innerHTML=briefHtml(q);
-if(q.p){const r=$("#r"+q.p);if(r)r.classList.add("on","show")}
-if(c.spot&&!c.sd){c.sd=1;const s=$("#spm");if(s)s.textContent=`Textbook used. This scenario tests step ${q.p}, ${STEPS[q.p-1][0]}. No bonus this time.`}}
-else if(k==="d"){const used=new Set(st.d),pool=S.map((_,i)=>i).filter(i=>!used.has(i));if(!pool.length)return;
-st.log.push({t:q.t,c:chOf(q),g:"–",ok:0,pts:0,skip:1,pick:"Delegated",best:"",p:0});
-st.d[st.i]=pool[Math.floor(Math.random()*pool.length)];st.ll.d--;st.s.ll++;show();return}
-st.ll[k]--;st.s.ll++;llUp()}
-function pick(k){if(busy)return;busy=1;resolve(cur().x[k],k,0)}
-function timeout(){if(busy)return;busy=1;resolve(["No decision",[-5,-10,-5,-5],0,"The clock ran out. Not deciding is also a decision, and the team felt it."],-1,1)}
-function resolve(o,k,to){const q=cur(),c=st.cq,fr=left();stopClock();
-const best=Math.max(...q.o.map(x=>x[2])),bo=q.o.find(x=>x[2]===best),ok=!to&&o[2]===best;
-st.streak=ok?st.streak+1:0;st.s.maxS=Math.max(st.s.maxS,st.streak);st.s.tot++;if(ok)st.s.ok++;
-if(st.mode==="career"){const id=st.d[st.i],ms=(LS("mm_miss")||[]).filter(x=>x!==id);if(!ok)ms.push(id);LS("mm_miss",ms)}
-const bonus=ok?Math.min(50,(st.streak-1)*10):0,speed=ok&&st.pr?Math.round(20*fr):0,gain=Math.max(0,o[2]+bonus+speed-c.pen);
-o[1].forEach((d,i)=>{st.m[i]=Math.max(0,Math.min(100,st.m[i]+d));if(st.m[i]<25)st.low[i]=1});
-bars();floats(o[1]);ok?boom():shake();addScore(gain);stkUp();llUp();
-const dead=st.m.some(v=>v<=0);
-$$(".opt").forEach((b,j)=>{b.disabled=true;if(j===k)b.classList.add(ok?"good":o[2]>=50?"mid":"bad");else if(q.x[j][2]===best)b.classList.add("ans")});
-if(q.p){const r=$("#r"+q.p);if(r)r.classList.add("on","show");const s=$("#spm");if(s&&c.spot&&!c.sd)s.textContent=`This scenario was testing step ${q.p}, ${STEPS[q.p-1][0]}.`}
-if(st.mode==="case"){st.stat[q.p-1]=ok?"ok":"no";$("#tbl").innerHTML=stepsTbl({active:q.p,stat:st.stat,all:st.all})}
-const g=GR(o[2]),head=to?"Out of time":ok?"Best call":o[2]>=50?"Decent, not ideal":"Costly move";
-const bd=[o[2]+" for the call",bonus?"+"+bonus+" streak":"",speed?"+"+speed+" speed":"",c.pen?"−"+c.pen+" lifelines":""].filter(Boolean).join(", ");
-const stepNote=q.p?`<p class="mute"><b>Step ${q.p}, ${STEPS[q.p-1][0]}.</b> ${STEPS[q.p-1][1]}</p>`:"";
-st.log.push({t:q.t,c:chOf(q),g:GR(o[2]),ok,pts:gain,pick:o[0],best:bo[0],p:q.p||0});
-$("#rs").innerHTML=`<div class="res in"><div class="rh"><span class="stamp g-${g}" title="Grade for this call">${g}</span><b>${head}: +${gain} points</b></div><p class="mute">${bd}</p><p>${o[3]}</p>${ok?"":`<p class="mute"><b>Best move:</b> ${bo[0]}. ${bo[3]}</p>`}${stepNote}<button class="go" data-a="${dead?"fire":"nxt"}">${dead?"See what happened":st.i+1<st.d.length?"Next decision":"Finish"}</button></div>`;
-$("#rs").scrollIntoView({behavior:"smooth",block:"nearest"})}
-function nxt(){st.i++;st.i<st.d.length?show():end()}
+function descendants(id) {
+  var out = [];
+  children(id).forEach(function (c) { out.push(c.id); out = out.concat(descendants(c.id)); });
+  return out;
+}
 
-/* ---------- step sprint ---------- */
-const fillArr=()=>STEPS.map((_,i)=>i+1<st.ord.n);
-const chipsHtml=()=>st.ord.ch.filter(n=>n>=st.ord.n).map(n=>`<button class="chip" data-a="chip" data-k="${n}">${esc(STEPS[n-1][0])}</button>`).join("");
-function sprintOrder(){stopClock();
-A.innerHTML=`${hud()}<div class="card in"><div class="tag">Step sprint · Round 1 of 2</div><div class="scene"><span>🔢</span><span>🧩</span><span>⏱️</span></div><h2>Put the 8 steps in order</h2><p>Tap the next step of the decision process. Each wrong tap costs 15 points.</p><p class="mute" id="om">Wrong taps: 0</p><div class="chips" id="chips">${chipsHtml()}</div><div id="tbl">${stepsTbl({fill:fillArr(),all:1})}</div><div id="rs"></div></div>`;
-busy=0;window.scrollTo(0,0)}
-function chip(n){const o=st.ord;if(busy)return;
-if(n===o.n){o.n++;$("#tbl").innerHTML=stepsTbl({fill:fillArr(),all:1});$("#chips").innerHTML=chipsHtml();
-if(o.n>8){busy=1;const pts=Math.max(0,100-15*o.miss);addScore(pts);st.s.o1=o.miss===0?1:0;if(o.miss===0)boom();
-$("#rs").innerHTML=`<div class="res in"><div class="rh"><span class="stamp g-${GR(pts)}">${GR(pts)}</span><b>${o.miss?`${o.miss} wrong tap${o.miss>1?"s":""}`:"First try"}: +${pts} points</b></div><p>That is the order every decision follows. When the problem is not solved, the process loops back to an earlier step.</p><button class="go" data-a="sq">Start the quick-fire round</button></div>`;$("#rs").scrollIntoView({behavior:"smooth",block:"nearest"})}}
-else{o.miss++;const m=$("#om");if(m)m.textContent="Wrong taps: "+o.miss;shake()}}
-function sprintAsk(){st.ph="ask";st.i=0;st.sq=sh([1,2,3,4,5,6,7,8]).map(n=>{const p=SIT.filter(x=>x[1]===n);return[p[Math.floor(Math.random()*p.length)][0],n]});sq()}
-function sq(){const x=st.sq[st.i];
-A.innerHTML=`${hud()}<div class="card in"><div class="tag">Step sprint · Round 2 of 2</div><h2>Which step is this?</h2><p class="situ">${x[0]}</p><div id="tbl">${stepsTbl({spot:1})}</div><div id="rs"></div></div>`;
-busy=0;window.scrollTo(0,0);startClock(12,()=>sprintTap(0,1))}
-function sprintTap(n,to){if(busy)return;busy=1;const fr=left();stopClock();
-const t=st.sq[st.i][1],ok=!to&&n===t;
-st.streak=ok?st.streak+1:0;st.s.maxS=Math.max(st.s.maxS,st.streak);st.s.tot++;if(ok)st.s.ok++;
-const bonus=ok?Math.min(50,(st.streak-1)*10):0,speed=ok?Math.round(20*fr):0,gain=ok?100+bonus+speed:0;
-addScore(gain);stkUp();
-const row=$("#r"+t);row.classList.add("on","show");if(!ok&&n)$("#r"+n).classList.add("bad");
-if(ok){row.classList.add("good");boom()}else shake();
-$$(".rowb").forEach(b=>b.disabled=true);
-st.log.push({t:`Step ${t}: ${STEPS[t-1][0]}`,c:0,g:ok?"S":"D",ok,pts:gain,pick:to?"Out of time":STEPS[n-1][0],best:STEPS[t-1][0],p:t});
-const bd=[ok?"100 for the answer":"",bonus?"+"+bonus+" streak":"",speed?"+"+speed+" speed":""].filter(Boolean).join(", ");
-$("#rs").innerHTML=`<div class="res in"><div class="rh"><span class="stamp g-${ok?"S":"D"}">${ok?"S":"D"}</span><b>${to?"Out of time":ok?"Correct":"Not quite"}: +${gain} points</b></div>${bd?`<p class="mute">${bd}</p>`:""}<p><b>Step ${t}, ${STEPS[t-1][0]}.</b> ${STEPS[t-1][1]}</p><button class="go" data-a="sn">${st.i+1<8?"Next situation":"Finish"}</button></div>`;
-$("#rs").scrollIntoView({behavior:"smooth",block:"nearest"})}
-function sprintNext(){st.i++;st.i<8?sq():end()}
+/* ---------- load ---------- */
+function load() {
+  say("Loading...");
+  api("team_hierarchy?id=eq.1&select=data").then(function (rows) {
+    roles = (rows[0] && rows[0].data && rows[0].data.roles) || [];
+    dirty = false;
+    say("");
+    render();
+  }).catch(function (e) { say("Could not load: " + e.message); });
+}
 
-/* ---------- end screen ---------- */
-function chapRep(){const ch={1:[0,0],2:[0,0],3:[0,0]},nm={1:"Chapter 1 · Management basics",2:"Chapter 2 · Decision making",3:"Chapter 3 · Goals and plans"};
-st.log.forEach(x=>{if(x.c&&!x.skip){ch[x.c][1]++;if(x.ok)ch[x.c][0]++}});
-let weak=0,wr=2;[1,2,3].forEach(c=>{const t=ch[c][1];if(t&&ch[c][0]/t<wr){wr=ch[c][0]/t;weak=c}});
-return `<h2>Board report</h2><div class="tw"><table class="rep"><thead><tr><th>Topic</th><th>Best calls</th></tr></thead><tbody>${[1,2,3].map(c=>`<tr><td>${nm[c]}</td><td class="n">${ch[c][1]?`${ch[c][0]} of ${ch[c][1]}`:"–"}</td></tr>`).join("")}</tbody></table></div>${weak&&wr<1?`<p class="mute">Review next: ${nm[weak]}.</p>`:""}`}
-function stepRep(){const stat=Array(8).fill(null);st.log.forEach(x=>{if(x.p)stat[x.p-1]=x.ok?"ok":"no"});return `<h2>Step report</h2>${stepsTbl({stat})}`}
-const logRep=()=>`<details class="proc"><summary>Decision log</summary><div class="tw"><table class="rep"><thead><tr><th>#</th><th>Decision</th><th>Grade</th><th>Pts</th></tr></thead><tbody>${st.log.map((x,i)=>`<tr><td class="n">${i+1}</td><td>${esc(x.t)}<small>${x.skip?"Delegated":x.ok?esc(x.pick):`You: ${esc(x.pick)}. Best: ${esc(x.best)}`}</small></td><td><span class="stamp sm g-${x.g==="–"?"C":x.g}">${x.g}</span></td><td class="n">${x.pts}</td></tr>`).join("")}</tbody></table></div></details>`;
-function end(f){stopClock();busy=0;
-const sp=st.mode==="sprint",N=st.mode==="career"?st.d.length:8,s=st.s;
-const mb=(f||sp)?0:Math.round(st.m.reduce((a,c)=>a+c,0)/2),t=st.score+mb,ri=rkI(t,st.k),r=f?[0,"Fired","🔥"]:RK[ri];
-const E=[];
-if(!f&&!sp&&s.tot===N&&s.ok===N)E.push("perfect");
-if(s.maxS>=5)E.push("streak");
-if(s.sp>=2&&s.sp===s.spOk)E.push("purist");
-if(!f&&!sp&&s.ll===0&&s.ok>=8)E.push("selfmade");
-if(!f&&st.mode==="career"&&st.pr&&s.ok>=8)E.push("quick");
-if(!f&&!sp&&st.low.some((l,i)=>l&&st.m[i]>=60))E.push("comeback");
-if(!f&&st.mode==="case"&&s.ok>=6)E.push("closed");
-if(sp&&s.o1)E.push("order");
-if(!f&&ri>=5)E.push("board");
-const got=LS("mm_badges")||[],nw=E.filter(x=>!got.includes(x));if(nw.length)LS("mm_badges",got.concat(nw));
-const cs=CS();cs.g++;if(st.mode==="career"&&t>cs.best)cs.best=t;if(!f&&ri>cs.rk)cs.rk=ri;LS("mm_stats",cs);
-if(st.mode==="career")save(t);
-const nx=!f&&RK[ri+1],prog=f?"":nx?`${th(ri+1,st.k)-t} points short of ${nx[1]}.`:"You hold the top rank.";
-const line=f?`Your ${MET[st.m.findIndex(v=>v<=0)][1].toLowerCase()} hit zero. The board let you go.`:st.mode==="case"?`You closed the ${esc(st.cs.n)} case file.`:sp?"Quick-fire round complete.":`You made all ${N} decisions.`;
-const nb=nw.length?`<h2>New badges</h2><div class="badges">${nw.map(id=>{const b=BADGES.find(x=>x[0]===id);return `<div class="bd"><span class="ic">${b[1]}</span><b>${b[2]}</b><small>${b[3]}</small></div>`}).join("")}</div>`:"";
-A.innerHTML=`<div class="hero end in"><div class="scene"><span>${r[2]}</span></div><p class="mute">${line}</p><h1>${r[1]}</h1><div class="big">${t}</div><p class="mute">points${sp?"":" · "+st.m.map((v,i)=>MET[i][0]+" "+v).join("  ")}</p><p class="mute">${prog}</p>${nb}${st.mode==="career"?chapRep():stepRep()}${logRep()}<button class="go" data-a="start" data-k="${st.mode}">Play again</button><button class="go alt" data-a="home">Home</button>${st.mode==="career"?`<h2>Top managers</h2><div id="lb">${lb()}</div>`:""}</div>`;
-window.scrollTo(0,0);if(!f)boom()}
+/* ---------- top bar ---------- */
+function renderBar() {
+  var bar = document.getElementById("bar");
+  bar.innerHTML = "";
+  if (!editing) {
+    bar.appendChild(button("Board login", showLogin));
+  } else {
+    bar.appendChild(el("b", "Board mode. "));
+    bar.appendChild(button("Add top-level role", function () {
+      roles.push({ id: newId(), name: "New role", parent: null, people: [] });
+      dirty = true; render();
+    }));
+    bar.appendChild(document.createTextNode(" "));
+    bar.appendChild(button("Save", save));
+    bar.appendChild(document.createTextNode(" "));
+    bar.appendChild(button("Log out", logout));
+  }
+}
 
-/* ---------- events ---------- */
-A.addEventListener("click",e=>{const b=e.target.closest("[data-a]");if(!b||b.disabled)return;const a=b.dataset.a,k=b.dataset.k;
-if(a==="pick")pick(+k);else if(a==="start")start(k||"career");else if(a==="home")home();else if(a==="nxt")nxt();else if(a==="fire")end(1);
-else if(a==="ll")lifeline(k);else if(a==="spot")(st.mode==="sprint"?sprintTap(+k):spotPick(+k));else if(a==="chip")chip(+k);else if(a==="sq")sprintAsk();else if(a==="sn")sprintNext();else if(a==="all")toggleAll(b)});
-A.addEventListener("change",e=>{if(e.target.id==="pr")LS("mm_pr",e.target.checked)});
-home();
-(async()=>{try{if(!window.claude)return;const u=await claude.use("user");uid=u?await u.id():null;const d=await claude.use("db");
-if(d&&uid){db=d;db.collection("scores").orderBy("best","desc").limit(10).onSnapshot(s=>{rows=s.docs.map(x=>({id:x.id,...x.data()}));const l=$("#lb");if(l)l.innerHTML=lb()},()=>{db=null})}}catch(e){}})();
+function showLogin() {
+  var bar = document.getElementById("bar");
+  bar.innerHTML = "";
+  var form = el("div");
+  var input = el("input");
+  input.type = "password";
+  input.placeholder = "Board password";
+  input.autocomplete = "current-password";
+  input.onkeydown = function (e) { if (e.key === "Enter") go(); };
+  function go() {
+    var p = input.value;
+    if (!p) return;
+    say("Checking...");
+    api("rpc/verify_board", { method: "POST", body: JSON.stringify({ p: p }) })
+      .then(function (ok) {
+        if (ok === true) { password = p; editing = true; say("Logged in."); render(); }
+        else { say("Wrong password."); input.value = ""; input.focus(); }
+      })
+      .catch(function (e) { say("Error: " + e.message); });
+  }
+  form.appendChild(input);
+  form.appendChild(document.createTextNode(" "));
+  form.appendChild(button("Enter", go));
+  form.appendChild(document.createTextNode(" "));
+  form.appendChild(button("Cancel", function () { say(""); render(); }));
+  bar.appendChild(form);
+  input.focus();
+}
+
+function logout() {
+  if (dirty && !confirm("You have unsaved changes. Log out anyway?")) return;
+  password = null; editing = false;
+  if (dirty) { load(); } else { render(); }
+  say("");
+}
+
+/* ---------- save ---------- */
+function save() {
+  say("Saving...");
+  api("rpc/save_hierarchy", {
+    method: "POST",
+    body: JSON.stringify({ p: password, d: { roles: roles } })
+  }).then(function () {
+    dirty = false;
+    say("Saved.");
+  }).catch(function (e) { say("Save failed: " + e.message); });
+}
+
+/* ---------- tree ---------- */
+function render() {
+  renderBar();
+  var tree = document.getElementById("tree");
+  tree.innerHTML = "";
+  var tops = roles.filter(function (r) { return !r.parent || !byId(r.parent); });
+  if (!tops.length) { tree.textContent = "No roles yet."; return; }
+  var ul = el("ul");
+  tops.forEach(function (r) { ul.appendChild(node(r)); });
+  tree.appendChild(ul);
+}
+
+function node(r) {
+  var li = el("li");
+  if (!editing) {
+    li.appendChild(el("b", r.name));
+    if (r.people && r.people.length) {
+      var pl = el("ul");
+      r.people.forEach(function (p) { pl.appendChild(el("li", p)); });
+      li.appendChild(pl);
+    }
+  } else {
+    var name = el("input");
+    name.value = r.name;
+    name.placeholder = "Role name";
+    name.oninput = function () { r.name = name.value; dirty = true; };
+    li.appendChild(name);
+
+    li.appendChild(document.createTextNode(" Reports to: "));
+    var sel = el("select");
+    var blocked = descendants(r.id).concat([r.id]);
+    var none = el("option", "(top level)"); none.value = ""; sel.appendChild(none);
+    roles.forEach(function (o) {
+      if (blocked.indexOf(o.id) !== -1) return;
+      var opt = el("option", o.name); opt.value = o.id; sel.appendChild(opt);
+    });
+    sel.value = r.parent || "";
+    sel.onchange = function () { r.parent = sel.value || null; dirty = true; render(); };
+    li.appendChild(sel);
+
+    li.appendChild(document.createTextNode(" "));
+    li.appendChild(button("Add sub-role", function () {
+      roles.push({ id: newId(), name: "New role", parent: r.id, people: [] });
+      dirty = true; render();
+    }));
+    if (r.id !== "r1") {
+      li.appendChild(document.createTextNode(" "));
+      li.appendChild(button("Delete", function () {
+        var n = descendants(r.id).length;
+        var m = "Delete \"" + r.name + "\"" + (n ? " and its " + n + " sub-role(s)" : "") + "?";
+        if (!confirm(m)) return;
+        var gone = descendants(r.id).concat([r.id]);
+        roles = roles.filter(function (x) { return gone.indexOf(x.id) === -1; });
+        dirty = true; render();
+      }));
+    }
+
+    li.appendChild(el("br"));
+    li.appendChild(document.createTextNode("People (one per line):"));
+    li.appendChild(el("br"));
+    var ta = el("textarea");
+    ta.rows = Math.max(2, (r.people || []).length + 1);
+    ta.cols = 30;
+    ta.value = (r.people || []).join("\n");
+    ta.oninput = function () {
+      r.people = ta.value.split("\n").map(function (s) { return s.trim(); }).filter(Boolean);
+      dirty = true;
+    };
+    li.appendChild(ta);
+  }
+
+  var kids = children(r.id);
+  if (kids.length) {
+    var ul = el("ul");
+    kids.forEach(function (k) { ul.appendChild(node(k)); });
+    li.appendChild(ul);
+  }
+  return li;
+}
+
+window.onbeforeunload = function () { return dirty ? "Unsaved changes" : undefined; };
+
+load();
 </script>
 
-</body></html>
+</body>
+</html>
