@@ -943,7 +943,7 @@ function videoEditor(v, p) {
 function nav() {
   var l = [["about", "About"]];
   if (editing || state.site.announcements.some(function (a) { return a.title; })) l.push(["announcements", "News"]);
-  if (editing || visEvents().length) l.push(["events", "Events"]);
+  if (editing || state.site.registrations.length) l.push(["registration", "Register"]);   if (editing || visEvents().length) l.push(["events", "Events"]);
   if (editing || visGallery().length) l.push(["gallery", "Gallery"]);
   if (editing || visVideos().length) l.push(["videos", "Reels"]);
   l.push(["team", "Team"], ["contact", "Contact"]);
@@ -1390,12 +1390,189 @@ function footer() {
       T("p", "site.footer.disclaimer", "", "License notice", true)),
     h("div", null, "© " + new Date().getFullYear() + " TEDxMSAUniversity · MSA University")));
 }
+/* ---------- registration ---------- */
+var FIELD_TYPES = [["text", "Short answer"], ["textarea", "Long answer"], ["email", "Email"], ["phone", "Phone"], ["select", "Dropdown"], ["file", "Photo upload"], ["checkbox", "Checkbox"]];
+var REG_TPL = { title: "", when: "", desc: "", open: true, button: "Register", thanks: "You are registered. We emailed you a QR code. Show that email to the ushers at the entrance, otherwise you will not be let in.", fields: [] };
+var FLD_TPL = { label: "", type: "text", required: true, options: "", showQ: "", showEq: "" };
 
+function optList(s) { return String(s || "").split(",").map(function (x) { return x.trim(); }).filter(Boolean); }
+
+function callReg(body) {
+  return fetch(SB_URL + "/functions/v1/register", { method: "POST", headers: { apikey: SB_KEY, "Content-Type": "application/json" }, body: JSON.stringify(body) })
+    .then(function (r) { return r.json().then(function (j) { if (!r.ok) throw new Error(j.error || "Request failed"); return j; }); });
+}
+
+/* board: edit one question */
+function fieldEditor(fp, form, fi) {
+  var f = form.fields[fi], p = fp + "." + fi + ".";
+  var typeSel = h("select", { class: "sel", on: { change: function () { set(p + "type", this.value); render(); } } },
+    FIELD_TYPES.map(function (t) { return h("option", { value: t[0], selected: t[0] === f.type ? "selected" : null }, t[1]); }));
+  var prior = form.fields.slice(0, fi).filter(function (x) { return x.type === "select" && x.label; });
+  var cond = null;
+  if (prior.length) {
+    var src = prior.filter(function (x) { return x.id === f.showQ; })[0];
+    cond = h("div", { class: "row" },
+      h("select", { class: "sel", on: { change: function () { set(p + "showQ", this.value); set(p + "showEq", ""); render(); } } },
+        h("option", { value: "" }, "Always show"),
+        prior.map(function (x) { return h("option", { value: x.id, selected: x.id === f.showQ ? "selected" : null }, "Only if “" + x.label + "” is…"); })),
+      src ? h("select", { class: "sel", on: { change: function () { set(p + "showEq", this.value); } } },
+        h("option", { value: "" }, "Choose…"),
+        optList(src.options).map(function (o) { return h("option", { value: o, selected: o === f.showEq ? "selected" : null }, o); })) : null);
+  }
+  return h("div", { class: "rfld" },
+    INP(p + "label", "Question", "e.g. Full name"),
+    h("div", { class: "row" }, typeSel, CK(f, "required", "Required", true)),
+    f.type === "select" ? INP(p + "options", "Options, separated by commas", "MSA student, Outcomer") : null,
+    cond,
+    ctl(fp, fi));
+}
+
+/* public: the form pop-up */
+function openReg(form) {
+  var dlg = $id("regdlg"), box = $id("regbox"), vals = {}, files = {}, wraps = [];
+  var err = h("div", { class: "err", role: "alert" });
+  var hp = h("input", { class: "hp", type: "text", tabindex: "-1", autocomplete: "off", "aria-hidden": "true" });
+  var send = h("button", { class: "btn", type: "button" }, form.button || "Register");
+  function sync() { wraps.forEach(function (w) { w.el.style.display = (w.f.showQ && vals[w.f.showQ] !== w.f.showEq) ? "none" : ""; }); }
+
+  function field(f) {
+    var req = f.required ? h("span", { class: "req" }, " *") : null, c;
+    var lab = h("label", { class: "f" + (f.type === "checkbox" ? " ck2" : "") });
+    if (f.type === "textarea") c = h("textarea", { rows: "3", maxlength: "2000" });
+    else if (f.type === "select") c = h("select", null, h("option", { value: "" }, "Choose…"), optList(f.options).map(function (o) { return h("option", { value: o }, o); }));
+    else if (f.type === "file") c = h("input", { type: "file", accept: "image/*" });
+    else if (f.type === "checkbox") { c = h("input", { type: "checkbox" }); vals[f.id] = "No"; }
+    else c = h("input", { type: f.type === "email" ? "email" : f.type === "phone" ? "tel" : "text", maxlength: "300" });
+    function read() {
+      if (f.type === "file") files[f.id] = c.files[0] || null;
+      else if (f.type === "checkbox") vals[f.id] = c.checked ? "Yes" : "No";
+      else vals[f.id] = c.value;
+      sync();
+    }
+    c.addEventListener("input", read); c.addEventListener("change", read);
+    if (f.type === "checkbox") lab.append(c, h("span", null, f.label, req));
+    else lab.append(h("span", null, f.label, req), c);
+    return lab;
+  }
+  form.fields.forEach(function (f) { if (f.label) wraps.push({ f: f, el: field(f) }); });
+
+  send.addEventListener("click", function () {
+    err.textContent = "";
+    var fd = new FormData(), ans = {}, jobs = [], bad = "";
+    form.fields.forEach(function (f) {
+      if (bad || !f.label || (f.showQ && vals[f.showQ] !== f.showEq)) return;
+      if (f.type === "file") {
+        var file = files[f.id];
+        if (file) jobs.push(shrink(file, 1600).then(function (b) { fd.append("f_" + f.id, b, "id.jpg"); }));
+        else if (f.required) bad = "Please add a photo: " + f.label;
+        return;
+      }
+      var v = String(vals[f.id] || "").trim();
+      if (f.type === "checkbox") { if (f.required && v !== "Yes") bad = "Please tick: " + f.label; }
+      else if (!v) { if (f.required) bad = "Please answer: " + f.label; }
+      else if (f.type === "email" && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v)) bad = "Enter a valid email address.";
+      ans[f.id] = v;
+    });
+    if (bad) { err.textContent = bad; return; }
+    send.disabled = true; send.textContent = "Sending…";
+    fd.append("action", "submit"); fd.append("form", form.id); fd.append("answers", JSON.stringify(ans)); fd.append("hp", hp.value);
+    Promise.all(jobs).then(function () {
+      return fetch(SB_URL + "/functions/v1/register", { method: "POST", headers: { apikey: SB_KEY }, body: fd });
+    }).then(function (r) {
+      return r.json().then(function (j) { if (!r.ok) throw new Error(j.error || "Could not register"); return j; });
+    }).then(function (j) {
+      box.textContent = "";
+      box.append(h("div", null, h("h3", null, "Thank you!"),
+        h("p", null, j.emailed ? (form.thanks || REG_TPL.thanks) : "You are registered, but we could not send your email yet. The team will resend it."),
+        h("div", { class: "cta" }, h("button", { class: "btn", type: "button", on: { click: function () { dlg.close(); } } }, "Close"))));
+    }).catch(function (e) {
+      err.textContent = e.message; send.disabled = false; send.textContent = form.button || "Register";
+    });
+  });
+
+  box.textContent = "";
+  box.append(h("div", null,
+    h("h3", null, form.title),
+    h("p", { class: "pl" }, form.desc || ""),
+    wraps.map(function (w) { return w.el; }),
+    hp, err,
+    h("div", { class: "cta" }, send, h("button", { class: "btn line", type: "button", on: { click: function () { dlg.close(); } } }, "Cancel"))));
+  sync(); dlg.showModal();
+}
+
+/* board: responses table */
+function openResponses(form) {
+  var dlg = $id("respdlg"), box = $id("respbox");
+  box.textContent = ""; box.append(h("p", null, "Loading…"));
+  if (!dlg.open) dlg.showModal();
+  callReg({ action: "list", password: password, form: form.id }).then(function (j) {
+    var rows = j.rows || [], cols = [];
+    form.fields.forEach(function (f) { if (f.label && cols.indexOf(f.label) < 0) cols.push(f.label); });
+    rows.forEach(function (r) { (r.answers || []).forEach(function (a) { if (cols.indexOf(a.q) < 0) cols.push(a.q); }); });
+    var headRow = h("tr", null, h("th", null, "Date"), cols.map(function (c) { return h("th", null, c); }), h("th", null, "Email"), h("th", null, ""));
+    var body = rows.map(function (r) {
+      var by = {}; (r.answers || []).forEach(function (a) { by[a.q] = a.a; });
+      return h("tr", null,
+        h("td", null, new Date(r.created_at).toLocaleString()),
+        cols.map(function (c) { var v = by[c] || ""; return h("td", null, safeUrl(v) ? h("a", { href: v, target: "_blank", rel: "noopener" }, "Open") : v); }),
+        h("td", null, r.status === "sent" ? "Sent" : (r.error || r.status)),
+        h("td", null, h("button", { class: "sm", type: "button", on: { click: function (ev) {
+          var b = ev.currentTarget; b.disabled = true;
+          callReg({ action: "resend", password: password, id: r.id }).then(function (x) {
+            toast(x.ok ? "Email sent." : "Failed: " + x.error, !x.ok); openResponses(form);
+          }).catch(function (e) { b.disabled = false; toast(e.message, true); });
+        } } }, "Resend")));
+    });
+    box.textContent = "";
+    box.append(h("div", null,
+      h("h3", null, "Responses (" + rows.length + ")"),
+      rows.length ? h("div", { class: "rtw" }, h("table", { class: "rt" }, h("thead", null, headRow), h("tbody", null, body))) : h("p", null, "No responses yet."),
+      h("div", { class: "cta" },
+        h("button", { class: "btn sm line", type: "button", on: { click: function () { openResponses(form); } } }, "Refresh"),
+        h("button", { class: "btn sm", type: "button", on: { click: function () { dlg.close(); } } }, "Close"))));
+  }).catch(function (e) { box.textContent = ""; box.append(h("p", null, "Could not load: " + e.message)); });
+}
+
+function regSec() {
+  var s = "site.registrations", cards = [];
+  state.site.registrations.forEach(function (f, i) {
+    if (!editing && !f.title) return;
+    var p = s + "." + i + ".", open = f.open !== false;
+    var btn = h("button", { class: "btn", type: "button", disabled: open ? null : "disabled", on: { click: function () { openReg(f); } } },
+      open ? (f.button || "Register") : "Registration closed");
+    var adm = null;
+    if (editing) adm = h("div", { class: "radm" },
+      h("div", { class: "ctl" },
+        h("button", { type: "button", class: "btn sm" + (open ? " line" : ""), on: { click: function () { f.open = !open; touch(); } } }, open ? "Close registration" : "Open registration"),
+        h("button", { type: "button", class: "btn sm line", on: { click: function () { openResponses(f); } } }, "View responses")),
+      INP(p + "button", "Button text", "Register"),
+      INP(p + "thanks", "Message shown after registering", ""),
+      h("details", { class: "rfields", open: "open" },
+        h("summary", null, "Questions (" + f.fields.length + ")"),
+        f.fields.map(function (q, qi) { return fieldEditor(s + "." + i + ".fields", f, qi); }),
+        h("div", { class: "addrow" }, h("button", { type: "button", class: "btn sm line", on: { click: function () {
+          var n = clone(FLD_TPL); n.id = newId(); f.fields.push(n); touch();
+        } } }, "+ Add question"))),
+      ctl(s, i));
+    cards.push(h("article", { class: "reg" + (editing && !f.title ? " slot" : "") },
+      h("div", { class: "rmeta" }, h("span", { class: "pill " + (open ? "ok" : "no") }, open ? "Open" : "Closed")),
+      T("h3", p + "title", "", "Form title, e.g. Attendee registration"),
+      T("div", p + "when", "when", "Date or deadline (optional)"),
+      T("p", p + "desc", "", "Short description", true),
+      btn, adm));
+  });
+  if (!editing && !cards.length) return null;
+  return h("section", { id: "registration" }, h("div", { class: "wrap" },
+    head("site.regHead"), h("div", { class: "regs" }, cards),
+    editing ? h("div", { class: "addrow" }, h("button", { type: "button", class: "btn sm line", on: { click: function () {
+      var n = clone(REG_TPL); n.id = newId(); state.site.registrations.push(n); touch();
+    } } }, "+ Add registration form")) : null));
+}
 /* ---------- render ---------- */
 function render() {
   var y = window.scrollY, app = document.getElementById("app");
   app.textContent = "";
-  [announceBar(), nav(), hero(), stats(), about(), nextBand(), announcementsSec(), eventsSec(), gallerySec(), videosSec(), teamSec(), contactSec(), footer()]
+  [announceBar(), nav(), hero(), stats(), about(), nextBand(), announcementsSec(), regSec(), eventsSec(), gallerySec(), videosSec(), teamSec(), contactSec(), footer()]
     .forEach(function (n) { if (n) app.append(n); });
   renderBar();
   fitTree();
