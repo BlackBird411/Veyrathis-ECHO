@@ -194,6 +194,20 @@ dialog .err{color:var(--red);font-size:14px;min-height:20px;margin:0 0 10px}
 #lb{background:transparent;padding:0;max-width:92vw;max-height:92vh;width:auto}
 #lb img{max-width:92vw;max-height:92vh;object-fit:contain;cursor:zoom-out}
 
+#crop{max-width:560px;padding:24px}
+#crop h3{font-size:22px;margin-bottom:6px}
+#crop p{margin:0 0 12px;font-size:14px}
+#crop input{width:auto;padding:0;border:0;margin:0}
+#crop input[type=range]{flex:1;min-width:120px;accent-color:var(--red)}
+#cstage{display:flex;justify-content:center;background:#111;padding:12px;margin-bottom:12px}
+#ccan{display:block;touch-action:none;cursor:grab;background:#fff;max-width:100%}
+#ccan.circle{border-radius:50%}
+#ccan.drag{cursor:grabbing}
+.crow{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:8px 0}
+.crow[hidden]{display:none}
+.crow>label{font-size:12px;color:#555;min-width:78px}
+.crow .chk{display:flex;gap:6px;align-items:center;min-width:0;color:#111;font-size:13px}
+.sm.on{background:#111;color:#fff;border-color:#111}
 @media(max-width:860px){
   .lk{display:none}
   .about,.cgrid{grid-template-columns:1fr}
@@ -230,6 +244,30 @@ dialog .err{color:var(--red);font-size:14px;min-height:20px;margin:0 0 10px}
   </div>
 </dialog>
 <dialog id="lb"><img alt=""></dialog>
+
+<dialog id="crop">
+  <h3>Adjust photo</h3>
+  <p id="chint"></p>
+  <div id="cstage"><canvas id="ccan"></canvas></div>
+  <div class="crow" id="cshape"><label>Shape</label><span id="cpresets" class="crow" style="margin:0"></span></div>
+  <div class="crow"><label>Zoom</label><input id="czoom" type="range" min="1" max="5" step="0.01" value="1"></div>
+  <div class="crow"><label>Brightness</label><input id="cbri" type="range" min="50" max="150" step="1" value="100"></div>
+  <div class="crow"><label>Contrast</label><input id="ccon" type="range" min="50" max="150" step="1" value="100"></div>
+  <div class="crow">
+    <button class="sm" id="ccenter" type="button">Center</button>
+    <button class="sm" id="ccenterx" type="button">Center ↔</button>
+    <button class="sm" id="ccentery" type="button">Center ↕</button>
+    <button class="sm" id="crotl" type="button">Rotate left</button>
+    <button class="sm" id="crotr" type="button">Rotate right</button>
+    <button class="sm" id="cflip" type="button">Flip</button>
+    <label class="chk"><input type="checkbox" id="cbw"> Black &amp; white</label>
+    <button class="sm" id="creset" type="button">Reset</button>
+  </div>
+  <div class="cta mt">
+    <button class="btn" id="cok" type="button">Use photo</button>
+    <button class="btn line" id="ccancel" type="button">Cancel</button>
+  </div>
+</dialog>
 
 <script>
 (function () {
@@ -430,56 +468,176 @@ function INP(path, label, ph) {
 }
 
 /* ---------- pictures ---------- */
-function resizeImg(file, max) {
-  return new Promise(function (res, rej) {
-    var img = new Image(), u = URL.createObjectURL(file);
-    img.onload = function () {
-      var w = img.width, ht = img.height, s = Math.min(1, max / Math.max(w, ht));
-      w = Math.round(w * s); ht = Math.round(ht * s);
-      var c = document.createElement("canvas"); c.width = w; c.height = ht;
-      c.getContext("2d").drawImage(img, 0, 0, w, ht);
-      c.toBlob(function (b) { URL.revokeObjectURL(u); b ? res(b) : rej(new Error("Could not process image")); }, "image/jpeg", 0.86);
-    };
-    img.onerror = function () { rej(new Error("That file is not an image")); };
-    img.src = u;
+var FILTER = (function () { var c = document.createElement("canvas").getContext("2d"); return !!c && "filter" in c; })();
+var cs = null;
+var PRESETS = [["Original", null], ["1:1", 1], ["4:5", 0.8], ["16:10", 1.6], ["16:9", 16 / 9], ["3:2", 1.5]];
+function $id(i) { return document.getElementById(i); }
+
+function dimsR() {
+  var r = cs.rot % 2, w = cs.img.naturalWidth, ht = cs.img.naturalHeight;
+  return { w: r ? ht : w, h: r ? w : ht };
+}
+function ratio() { var d = dimsR(); return cs.aspect || d.w / d.h; }
+function clampPos(W, H) {
+  var d = dimsR(), sc = Math.max(W / d.w, H / d.h) * cs.zoom;
+  var mx = Math.max(0, (d.w * sc - W) / 2 / W), my = Math.max(0, (d.h * sc - H) / 2 / H);
+  cs.fx = Math.min(mx, Math.max(-mx, cs.fx));
+  cs.fy = Math.min(my, Math.max(-my, cs.fy));
+}
+function pixelFx(ctx, W, H) {
+  var id = ctx.getImageData(0, 0, W, H), p = id.data, b = cs.bri / 100, c = cs.con / 100;
+  for (var i = 0; i < p.length; i += 4) {
+    var r = (p[i] * b - 128) * c + 128, g = (p[i + 1] * b - 128) * c + 128, bl = (p[i + 2] * b - 128) * c + 128;
+    if (cs.bw) { var l = 0.299 * r + 0.587 * g + 0.114 * bl; r = g = bl = l; }
+    p[i] = r; p[i + 1] = g; p[i + 2] = bl;
+  }
+  ctx.putImageData(id, 0, 0);
+}
+function drawTo(ctx, W, H) {
+  var d = dimsR(), sc = Math.max(W / d.w, H / d.h) * cs.zoom;
+  ctx.save();
+  ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, W, H);
+  if (FILTER) ctx.filter = "brightness(" + cs.bri + "%) contrast(" + cs.con + "%) grayscale(" + (cs.bw ? 1 : 0) + ")";
+  ctx.translate(W / 2 + cs.fx * W, H / 2 + cs.fy * H);
+  ctx.scale(cs.flip ? -1 : 1, 1);
+  ctx.rotate(cs.rot * Math.PI / 2);
+  ctx.scale(sc, sc);
+  ctx.drawImage(cs.img, -cs.img.naturalWidth / 2, -cs.img.naturalHeight / 2);
+  ctx.restore();
+  if (!FILTER && (cs.bri !== 100 || cs.con !== 100 || cs.bw)) pixelFx(ctx, W, H);
+}
+function refresh() {
+  if (!cs) return;
+  var can = $id("ccan");
+  clampPos(can.width, can.height);
+  drawTo(can.getContext("2d"), can.width, can.height);
+}
+function layoutPreview() {
+  var can = $id("ccan"), r = ratio();
+  var w = Math.min(440, window.innerWidth - 100), ht = w / r, maxH = Math.round(window.innerHeight * 0.42);
+  if (ht > maxH) { ht = maxH; w = ht * r; }
+  can.style.width = Math.round(w) + "px"; can.style.height = Math.round(ht) + "px";
+  can.width = Math.round(w * 2); can.height = Math.round(can.width / r);
+  refresh();
+}
+function renderPresets() {
+  var box = $id("cpresets"); box.textContent = "";
+  $id("cshape").hidden = cs.lock;
+  if (cs.lock) return;
+  PRESETS.forEach(function (p) {
+    box.append(h("button", { type: "button", class: "sm" + (p[1] === cs.aspect ? " on" : ""), on: { click: function () {
+      cs.aspect = p[1]; cs.fx = 0; cs.fy = 0; renderPresets(); layoutPreview();
+    } } }, p[0]));
   });
 }
+function syncCropUi() {
+  $id("czoom").value = cs.zoom; $id("cbri").value = cs.bri; $id("ccon").value = cs.con; $id("cbw").checked = cs.bw;
+}
+function openCropper(file, opts, done) {
+  var url = URL.createObjectURL(file), img = new Image();
+  img.onload = function () {
+    cs = { img: img, url: url, rot: 0, flip: false, zoom: 1, fx: 0, fy: 0, bri: 100, con: 100, bw: false,
+      aspect: opts.lock ? (opts.aspect || 1) : (opts.aspect || null), lock: !!opts.lock, circle: !!opts.circle,
+      maxDim: opts.maxDim || 1600, opts: opts, done: done };
+    $id("ccan").className = cs.circle ? "circle" : "";
+    $id("chint").textContent = cs.circle
+      ? "Drag the photo to place the face in the middle of the circle. Zoom with the slider or mouse wheel."
+      : "Drag to reposition. Zoom with the slider or mouse wheel, pick a shape, and use Center to snap to the middle.";
+    syncCropUi(); renderPresets();
+    $id("crop").showModal(); layoutPreview();
+  };
+  img.onerror = function () { URL.revokeObjectURL(url); toast("That file is not an image", true); };
+  img.src = url;
+}
+function exportCrop(cb) {
+  var r = ratio(), d = dimsR(), m = Math.min(cs.maxDim, Math.max(d.w, d.h)), W, H;
+  if (r >= 1) { W = m; H = Math.round(m / r); } else { H = m; W = Math.round(m * r); }
+  var c = document.createElement("canvas"); c.width = W; c.height = H;
+  clampPos(W, H); drawTo(c.getContext("2d"), W, H);
+  c.toBlob(function (b) { b ? cb(b) : toast("Could not process image", true); }, "image/jpeg", 0.88);
+}
+function wireCropper() {
+  var can = $id("ccan"), dlg = $id("crop"), drag = null;
+  can.addEventListener("pointerdown", function (e) { if (!cs) return; drag = { x: e.clientX, y: e.clientY }; can.setPointerCapture(e.pointerId); can.classList.add("drag"); });
+  can.addEventListener("pointermove", function (e) {
+    if (!cs || !drag) return;
+    cs.fx += (e.clientX - drag.x) / can.clientWidth; cs.fy += (e.clientY - drag.y) / can.clientHeight;
+    drag.x = e.clientX; drag.y = e.clientY; refresh();
+  });
+  function end() { drag = null; can.classList.remove("drag"); }
+  can.addEventListener("pointerup", end); can.addEventListener("pointercancel", end);
+  can.addEventListener("wheel", function (e) {
+    if (!cs) return; e.preventDefault();
+    cs.zoom = Math.min(5, Math.max(1, cs.zoom * Math.exp(-e.deltaY * 0.0015))); $id("czoom").value = cs.zoom; refresh();
+  }, { passive: false });
+  $id("czoom").addEventListener("input", function () { cs.zoom = parseFloat(this.value); refresh(); });
+  $id("cbri").addEventListener("input", function () { cs.bri = +this.value; refresh(); });
+  $id("ccon").addEventListener("input", function () { cs.con = +this.value; refresh(); });
+  $id("cbw").addEventListener("change", function () { cs.bw = this.checked; refresh(); });
+  $id("ccenter").addEventListener("click", function () { cs.fx = 0; cs.fy = 0; refresh(); });
+  $id("ccenterx").addEventListener("click", function () { cs.fx = 0; refresh(); });
+  $id("ccentery").addEventListener("click", function () { cs.fy = 0; refresh(); });
+  $id("crotl").addEventListener("click", function () { cs.rot = (cs.rot + 3) % 4; cs.fx = 0; cs.fy = 0; layoutPreview(); });
+  $id("crotr").addEventListener("click", function () { cs.rot = (cs.rot + 1) % 4; cs.fx = 0; cs.fy = 0; layoutPreview(); });
+  $id("cflip").addEventListener("click", function () { cs.flip = !cs.flip; refresh(); });
+  $id("creset").addEventListener("click", function () {
+    cs.rot = 0; cs.flip = false; cs.zoom = 1; cs.fx = 0; cs.fy = 0; cs.bri = 100; cs.con = 100; cs.bw = false;
+    cs.aspect = cs.lock ? (cs.opts.aspect || 1) : (cs.opts.aspect || null);
+    syncCropUi(); renderPresets(); layoutPreview();
+  });
+  $id("cok").addEventListener("click", function () {
+    exportCrop(function (blob) { var done = cs.done; dlg.close(); done(blob); });
+  });
+  $id("ccancel").addEventListener("click", function () { dlg.close(); });
+  dlg.addEventListener("close", function () { if (cs) { URL.revokeObjectURL(cs.url); cs = null; } });
+  window.addEventListener("resize", function () { if (cs && dlg.open) layoutPreview(); });
+}
 
-function pick(path, maxDim) {
+function upload(path, blob) {
+  toast("Uploading photo…");
+  var fd = new FormData();
+  fd.append("password", password);
+  fd.append("file", blob, "photo.jpg");
+  fetch(SB_URL + "/functions/v1/upload-media", { method: "POST", headers: { apikey: SB_KEY }, body: fd })
+    .then(function (r) { return r.json().then(function (j) { if (!r.ok) throw new Error(j.error || "Upload failed"); return j; }); })
+    .then(function (j) { set(path, j.url); render(); toast("Photo ready. Press Save to publish."); })
+    .catch(function (e) { toast("Upload failed: " + e.message, true); });
+}
+
+/* choose a new photo, then crop/adjust it */
+function pick(path, maxDim, aspect, circle) {
   var i = document.createElement("input");
   i.type = "file"; i.accept = "image/*";
   i.onchange = function () {
     var f = i.files[0]; if (!f) return;
-    toast("Uploading photo…");
-    resizeImg(f, maxDim || 1600).then(function (blob) {
-      var fd = new FormData();
-      fd.append("password", password);
-      fd.append("file", blob, "photo.jpg");
-      return fetch(SB_URL + "/functions/v1/upload-media", { method: "POST", headers: { apikey: SB_KEY }, body: fd });
-    }).then(function (r) {
-      return r.json().then(function (j) { if (!r.ok) throw new Error(j.error || "Upload failed"); return j; });
-    }).then(function (j) {
-      set(path, j.url); render();
-      toast("Photo uploaded. Press Save to publish.");
-    }).catch(function (e) { toast("Upload failed: " + e.message, true); });
+    openCropper(f, { maxDim: maxDim || 1600, aspect: aspect || null, circle: !!circle, lock: !!circle }, function (blob) { upload(path, blob); });
   };
   i.click();
 }
+/* re-open the photo that is already there */
+function adjust(path, maxDim, aspect, circle) {
+  var src = get(path); if (!src) return;
+  toast("Opening photo…");
+  fetch(src).then(function (r) { if (!r.ok) throw new Error(); return r.blob(); }).then(function (b) {
+    openCropper(b, { maxDim: maxDim || 1600, aspect: aspect || null, circle: !!circle, lock: !!circle }, function (blob) { upload(path, blob); });
+  }).catch(function () { toast("This photo can’t be edited here. Use “Change photo” to upload it again.", true); });
+}
 
-function picControls(path, maxDim, label) {
+function picControls(path, maxDim, label, aspect) {
   var src = get(path);
   return h("div", { class: "picbtns" },
-    h("button", { type: "button", class: "sm", on: { click: function () { pick(path, maxDim); } } }, (src ? "Change " : "Add ") + (label || "photo")),
+    h("button", { type: "button", class: "sm", on: { click: function () { pick(path, maxDim, aspect); } } }, (src ? "Change " : "Add ") + (label || "photo")),
+    src ? h("button", { type: "button", class: "sm", on: { click: function () { adjust(path, maxDim, aspect); } } }, "Adjust") : null,
     src ? h("button", { type: "button", class: "sm danger", on: { click: function () { set(path, ""); render(); } } }, "Remove") : null);
 }
 
-function PIC(path, cls, maxDim, label) {
+function PIC(path, cls, maxDim, label, aspect) {
   var src = get(path);
   if (!src && !editing) return null;
   var w = h("div", { class: "pic " + (cls || "") + (src ? "" : " empty") });
   if (src) w.append(h("img", { src: src, alt: "", loading: "lazy" }));
   else w.append(h("span", { class: "ph" }, "No photo yet"));
-  if (editing) w.append(picControls(path, maxDim, label));
+  if (editing) w.append(picControls(path, maxDim, label, aspect));
   return w;
 }
 
@@ -552,7 +710,7 @@ function hero() {
       h("h1", null, T("span", s + "title", "", "Headline"), " ", T("em", s + "accent", "", "Red words")),
       T("p", s + "sub", "sub", "Intro sentence", true),
       h("div", { class: "cta" }, ctaBtn(s + "cta1", "#events", false), ctaBtn(s + "cta2", "#team", true)),
-      editing ? h("div", { class: "ctl" }, picControls(s + "image", 2000, "background photo")) : null));
+      editing ? h("div", { class: "ctl" }, picControls(s + "image", 2000, "background photo", 16 / 9)) : null));
 }
 
 function stats() {
@@ -571,7 +729,7 @@ function stats() {
 }
 
 function about() {
-  var s = "site.about.", img = PIC(s + "image", "tall", 1400, "photo"), cards = [];
+  var s = "site.about.", img = PIC(s + "image", "tall", 1400, "photo", 4 / 5), cards = [];
   state.site.about.cards.forEach(function (c, i) {
     if (!editing && !c.title) return;
     var p = s + "cards." + i + ".";
@@ -608,7 +766,7 @@ function eventsSec() {
   state.site.events.forEach(function (e, i) {
     var empty = !e.theme && !e.year;
     if (!editing && empty) return;
-    var p = s + "." + i + ".", img = PIC(p + "image", "", 1400, "photo"), link = safeUrl(e.link), more = null;
+    var p = s + "." + i + ".", img = PIC(p + "image", "", 1400, "photo", 1.6), link = safeUrl(e.link), more = null;
     if (editing) more = INP(p + "link", "Link (optional)", "https://…");
     else if (link) more = h("a", { class: "more", href: link, target: "_blank", rel: "noopener" }, "Read more →");
     cards.push(h("article", { class: "ev" + (editing && empty ? " slot" : "") }, img,
@@ -688,7 +846,8 @@ function person(ri, k, pp) {
   else av.textContent = (pp.name || "?").trim().charAt(0).toUpperCase() || "?";
   var w = h("div", { class: "pp" + (editing && !pp.name ? " slot" : "") }, av, T("div", path + ".name", "pn", "Full name"));
   if (editing) w.append(h("div", { class: "ctl c" },
-    h("button", { type: "button", class: "sm", on: { click: function () { pick(path + ".photo", 600); } } }, pp.photo ? "Change photo" : "Add photo"),
+    h("button", { type: "button", class: "sm", on: { click: function () { pick(path + ".photo", 600, 1, true); } } }, pp.photo ? "Change photo" : "Add photo"),
+    pp.photo ? h("button", { type: "button", class: "sm", on: { click: function () { adjust(path + ".photo", 600, 1, true); } } }, "Adjust") : null,
     h("button", { type: "button", class: "sm danger", on: { click: function () { del("roles." + ri + ".people", k); } } }, "✕")));
   return w;
 }
@@ -879,6 +1038,7 @@ function load() {
     init({}); loaded = false; render(); toast("Could not load saved content: " + e.message, true);
   });
 }
+wireCropper();
 window.onbeforeunload = function () { return dirty ? "You have unsaved changes." : undefined; };
 load();
 })();
