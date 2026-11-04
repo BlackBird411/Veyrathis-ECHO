@@ -119,6 +119,26 @@ nav{position:sticky;top:0;z-index:50;background:rgba(10,10,10,.93);backdrop-filt
 .adate{color:#777;font-size:13px}
 .ck{display:flex;gap:8px;align-items:center;font-size:13px;margin:10px 0;color:#444;cursor:pointer}
 
+/* news badge + entrance pop-up */
+.lk.news{display:inline-flex;align-items:center}
+.badge{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 5px;margin-left:7px;border-radius:9px;background:#ed4245;color:#fff;font-size:11px;font-weight:800;line-height:1;box-shadow:0 0 0 2px #0a0a0a;animation:bdg 2.4s ease-in-out infinite}
+@keyframes bdg{0%,100%{transform:scale(1)}50%{transform:scale(1.14)}}
+#annpop{max-width:540px;width:calc(100% - 32px);padding:0;border-top:5px solid var(--red);box-shadow:0 30px 80px rgba(0,0,0,.5);max-height:calc(100vh - 32px);overflow-x:hidden;overflow-y:auto}
+#annpop[open]{animation:popin .28s cubic-bezier(.2,.8,.2,1)}
+@keyframes popin{from{opacity:0;transform:translateY(14px) scale(.97)}to{opacity:1;transform:none}}
+#annpop .pimg{aspect-ratio:16/9;background:#111}
+#annpop .pimg img{width:100%;height:100%;object-fit:cover}
+#annpop .pbody{padding:26px 28px 24px}
+#annpop h3{font-size:30px;letter-spacing:-.02em;margin:14px 0 10px}
+#annpop p{margin:0 0 22px;color:#444;font-size:16px}
+#annpop .pnav{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:22px;padding-top:16px;border-top:1px solid #eee}
+.dots{display:flex;gap:7px}
+.dots button{width:9px;height:9px;border-radius:50%;border:0;padding:0;background:#ccc;cursor:pointer}
+.dots button.on{background:var(--red)}
+.pclose{position:absolute;top:12px;right:12px;z-index:2;width:34px;height:34px;border-radius:50%;border:0;background:rgba(0,0,0,.7);color:#fff;font-size:22px;line-height:1;cursor:pointer}
+.pclose:hover{background:var(--red)}
+@media(prefers-reduced-motion:reduce){#annpop[open],.badge{animation:none}}
+
 /* events */
 .grid3{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:28px}
 .ev{background:#fff;border:1px solid #e6e6e6;border-top:4px solid var(--red);display:flex;flex-direction:column}
@@ -238,6 +258,7 @@ dialog .err{color:var(--red);font-size:14px;min-height:20px;margin:0 0 10px}
 .sm.on{background:#111;color:#fff;border-color:#111}
 @media(max-width:860px){
   .lk{display:none}
+  .links a.lk.news{display:inline-flex}
   .about,.cgrid{grid-template-columns:1fr}
   section{padding:72px 0}
   .hero{padding:110px 0 90px}
@@ -272,6 +293,11 @@ dialog .err{color:var(--red);font-size:14px;min-height:20px;margin:0 0 10px}
   </div>
 </dialog>
 <dialog id="lb"><img alt=""></dialog>
+
+<dialog id="annpop" aria-label="Announcements">
+  <button class="pclose" id="annx" type="button" aria-label="Close">×</button>
+  <div id="annbox"></div>
+</dialog>
 
 <dialog id="crop">
   <h3>Adjust photo</h3>
@@ -809,7 +835,11 @@ function nav() {
   l.push(["team", "Team"], ["contact", "Contact"]);
   return h("nav", null, h("div", { class: "wrap navin" }, logo(),
     h("div", { class: "links" },
-      l.map(function (x) { return h("a", { class: "lk", href: "#" + x[0] }, x[1]); }),
+      l.map(function (x) {
+        var isNews = x[0] === "announcements", n = (isNews && !editing) ? unreadAnn() : 0;
+        return h("a", { class: "lk" + (isNews ? " news" : ""), href: "#" + x[0], on: isNews ? { click: markAnnRead } : null },
+          x[1], n ? h("span", { class: "badge", "aria-label": n + " new" }, n > 9 ? "9+" : String(n)) : null);
+      }),
       editing ? h("span", { class: "tag" }, "Editing")
               : h("button", { class: "btn sm", type: "button", on: { click: openLogin } }, "Board login"))));
 }
@@ -881,14 +911,83 @@ function nextBand() {
 }
 
 /* ---------- announcements ---------- */
-var ANN_TPL = { tag: "Announcement", date: "", title: "", text: "", image: "", cta: "", link: "", banner: false };
-function CK(item, key, label) {
+var ANN_TPL = { tag: "Announcement", date: "", title: "", text: "", image: "", cta: "", link: "", banner: false, popup: true };
+function CK(item, key, label, def) {
   var i = h("input", { type: "checkbox" });
-  i.checked = !!item[key];
+  i.checked = item[key] === undefined ? !!def : !!item[key];
   i.addEventListener("change", function () { item[key] = i.checked; dirty = true; markDirty(); render(); });
   return h("label", { class: "ck" }, i, label);
 }
 function annBanner() { return state.site.announcements.filter(function (a) { return a.title && a.banner; })[0]; }
+
+/* what each visitor has already seen (kept in their own browser only) */
+var seenMem = { popped: {}, read: {} };
+function annKey(a) { return a.id || ("t:" + a.title); }
+function readSeen() {
+  try { var r = JSON.parse(localStorage.getItem("tedx-ann") || "null"); if (r && typeof r === "object") return r; }
+  catch (e) { return seenMem; }
+  return seenMem;
+}
+function isSeen(kind, a) { var s = readSeen(); return !!(s[kind] && s[kind][annKey(a)]); }
+function markSeen(kind, list) {
+  var s = readSeen(); s[kind] = s[kind] || {};
+  list.forEach(function (a) { s[kind][annKey(a)] = 1; });
+  seenMem = s;
+  try { localStorage.setItem("tedx-ann", JSON.stringify(s)); } catch (e) {}
+}
+function liveAnn() { return state.site.announcements.filter(function (a) { return a.title; }); }
+function unreadAnn() { return liveAnn().filter(function (a) { return !isSeen("read", a); }).length; }
+function markAnnRead() {
+  if (editing) return;
+  markSeen("read", liveAnn());
+  Array.prototype.forEach.call(document.querySelectorAll(".badge"), function (b) { b.remove(); });
+}
+var annObs = null;
+function watchNews() {
+  if (annObs) { annObs.disconnect(); annObs = null; }
+  var el = document.querySelector("#announcements .head");
+  if (editing || !el || !unreadAnn() || !("IntersectionObserver" in window)) return;
+  annObs = new IntersectionObserver(function (es) {
+    if (es.some(function (e) { return e.isIntersecting; })) { markAnnRead(); annObs.disconnect(); annObs = null; }
+  }, { threshold: 0.6 });
+  annObs.observe(el);
+}
+
+/* entrance pop-up */
+var popList = [], popIdx = 0, popPreview = false, popShown = false;
+function popItems(all) {
+  return liveAnn().filter(function (a) { return a.popup !== false && (all || !isSeen("popped", a)); });
+}
+function drawPop() {
+  var box = $id("annbox"), a = popList[popIdx], n = popList.length, link = safeUrl(a.link);
+  box.textContent = "";
+  box.append(
+    a.image ? h("div", { class: "pimg" }, h("img", { src: a.image, alt: "" })) : null,
+    h("div", { class: "pbody" },
+      h("div", { class: "annmeta" }, a.tag ? h("span", { class: "atag" }, a.tag) : null, a.date ? h("span", { class: "adate" }, a.date) : null),
+      h("h3", null, a.title),
+      a.text ? h("p", { class: "pl" }, a.text) : null,
+      h("div", { class: "cta" },
+        link ? h("a", { class: "btn", href: link, target: "_blank", rel: "noopener" }, a.cta || "Learn more")
+             : h("button", { class: "btn", type: "button", on: { click: function () { $id("annpop").close(); } } }, "Got it"),
+        h("a", { class: "btn line", href: "#announcements", on: { click: function () { $id("annpop").close(); } } }, "View all news")),
+      n > 1 ? h("div", { class: "pnav" },
+        h("button", { class: "sm", type: "button", on: { click: function () { popIdx = (popIdx + n - 1) % n; drawPop(); } } }, "‹ Prev"),
+        h("div", { class: "dots" }, popList.map(function (x, k) {
+          return h("button", { type: "button", class: k === popIdx ? "on" : "", "aria-label": "Announcement " + (k + 1), on: { click: function () { popIdx = k; drawPop(); } } });
+        })),
+        h("button", { class: "sm", type: "button", on: { click: function () { popIdx = (popIdx + 1) % n; drawPop(); } } }, "Next ›")) : null));
+}
+function showPopup(all) {
+  var list = popItems(all);
+  if (!list.length) { if (all) toast("Nothing to preview. Tick “Show as a pop-up” on an announcement with a headline.", true); return; }
+  popList = list; popIdx = 0; popPreview = !!all; drawPop();
+  var d = $id("annpop"); if (!d.open) d.showModal();
+}
+function entrancePopup() {
+  if (popShown || editing) return;
+  popShown = true; showPopup(false);
+}
 
 function announceBar() {
   var a = annBanner(); if (!a) return null;
@@ -916,6 +1015,7 @@ function announcementsSec() {
     if (editing) act = h("div", null,
       INP(p + "cta", "Button text (optional)", "Get tickets"),
       INP(p + "link", "Button link (optional)", "https://…"),
+      CK(a, "popup", "Show as a pop-up when visitors arrive", true),
       CK(a, "banner", "Show in the banner at the top of the site"));
     else if (link) act = h("a", { class: "btn sm", href: link, target: "_blank", rel: "noopener" }, a.cta || "Learn more");
     cards.push(h("article", { class: "ann" + (editing && empty ? " slot" : "") }, img,
@@ -928,9 +1028,11 @@ function announcementsSec() {
   if (!editing && !cards.length) return null;
   return h("section", { id: "announcements" }, h("div", { class: "wrap" },
     head("site.announceHead"), h("div", { class: "grid3" }, cards),
-    editing ? h("div", { class: "addrow" }, h("button", { type: "button", class: "btn sm line", on: { click: function () {
-      state.site.announcements.unshift(clone(ANN_TPL)); touch();
-    } } }, "+ New announcement")) : null));
+    editing ? h("div", { class: "addrow", style: "gap:12px;flex-wrap:wrap" },
+      h("button", { type: "button", class: "btn sm line", on: { click: function () {
+        var n = clone(ANN_TPL); n.id = newId(); state.site.announcements.unshift(n); touch();
+      } } }, "+ New announcement"),
+      h("button", { type: "button", class: "btn sm line", on: { click: function () { showPopup(true); } } }, "Preview pop-up")) : null));
 }
 
 function eventsSec() {
@@ -1183,6 +1285,7 @@ function render() {
     .forEach(function (n) { if (n) app.append(n); });
   renderBar();
   fitTree();
+  watchNews();
   window.scrollTo({ top: y, behavior: "instant" });
 }
 
@@ -1235,6 +1338,9 @@ function save() {
 /* ---------- lightbox ---------- */
 function openLb(src) { var d = document.getElementById("lb"); d.querySelector("img").src = src; d.showModal(); }
 document.getElementById("lb").addEventListener("click", function () { this.close(); });
+$id("annx").addEventListener("click", function () { $id("annpop").close(); });
+$id("annpop").addEventListener("click", function (e) { if (e.target === this) this.close(); });
+$id("annpop").addEventListener("close", function () { if (!popPreview) markSeen("popped", popList); });
 document.getElementById("loginGo").addEventListener("click", doLogin);
 document.getElementById("loginCancel").addEventListener("click", function () { document.getElementById("login").close(); });
 document.getElementById("pw").addEventListener("keydown", function (e) { if (e.key === "Enter") doLogin(); });
@@ -1255,6 +1361,7 @@ function init(d) {
 function load() {
   api("team_hierarchy?id=eq.1&select=data").then(function (rows) {
     init((rows[0] && rows[0].data) || {}); loaded = true; dirty = false; render();
+    setTimeout(entrancePopup, 700);
   }).catch(function (e) {
     init({}); loaded = false; render(); toast("Could not load saved content: " + e.message, true);
   });
