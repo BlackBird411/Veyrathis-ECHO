@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>TEDxMSAUniversity</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%230a0a0a'/%3E%3Ctext x='32' y='30' text-anchor='middle' font-family='Helvetica,Arial,sans-serif' font-weight='800' font-size='23' fill='%23e62b1e' textLength='54' lengthAdjust='spacingAndGlyphs'%3ETEDx%3C/text%3E%3Ctext x='32' y='55' text-anchor='middle' font-family='Helvetica,Arial,sans-serif' font-weight='800' font-size='25' fill='%23ffffff' textLength='54' lengthAdjust='spacingAndGlyphs'%3EMSA%3C/text%3E%3C/svg%3E">
 <meta name="description" content="TEDxMSAUniversity — the independently organized TEDx community of MSA University. Ideas worth spreading.">
 <style>
 :root{--red:#e62b1e;--red-d:#c4200f;--ink:#0a0a0a;--mut:#8a8a8a;--soft:#f5f5f5;--max:1160px}
@@ -44,6 +45,8 @@ nav{position:sticky;top:0;z-index:50;background:rgba(10,10,10,.93);backdrop-filt
 .btn.ghost:hover{background:#fff;color:var(--ink)}
 .btn.line{background:transparent;color:#111;border-color:#111}
 .btn.line:hover{background:#111;color:#fff}
+.dark .btn.line{color:#fff;border-color:#fff}
+.dark .btn.line:hover{background:#fff;color:var(--ink);border-color:#fff}
 .btn.sm{padding:8px 16px;font-size:13px}
 .sm{font:inherit;font-size:12px;font-weight:700;padding:5px 10px;border:1px solid #bbb;background:#fff;color:#111;cursor:pointer;border-radius:2px}
 .sm:hover{border-color:var(--red);color:var(--red)}
@@ -872,6 +875,54 @@ function eventsSec() {
     editing ? addRow(s, { year: "", theme: "", date: "", venue: "", desc: "", image: "", link: "" }, "Add event") : null));
 }
 
+/* upload one or many photos straight into the gallery (resized to 1800px, no crop step) */
+function uploadBlob(blob) {
+  var fd = new FormData();
+  fd.append("password", password);
+  fd.append("file", blob, "photo.jpg");
+  return fetch(SB_URL + "/functions/v1/upload-media", { method: "POST", headers: { apikey: SB_KEY }, body: fd })
+    .then(function (r) { return r.json().then(function (j) { if (!r.ok) throw new Error(j.error || "Upload failed"); return j.url; }); });
+}
+function shrink(file, maxDim) {
+  return new Promise(function (resolve, reject) {
+    var url = URL.createObjectURL(file), img = new Image();
+    img.onload = function () {
+      var w = img.naturalWidth, ht = img.naturalHeight, sc = Math.min(1, maxDim / Math.max(w, ht));
+      var c = document.createElement("canvas"); c.width = Math.round(w * sc); c.height = Math.round(ht * sc);
+      var x = c.getContext("2d"); x.fillStyle = "#fff"; x.fillRect(0, 0, c.width, c.height);
+      x.drawImage(img, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(url);
+      c.toBlob(function (b) { b ? resolve(b) : reject(new Error("Could not process " + file.name)); }, "image/jpeg", 0.88);
+    };
+    img.onerror = function () { URL.revokeObjectURL(url); reject(new Error(file.name + " is not an image this browser can read")); };
+    img.src = url;
+  });
+}
+function addGalleryPhotos() {
+  var inp = document.createElement("input");
+  inp.type = "file"; inp.accept = "image/*"; inp.multiple = true;
+  inp.onchange = function () {
+    var files = Array.prototype.slice.call(inp.files); if (!files.length) return;
+    var ok = 0, fail = 0, lastErr = "", n = files.length;
+    vidCount++;
+    files.reduce(function (p, f, k) {
+      return p.then(function () {
+        toast("Uploading photo " + (k + 1) + " of " + n + "…");
+        return shrink(f, 1800).then(uploadBlob).then(function (url) {
+          var g = state.site.gallery, slot = g.filter(function (x) { return !x.src; })[0];
+          if (slot) slot.src = url; else g.push({ src: url, caption: "" });
+          dirty = true; ok++;
+        }).catch(function (e) { fail++; lastErr = e.message; });
+      });
+    }, Promise.resolve()).then(function () {
+      vidCount--; render();
+      if (fail) toast(ok + " added, " + fail + " failed: " + lastErr, true);
+      else toast(ok + (ok === 1 ? " photo" : " photos") + " added. Press Save to publish.");
+    });
+  };
+  inp.click();
+}
+
 function gallerySec() {
   var s = "site.gallery", figs = [];
   state.site.gallery.forEach(function (g, i) {
@@ -886,7 +937,7 @@ function gallerySec() {
   if (!editing && !figs.length) return null;
   return h("section", { class: "dark", id: "gallery" }, h("div", { class: "wrap" },
     head("site.galleryHead"), h("div", { class: "gal" }, figs),
-    editing ? addRow(s, { src: "", caption: "" }, "Add photo") : null));
+    editing ? h("div", { class: "addrow" }, h("button", { type: "button", class: "btn sm line", on: { click: addGalleryPhotos } }, "+ Add photos")) : null));
 }
 
 function videosSec() {
