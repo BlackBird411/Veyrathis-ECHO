@@ -1493,7 +1493,7 @@ function openReg(form) {
       else if (f.type === "email" && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v)) bad = "Enter a valid email address.";
       ans[f.id] = v;
     });
-    if (bad) { err.textContent = bad; return; }
+    if (bad) { err.textContent = bad; err.scrollIntoView({ block: "center", behavior: "smooth" }); return; }
     send.disabled = true; send.textContent = "Sending…";
     fd.append("action", "submit"); fd.append("form", form.id); fd.append("answers", JSON.stringify(ans)); fd.append("hp", hp.value);
     Promise.all(jobs).then(function () {
