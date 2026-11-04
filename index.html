@@ -3,229 +3,838 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>TEDx Team Hierarchy</title>
+<title>TEDxMSAUniversity</title>
+<meta name="description" content="TEDxMSAUniversity — the independently organized TEDx community of MSA University. Ideas worth spreading.">
+<style>
+:root{--red:#e62b1e;--red-d:#c4200f;--ink:#0a0a0a;--mut:#8a8a8a;--soft:#f5f5f5;--max:1160px}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;color:var(--ink);background:#fff;line-height:1.6;-webkit-font-smoothing:antialiased}
+img{max-width:100%;display:block}
+a{color:inherit}
+.wrap{max-width:var(--max);margin:0 auto;padding:0 24px}
+section{padding:96px 0;scroll-margin-top:64px}
+.dark{background:var(--ink);color:#fff}
+.soft{background:var(--soft)}
+h1,h2,h3{line-height:1.05;margin:0}
+h2{font-size:clamp(34px,5vw,56px);font-weight:800;letter-spacing:-.02em}
+.eyebrow{color:var(--red);font-weight:700;letter-spacing:.14em;text-transform:uppercase;font-size:13px;margin:0 0 14px}
+.lead{font-size:19px;color:#444;max-width:720px;margin:18px 0 0}
+.dark .lead{color:#bdbdbd}
+.head{margin-bottom:48px}
+.pl{white-space:pre-line}
+.mt{margin-top:28px}
+
+/* nav */
+nav{position:sticky;top:0;z-index:50;background:rgba(10,10,10,.93);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid #222}
+.navin{display:flex;align-items:center;justify-content:space-between;height:64px}
+.logo{font-weight:800;font-size:22px;color:#fff;text-decoration:none;letter-spacing:-.02em;display:inline-flex;align-items:baseline;gap:6px}
+.logo b{color:var(--red)}
+.logo sup{color:var(--red);font-size:.62em;font-weight:400;position:relative;top:-.5em;margin-left:-4px}
+.logo span{font-weight:300}
+.links{display:flex;gap:26px;align-items:center}
+.links a.lk{color:#cfcfcf;text-decoration:none;font-size:14px;font-weight:500}
+.links a.lk:hover{color:#fff}
+.tag{font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--red)}
+
+/* buttons */
+.btn{display:inline-block;border:2px solid var(--red);background:var(--red);color:#fff;padding:13px 26px;font:inherit;font-weight:700;font-size:15px;text-decoration:none;cursor:pointer;border-radius:2px}
+.btn:hover{background:var(--red-d);border-color:var(--red-d)}
+.btn.ghost{background:transparent;color:#fff;border-color:#fff}
+.btn.ghost:hover{background:#fff;color:var(--ink)}
+.btn.line{background:transparent;color:#111;border-color:#111}
+.btn.line:hover{background:#111;color:#fff}
+.btn.sm{padding:8px 16px;font-size:13px}
+.sm{font:inherit;font-size:12px;font-weight:700;padding:5px 10px;border:1px solid #bbb;background:#fff;color:#111;cursor:pointer;border-radius:2px}
+.sm:hover{border-color:var(--red);color:var(--red)}
+.sm.danger:hover{background:var(--red);color:#fff;border-color:var(--red)}
+.btn.sm{font-size:13px;padding:8px 16px}
+.cta{display:flex;gap:14px;flex-wrap:wrap}
+
+/* hero */
+.hero{position:relative;background:#000;color:#fff;overflow:hidden;padding:150px 0 130px;isolation:isolate}
+.hero::before{content:"";position:absolute;right:-14%;top:-35%;width:70vw;height:70vw;max-width:920px;max-height:920px;background:radial-gradient(circle,rgba(230,43,30,.55),rgba(230,43,30,0) 62%);z-index:-1}
+.herobg{position:absolute;inset:0;z-index:-1}
+.herobg img{width:100%;height:100%;object-fit:cover;opacity:.38}
+.hero h1{font-size:clamp(48px,9vw,120px);font-weight:800;letter-spacing:-.04em;max-width:980px}
+.hero h1 em{font-style:normal;color:var(--red)}
+.hero .sub{font-size:clamp(18px,2vw,22px);color:#d0d0d0;max-width:640px;margin:28px 0 40px}
+
+/* stats */
+.stats{background:var(--ink);color:#fff;border-top:1px solid #222;padding:0}
+.statgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
+.stat{padding:44px 28px;border-left:1px solid #262626}
+.stat:first-child{border-left:0}
+.stat .n{font-size:clamp(40px,5vw,60px);font-weight:800;color:var(--red);letter-spacing:-.03em;line-height:1}
+.stat .l{margin-top:10px;color:#bdbdbd;font-size:15px}
+
+/* about */
+.about{display:grid;grid-template-columns:1.1fr .9fr;gap:64px;align-items:start}
+.about.single{grid-template-columns:1fr;max-width:820px}
+.abt{margin-top:28px}
+.abt p{font-size:18px;color:#333;margin:0 0 18px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:20px;margin-top:56px}
+.card{background:#fff;border-top:4px solid var(--red);padding:28px;box-shadow:0 0 0 1px #ececec,0 10px 28px rgba(0,0,0,.05)}
+.card h3{font-size:22px;margin-bottom:10px;letter-spacing:-.01em}
+.card p{margin:0;color:#444;font-size:16px}
+
+/* pictures */
+.pic{position:relative;background:#111}
+.pic img{width:100%;height:100%;object-fit:cover}
+.pic.tall{aspect-ratio:4/5}
+.pic.empty{min-height:180px;border:2px dashed #bbb;background:#fafafa;display:flex;align-items:center;justify-content:center}
+.pic .ph{color:#aaa;font-size:13px}
+.picbtns{display:flex;gap:6px;flex-wrap:wrap}
+.pic>.picbtns{position:absolute;left:8px;bottom:8px;z-index:3}
+
+/* next band */
+.next{background:var(--red);color:#fff;padding:64px 0}
+.nextin{display:flex;align-items:center;justify-content:space-between;gap:32px;flex-wrap:wrap}
+.next .lab{letter-spacing:.14em;text-transform:uppercase;font-size:13px;font-weight:700}
+.next h3{font-size:clamp(34px,5vw,60px);font-weight:800;letter-spacing:-.03em;margin:8px 0}
+.next .meta{font-size:18px}
+.next .btn{background:#fff;color:var(--red);border-color:#fff}
+.next .btn:hover{background:#111;color:#fff;border-color:#111}
+.next .fld{color:#fff}
+
+/* events */
+.grid3{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:28px}
+.ev{background:#fff;border:1px solid #e6e6e6;border-top:4px solid var(--red);display:flex;flex-direction:column}
+.ev .pic{aspect-ratio:16/10}
+.ev .body{padding:24px;display:flex;flex-direction:column;gap:8px;flex:1}
+.ev .yr{color:var(--red);font-weight:800;font-size:15px;letter-spacing:.1em}
+.ev h3{font-size:28px;letter-spacing:-.02em}
+.ev .when{color:#666;font-size:14px}
+.ev p{margin:0;color:#444;font-size:16px}
+.ev a.more{margin-top:auto;padding-top:12px;font-weight:700;color:var(--red);text-decoration:none;font-size:14px}
+
+/* gallery */
+.gal{columns:3 260px;column-gap:16px}
+.gal figure{margin:0 0 16px;break-inside:avoid;position:relative}
+.gal figure:not(.slot){cursor:zoom-in}
+.gal .pic img{height:auto}
+.gal figcaption{font-size:13px;color:#bdbdbd;padding-top:6px}
+
+/* videos */
+.vids{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:28px}
+.vid iframe{width:100%;height:540px;border:0;background:#000}
+.vid.wide iframe{height:auto;aspect-ratio:16/9}
+.vid .vt{font-weight:700;margin-top:10px}
+.vid a.vl{display:block;padding:28px;background:#111;color:#fff;text-decoration:none;font-weight:700}
+
+/* team */
+.level{display:flex;flex-wrap:wrap;justify-content:center;gap:24px}
+.vline{width:2px;height:40px;background:var(--red);margin:0 auto}
+.role{background:#fff;border:1px solid #e6e6e6;border-top:4px solid var(--red);padding:24px;min-width:250px;max-width:380px;flex:1 1 270px}
+.role h3{font-size:20px;letter-spacing:-.01em}
+.rep{color:#888;font-size:12px;text-transform:uppercase;letter-spacing:.08em;margin:4px 0 18px}
+.role h3+.ppl,.role h3+.tba{margin-top:16px}
+.ppl{display:grid;grid-template-columns:repeat(auto-fill,minmax(108px,1fr));gap:20px 12px}
+.pp{text-align:center}
+.av{width:84px;height:84px;border-radius:50%;margin:0 auto 8px;background:#1b1b1b;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:28px;overflow:hidden}
+.av img{width:100%;height:100%;object-fit:cover}
+.pn{font-size:14px;font-weight:600;line-height:1.3}
+.tba{color:#999;font-size:14px}
+.rc{margin-top:18px;padding-top:14px;border-top:1px dashed #ddd;display:flex;flex-direction:column;gap:8px}
+.rc .row{display:flex;gap:6px;flex-wrap:wrap}
+.sel{font:inherit;font-size:13px;padding:6px;width:100%}
+.ctl{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.ctl.c{justify-content:center}
+.addrow{margin-top:28px;display:flex;justify-content:center}
+
+/* contact */
+.cgrid{display:grid;grid-template-columns:1fr 1fr;gap:56px;align-items:stretch}
+.addr{color:#bdbdbd;margin:28px 0 0}
+.map iframe{width:100%;height:100%;min-height:340px;border:0;filter:grayscale(1) contrast(1.1)}
+.fields{margin-top:24px}
+
+/* footer */
+footer{background:#000;color:#9a9a9a;padding:56px 0;font-size:14px}
+footer .row{display:flex;justify-content:space-between;gap:24px;flex-wrap:wrap;align-items:flex-start}
+footer p{margin:10px 0 0;max-width:520px}
+
+/* editing */
+.ed{outline:1px dashed transparent;outline-offset:3px;cursor:text;border-radius:2px;min-width:1ch}
+.ed:hover{outline-color:rgba(230,43,30,.6)}
+.ed:focus{outline:2px solid var(--red);background:rgba(230,43,30,.07)}
+.ed:empty::before{content:attr(data-ph);opacity:.4;pointer-events:none}
+.ed.pl,.ed.pl{white-space:pre-wrap}
+.slot{border:1px dashed #b5b5b5!important;background:rgba(230,43,30,.04)}
+.fld{display:block;margin:10px 0;font-size:12px;color:#888}
+.fld input{display:block;width:100%;margin-top:4px;font:inherit;font-size:14px;padding:8px 10px;border:1px solid #bbb;border-radius:2px;color:#111;background:#fff}
+.stat .ctl,.card .ctl,.gal .ctl{margin-top:12px}
+
+#bar{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);z-index:90;background:#111;color:#fff;display:flex;gap:12px;align-items:center;padding:10px 14px;border-radius:999px;box-shadow:0 10px 40px rgba(0,0,0,.45);font-size:14px;white-space:nowrap;max-width:calc(100vw - 24px)}
+#bar[hidden]{display:none}
+#bar .dot{width:9px;height:9px;border-radius:50%;background:#2ecc71}
+#bar.dirty .dot{background:#f5a623}
+#toast{position:fixed;left:50%;bottom:84px;transform:translateX(-50%);z-index:95;background:#fff;color:#111;padding:12px 18px;border-radius:4px;box-shadow:0 10px 40px rgba(0,0,0,.3);font-size:14px;max-width:calc(100vw - 32px);opacity:0;pointer-events:none;transition:opacity .2s}
+#toast.show{opacity:1}
+#toast.err{background:var(--red);color:#fff}
+
+dialog{border:0;padding:32px;border-radius:4px;max-width:380px;width:calc(100% - 32px);font-family:inherit}
+dialog::backdrop{background:rgba(0,0,0,.75)}
+dialog h3{font-size:26px;margin-bottom:8px}
+dialog p{margin:0 0 18px;color:#555;font-size:15px}
+dialog input{width:100%;font:inherit;font-size:16px;padding:12px;border:2px solid #111;border-radius:2px;margin-bottom:10px}
+dialog .err{color:var(--red);font-size:14px;min-height:20px;margin:0 0 10px}
+#lb{background:transparent;padding:0;max-width:92vw;max-height:92vh;width:auto}
+#lb img{max-width:92vw;max-height:92vh;object-fit:contain;cursor:zoom-out}
+
+@media(max-width:860px){
+  .lk{display:none}
+  .about,.cgrid{grid-template-columns:1fr}
+  section{padding:72px 0}
+  .hero{padding:110px 0 90px}
+  .stat{border-left:0;border-top:1px solid #262626}
+  .stat:first-child{border-top:0}
+}
+</style>
 </head>
 <body>
+<div id="app"><div class="wrap" style="padding:120px 24px;color:#888">Loading…</div></div>
+<div id="bar" hidden></div>
+<div id="toast" role="status"></div>
 
-<h1>TEDx Team Hierarchy</h1>
-
-<div id="bar"></div>
-<p id="msg"></p>
-<hr>
-<div id="tree">Loading...</div>
+<dialog id="login">
+  <h3>Board login</h3>
+  <p>Enter the board password to edit this website.</p>
+  <input id="pw" type="password" placeholder="Password" autocomplete="current-password">
+  <div class="err" id="loginerr"></div>
+  <div class="cta">
+    <button class="btn" id="loginGo" type="button">Enter</button>
+    <button class="btn line" id="loginCancel" type="button">Cancel</button>
+  </div>
+</dialog>
+<dialog id="lb"><img alt=""></dialog>
 
 <script>
+(function () {
+"use strict";
+
 var SB_URL = "https://fdiounclxvaescxfkcnt.supabase.co";
 var SB_KEY = "sb_publishable_pTmK9ZuSQHh915Ke4IAhIA_ib2ip80H";
+var MAP = "https://maps.google.com/maps?q=26%20July%20Mehwar%20Road%20intersection%20with%20Wahat%20Road%2C%206th%20of%20October&t=m&z=15&output=embed";
+var MSA = "https://msa.edu.eg/msauniversity/wp-content/uploads/2024/09/";
 
-var roles = [];
-var password = null;   // kept in memory only, never stored
-var editing = false;
-var dirty = false;
+var DEFAULTS = {
+  hero: {
+    kicker: "TEDxMSAUniversity · MSA University, 6th of October City",
+    title: "Ideas worth",
+    accent: "spreading.",
+    sub: "TEDxMSAUniversity is the independently organized TEDx community of MSA University — a stage for bold ideas, honest stories and the people behind them.",
+    cta1: "Our events",
+    cta2: "Meet the team",
+    image: ""
+  },
+  stats: [
+    { num: "2017", label: "Year of our first event" },
+    { num: "10", label: "Speakers on our first stage" },
+    { num: "2025", label: "Latest edition: VERDIA" },
+    { num: "", label: "" }
+  ],
+  about: {
+    eyebrow: "About us",
+    heading: "What is TEDxMSAUniversity?",
+    body1: "TEDxMSAUniversity is the student-led TEDx community of October University for Modern Sciences and Arts (MSA University) in 6th of October City, Egypt. We bring together speakers from different fields to share ideas, propose solutions and tell stories our community can relate to.",
+    body2: "Since our first event in 2017, we have worked to build a community of bright minds — students, faculty and guests — who believe an idea shared well can change how we see ourselves, our community and the world.",
+    image: "",
+    cards: [
+      { title: "What is TED?", text: "TED is a non-profit organization devoted to spreading ideas, usually through short, powerful talks. It started in 1984 as a conference on Technology, Entertainment and Design and today covers almost every topic." },
+      { title: "What is TEDx?", text: "TEDx events are independently organized by local communities, under license from TED, to bring the TED experience to people who might never attend a TED conference. The “x” stands for independently organized event." },
+      { title: "Our mission", text: "To spread knowledge and new ideas through a series of TEDxMSAUniversity events, where speakers from many disciplines introduce ideas and solutions our community can relate to, and together build a community of bright minds." },
+      { title: "Our vision", text: "To shine a light on ideas worth hearing and share them widely, inspiring people to better themselves, their community, their country and, ultimately, the world." },
+      { title: "", text: "" }
+    ]
+  },
+  next: {
+    label: "Next event",
+    theme: "To be announced",
+    date: "Date coming soon",
+    venue: "MSA University · 6th of October Campus",
+    cta: "Follow for updates",
+    link: "https://www.instagram.com/tedxmsauniversity_/"
+  },
+  eventsHead: {
+    eyebrow: "Our story",
+    title: "Past events",
+    lead: "Every edition is built around a theme and a stage full of ideas. Here is where we have been."
+  },
+  events: [
+    { year: "2025", theme: "VERDIA", date: "", venue: "MSA University", desc: "A celebration of growth and transformation. VERDIA brought together ideas and experiences about personal growth, evolving perspectives and the journey toward positive change.", image: "", link: "https://msa.edu.eg/msauniversity/tedxmsauniversity-2025-verdia-a-celebration-of-growth-transformation/" },
+    { year: "2017", theme: "Transcendence", date: "February 18, 2017", venue: "MSA University, 6th of October City", desc: "Our first stage. Ten speakers from different fields explored what it means to exceed limits and think outside the box.", image: "", link: "https://www.ted.com/tedx/events/19637" },
+    { year: "", theme: "", date: "", venue: "", desc: "", image: "", link: "" },
+    { year: "", theme: "", date: "", venue: "", desc: "", image: "", link: "" }
+  ],
+  galleryHead: {
+    eyebrow: "Moments",
+    title: "Gallery",
+    lead: "Photos from our stages, our audience and our team."
+  },
+  gallery: [
+    { src: MSA + "student-activity-4.jpg", caption: "" },
+    { src: MSA + "student-activity5-1.jpg", caption: "" },
+    { src: MSA + "student-activity2-1.jpg", caption: "" },
+    { src: MSA + "student-activity3-1.jpg", caption: "" },
+    { src: MSA + "student-activity-1.jpg", caption: "" },
+    { src: "", caption: "" },
+    { src: "", caption: "" },
+    { src: "", caption: "" }
+  ],
+  videosHead: {
+    eyebrow: "Watch",
+    title: "Reels & talks",
+    lead: "Highlights from our events, straight from our Instagram."
+  },
+  videos: [
+    { url: "", title: "" },
+    { url: "", title: "" },
+    { url: "", title: "" }
+  ],
+  teamHead: {
+    eyebrow: "The people",
+    title: "Meet the team",
+    lead: "TEDxMSAUniversity is organized by a team of volunteers from MSA University. Every role below is led by people who make the event happen."
+  },
+  contact: {
+    eyebrow: "Contact",
+    heading: "Let’s talk",
+    text: "Want to speak, sponsor, volunteer or join the team? Write to us and we’ll get back to you.",
+    email: "tedx@msa.edu.eg",
+    instagram: "https://www.instagram.com/tedxmsauniversity_/",
+    facebook: "https://www.facebook.com/share/194jyepnv9/?mibextid=wwXIfr",
+    address: "MSA University – 6th of October Campus\n26 July Mehwar Road intersection with Wahat Road, 6th October City, Egypt"
+  },
+  footer: {
+    disclaimer: "This independent TEDx event is operated under license from TED."
+  }
+};
+
+var state = { site: null, roles: [] };
+var password = null, editing = false, dirty = false, loaded = false;
+
+/* ---------- utils ---------- */
+function clone(x) { return JSON.parse(JSON.stringify(x)); }
+function isObj(x) { return x && typeof x === "object" && !Array.isArray(x); }
+function merge(a, b) {
+  for (var k in b) { if (isObj(a[k]) && isObj(b[k])) merge(a[k], b[k]); else a[k] = b[k]; }
+  return a;
+}
+function newId() { return "r" + Date.now().toString(36) + Math.floor(Math.random() * 1000); }
+function safeUrl(u) { u = (u || "").trim(); return /^https?:\/\//i.test(u) ? u : ""; }
+function get(path) { return path.split(".").reduce(function (o, k) { return o == null ? o : o[k]; }, state); }
+function set(path, val) {
+  var p = path.split("."), last = p.pop();
+  var o = p.reduce(function (o, k) { return o[k]; }, state);
+  o[last] = val;
+  dirty = true; markDirty();
+}
+function touch() { dirty = true; markDirty(); render(); }
+
+function h(tag, props) {
+  var e = document.createElement(tag), kids = Array.prototype.slice.call(arguments, 2);
+  if (props) for (var k in props) {
+    var v = props[k];
+    if (k === "class") e.className = v;
+    else if (k === "on") { for (var ev in v) e.addEventListener(ev, v[ev]); }
+    else if (v !== false && v != null) e.setAttribute(k, v);
+  }
+  kids.reduce(function (a, c) { return a.concat(c); }, []).forEach(function (c) {
+    if (c == null || c === false) return;
+    e.append(c.nodeType ? c : document.createTextNode(c));
+  });
+  return e;
+}
 
 function api(path, opts) {
   opts = opts || {};
-  opts.headers = Object.assign({
-    "apikey": SB_KEY,
-    "Content-Type": "application/json"
-  }, opts.headers || {});
+  opts.headers = Object.assign({ apikey: SB_KEY, "Content-Type": "application/json" }, opts.headers || {});
   return fetch(SB_URL + "/rest/v1/" + path, opts).then(function (r) {
     return r.text().then(function (t) {
-      var j = t ? JSON.parse(t) : null;
+      var j = null; try { j = t ? JSON.parse(t) : null; } catch (e) {}
       if (!r.ok) throw new Error((j && (j.message || j.hint)) || "Request failed");
       return j;
     });
   });
 }
 
-function say(t) { document.getElementById("msg").textContent = t || ""; }
+var tt;
+function toast(m, err) {
+  var t = document.getElementById("toast");
+  t.textContent = m; t.className = "show" + (err ? " err" : "");
+  clearTimeout(tt); tt = setTimeout(function () { t.className = ""; }, 4200);
+}
 
-function newId() { return "r" + Date.now().toString(36) + Math.floor(Math.random() * 1000); }
+/* ---------- editable text ---------- */
+function readText(e) {
+  var out = "";
+  e.childNodes.forEach(function (n) {
+    if (n.nodeName === "BR") out += "\n";
+    else if (n.nodeType === 3) out += n.nodeValue;
+    else out += (out && out.slice(-1) !== "\n" ? "\n" : "") + n.textContent;
+  });
+  return out.replace(/\n+$/, "");
+}
 
-function el(tag, text) {
+function T(tag, path, cls, ph, multi) {
+  var val = get(path) || "";
+  if (!val && !editing) return null;
   var e = document.createElement(tag);
-  if (text !== undefined) e.textContent = text;
+  e.className = (cls || "") + (multi ? " pl" : "");
+  e.textContent = val;
+  if (editing) {
+    e.classList.add("ed");
+    e.setAttribute("data-ph", ph || "Click to edit");
+    try { e.contentEditable = "plaintext-only"; } catch (x) {}
+    if (e.contentEditable !== "plaintext-only") e.contentEditable = "true";
+    e.addEventListener("input", function () { set(path, readText(e)); });
+    e.addEventListener("blur", function () { if (!e.textContent.trim()) e.textContent = ""; });
+    e.addEventListener("keydown", function (ev) { if (ev.key === "Enter" && !multi) ev.preventDefault(); });
+    e.addEventListener("paste", function (ev) {
+      ev.preventDefault();
+      var t = (ev.clipboardData || window.clipboardData).getData("text");
+      document.execCommand("insertText", false, multi ? t : t.replace(/\s*\n\s*/g, " "));
+    });
+  }
   return e;
 }
 
-function button(label, fn) {
-  var b = el("button", label);
-  b.type = "button";
-  b.onclick = fn;
-  return b;
+function INP(path, label, ph) {
+  var i = h("input", { type: "text", placeholder: ph || "" });
+  i.value = get(path) || "";
+  i.addEventListener("input", function () { set(path, i.value.trim()); });
+  return h("label", { class: "fld" }, label, i);
 }
 
-function byId(id) { return roles.filter(function (r) { return r.id === id; })[0]; }
-function children(id) { return roles.filter(function (r) { return r.parent === id; }); }
+/* ---------- pictures ---------- */
+function resizeImg(file, max) {
+  return new Promise(function (res, rej) {
+    var img = new Image(), u = URL.createObjectURL(file);
+    img.onload = function () {
+      var w = img.width, ht = img.height, s = Math.min(1, max / Math.max(w, ht));
+      w = Math.round(w * s); ht = Math.round(ht * s);
+      var c = document.createElement("canvas"); c.width = w; c.height = ht;
+      c.getContext("2d").drawImage(img, 0, 0, w, ht);
+      c.toBlob(function (b) { URL.revokeObjectURL(u); b ? res(b) : rej(new Error("Could not process image")); }, "image/jpeg", 0.86);
+    };
+    img.onerror = function () { rej(new Error("That file is not an image")); };
+    img.src = u;
+  });
+}
 
+function pick(path, maxDim) {
+  var i = document.createElement("input");
+  i.type = "file"; i.accept = "image/*";
+  i.onchange = function () {
+    var f = i.files[0]; if (!f) return;
+    toast("Uploading photo…");
+    resizeImg(f, maxDim || 1600).then(function (blob) {
+      var fd = new FormData();
+      fd.append("password", password);
+      fd.append("file", blob, "photo.jpg");
+      return fetch(SB_URL + "/functions/v1/upload-media", { method: "POST", headers: { apikey: SB_KEY }, body: fd });
+    }).then(function (r) {
+      return r.json().then(function (j) { if (!r.ok) throw new Error(j.error || "Upload failed"); return j; });
+    }).then(function (j) {
+      set(path, j.url); render();
+      toast("Photo uploaded. Press Save to publish.");
+    }).catch(function (e) { toast("Upload failed: " + e.message, true); });
+  };
+  i.click();
+}
+
+function picControls(path, maxDim, label) {
+  var src = get(path);
+  return h("div", { class: "picbtns" },
+    h("button", { type: "button", class: "sm", on: { click: function () { pick(path, maxDim); } } }, (src ? "Change " : "Add ") + (label || "photo")),
+    src ? h("button", { type: "button", class: "sm danger", on: { click: function () { set(path, ""); render(); } } }, "Remove") : null);
+}
+
+function PIC(path, cls, maxDim, label) {
+  var src = get(path);
+  if (!src && !editing) return null;
+  var w = h("div", { class: "pic " + (cls || "") + (src ? "" : " empty") });
+  if (src) w.append(h("img", { src: src, alt: "", loading: "lazy" }));
+  else w.append(h("span", { class: "ph" }, "No photo yet"));
+  if (editing) w.append(picControls(path, maxDim, label));
+  return w;
+}
+
+/* ---------- list helpers ---------- */
+function move(path, i, d) {
+  var a = get(path), j = i + d;
+  if (j < 0 || j >= a.length) return;
+  var t = a[i]; a[i] = a[j]; a[j] = t; touch();
+}
+function del(path, i) { if (!confirm("Remove this item?")) return; get(path).splice(i, 1); touch(); }
+function add(path, tpl) { get(path).push(clone(tpl)); touch(); }
+function ctl(path, i) {
+  return h("div", { class: "ctl" },
+    h("button", { type: "button", class: "sm", title: "Move earlier", on: { click: function () { move(path, i, -1); } } }, "← Earlier"),
+    h("button", { type: "button", class: "sm", title: "Move later", on: { click: function () { move(path, i, 1); } } }, "Later →"),
+    h("button", { type: "button", class: "sm danger", on: { click: function () { del(path, i); } } }, "Remove"));
+}
+function addRow(path, tpl, label) {
+  return h("div", { class: "addrow" }, h("button", { type: "button", class: "btn sm line", on: { click: function () { add(path, tpl); } } }, "+ " + label));
+}
+function head(p) {
+  return h("div", { class: "head" },
+    T("p", p + ".eyebrow", "eyebrow", "Small label"),
+    T("h2", p + ".title", "", "Section title"),
+    T("p", p + ".lead", "lead", "Intro text", true));
+}
+
+/* ---------- sections ---------- */
+function logo() {
+  return h("a", { class: "logo", href: "#top" }, h("b", null, "TED"), h("sup", null, "x"), h("span", null, "MSAUniversity"));
+}
+
+function visEvents() { return state.site.events.filter(function (e) { return e.theme || e.year; }); }
+function visGallery() { return state.site.gallery.filter(function (g) { return g.src; }); }
+function embed(url) {
+  url = url || "";
+  var m = url.match(/instagram\.com\/(reel|reels|p|tv)\/([A-Za-z0-9_-]+)/i);
+  if (m) return { src: "https://www.instagram.com/" + (m[1].toLowerCase() === "p" ? "p" : "reel") + "/" + m[2] + "/embed", tall: true };
+  m = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?(?:[^#]*&)?v=|shorts\/|embed\/))([\w-]{11})/i);
+  if (m) return { src: "https://www.youtube.com/embed/" + m[1], tall: /shorts/i.test(url) };
+  return null;
+}
+function visVideos() { return state.site.videos.filter(function (v) { return embed(v.url) || safeUrl(v.url); }); }
+
+function nav() {
+  var l = [["about", "About"]];
+  if (editing || visEvents().length) l.push(["events", "Events"]);
+  if (editing || visGallery().length) l.push(["gallery", "Gallery"]);
+  if (editing || visVideos().length) l.push(["videos", "Reels"]);
+  l.push(["team", "Team"], ["contact", "Contact"]);
+  return h("nav", null, h("div", { class: "wrap navin" }, logo(),
+    h("div", { class: "links" },
+      l.map(function (x) { return h("a", { class: "lk", href: "#" + x[0] }, x[1]); }),
+      editing ? h("span", { class: "tag" }, "Editing")
+              : h("button", { class: "btn sm", type: "button", on: { click: openLogin } }, "Board login"))));
+}
+
+function ctaBtn(path, href, ghost) {
+  var e = T(editing ? "span" : "a", path, "btn" + (ghost ? " ghost" : ""), "Button text");
+  if (e && !editing) e.setAttribute("href", href);
+  return e;
+}
+
+function hero() {
+  var s = "site.hero.";
+  return h("header", { class: "hero", id: "top" },
+    get(s + "image") ? h("div", { class: "herobg" }, h("img", { src: get(s + "image"), alt: "" })) : null,
+    h("div", { class: "wrap" },
+      T("p", s + "kicker", "eyebrow", "Small line above the headline"),
+      h("h1", null, T("span", s + "title", "", "Headline"), " ", T("em", s + "accent", "", "Red words")),
+      T("p", s + "sub", "sub", "Intro sentence", true),
+      h("div", { class: "cta" }, ctaBtn(s + "cta1", "#events", false), ctaBtn(s + "cta2", "#team", true)),
+      editing ? h("div", { class: "ctl" }, picControls(s + "image", 2000, "background photo")) : null));
+}
+
+function stats() {
+  var items = [];
+  state.site.stats.forEach(function (s, i) {
+    if (!editing && !s.num) return;
+    var p = "site.stats." + i + ".";
+    items.push(h("div", { class: "stat" + (editing && !s.num ? " slot" : "") },
+      T("div", p + "num", "n", "00"), T("div", p + "label", "l", "Label"),
+      editing ? ctl("site.stats", i) : null));
+  });
+  if (!items.length && !editing) return null;
+  return h("section", { class: "stats", id: "stats" }, h("div", { class: "wrap" },
+    h("div", { class: "statgrid" }, items),
+    editing ? h("div", { style: "padding-bottom:28px" }, addRow("site.stats", { num: "", label: "" }, "Add stat")) : null));
+}
+
+function about() {
+  var s = "site.about.", img = PIC(s + "image", "tall", 1400, "photo"), cards = [];
+  state.site.about.cards.forEach(function (c, i) {
+    if (!editing && !c.title) return;
+    var p = s + "cards." + i + ".";
+    cards.push(h("div", { class: "card" + (editing && !c.title ? " slot" : "") },
+      T("h3", p + "title", "", "Card title"), T("p", p + "text", "", "Card text", true),
+      editing ? ctl(s + "cards", i) : null));
+  });
+  return h("section", { id: "about" }, h("div", { class: "wrap" },
+    h("div", { class: "about" + (img ? "" : " single") },
+      h("div", null,
+        T("p", s + "eyebrow", "eyebrow", "Small label"),
+        T("h2", s + "heading", "", "Section title"),
+        h("div", { class: "abt" }, T("p", s + "body1", "", "Paragraph", true), T("p", s + "body2", "", "Paragraph", true))),
+      img),
+    h("div", { class: "cards" }, cards),
+    editing ? addRow(s + "cards", { title: "", text: "" }, "Add card") : null));
+}
+
+function nextBand() {
+  var s = "site.next.";
+  if (!editing && !get(s + "theme")) return null;
+  var link = safeUrl(get(s + "link"));
+  var cta = T(editing ? "span" : "a", s + "cta", "btn", "Button text");
+  if (cta && !editing) { if (link) cta.setAttribute("href", link); else cta = null; }
+  return h("section", { class: "next", id: "next" }, h("div", { class: "wrap nextin" },
+    h("div", null,
+      T("div", s + "label", "lab", "Label"), T("h3", s + "theme", "", "Event theme"),
+      T("div", s + "date", "meta", "Date"), T("div", s + "venue", "meta", "Venue")),
+    h("div", null, cta, editing ? INP(s + "link", "Button link", "https://…") : null)));
+}
+
+function eventsSec() {
+  var s = "site.events", cards = [];
+  state.site.events.forEach(function (e, i) {
+    var empty = !e.theme && !e.year;
+    if (!editing && empty) return;
+    var p = s + "." + i + ".", img = PIC(p + "image", "", 1400, "photo"), link = safeUrl(e.link), more = null;
+    if (editing) more = INP(p + "link", "Link (optional)", "https://…");
+    else if (link) more = h("a", { class: "more", href: link, target: "_blank", rel: "noopener" }, "Read more →");
+    cards.push(h("article", { class: "ev" + (editing && empty ? " slot" : "") }, img,
+      h("div", { class: "body" },
+        T("div", p + "year", "yr", "Year"), T("h3", p + "theme", "", "Event theme"),
+        T("div", p + "date", "when", "Date"), T("div", p + "venue", "when", "Venue"),
+        T("p", p + "desc", "", "Short description of this event", true),
+        more, editing ? ctl(s, i) : null)));
+  });
+  if (!editing && !cards.length) return null;
+  return h("section", { class: "soft", id: "events" }, h("div", { class: "wrap" },
+    head("site.eventsHead"), h("div", { class: "grid3" }, cards),
+    editing ? addRow(s, { year: "", theme: "", date: "", venue: "", desc: "", image: "", link: "" }, "Add event") : null));
+}
+
+function gallerySec() {
+  var s = "site.gallery", figs = [];
+  state.site.gallery.forEach(function (g, i) {
+    if (!editing && !g.src) return;
+    var p = s + "." + i + ".";
+    var fig = h("figure", { class: editing && !g.src ? "slot" : "" },
+      PIC(p + "src", "", 1800, "photo"), T("figcaption", p + "caption", "", "Caption (optional)"),
+      editing ? ctl(s, i) : null);
+    if (!editing && g.src) fig.addEventListener("click", function () { openLb(g.src); });
+    figs.push(fig);
+  });
+  if (!editing && !figs.length) return null;
+  return h("section", { class: "dark", id: "gallery" }, h("div", { class: "wrap" },
+    head("site.galleryHead"), h("div", { class: "gal" }, figs),
+    editing ? addRow(s, { src: "", caption: "" }, "Add photo") : null));
+}
+
+function videosSec() {
+  var s = "site.videos", items = [];
+  state.site.videos.forEach(function (v, i) {
+    var em = embed(v.url), link = safeUrl(v.url), p = s + "." + i + ".";
+    if (!editing && !em && !link) return;
+    var body = null;
+    if (em) body = h("iframe", { src: em.src, loading: "lazy", allowfullscreen: "true", title: v.title || "Video", scrolling: "no" });
+    else if (link && !editing) body = h("a", { class: "vl", href: link, target: "_blank", rel: "noopener" }, "Watch →");
+    items.push(h("div", { class: "vid" + (em && !em.tall ? " wide" : "") + (editing && !em && !link ? " slot" : "") },
+      body, T("div", p + "title", "vt", "Title (optional)"),
+      editing ? INP(p + "url", "Instagram reel or YouTube link", "https://www.instagram.com/reel/…") : null,
+      editing ? ctl(s, i) : null));
+  });
+  if (!editing && !items.length) return null;
+  return h("section", { id: "videos" }, h("div", { class: "wrap" },
+    head("site.videosHead"), h("div", { class: "vids" }, items),
+    editing ? addRow(s, { url: "", title: "" }, "Add reel / video") : null));
+}
+
+/* ---------- team ---------- */
+function byId(id) { return state.roles.filter(function (r) { return r.id === id; })[0]; }
+function kidsOf(id) { return state.roles.filter(function (r) { return r.parent === id; }); }
 function descendants(id) {
   var out = [];
-  children(id).forEach(function (c) { out.push(c.id); out = out.concat(descendants(c.id)); });
+  kidsOf(id).forEach(function (c) { out.push(c.id); out = out.concat(descendants(c.id)); });
   return out;
 }
+function depth(r) {
+  var d = 0, c = r, seen = {};
+  while (c.parent && byId(c.parent) && !seen[c.id]) { seen[c.id] = 1; c = byId(c.parent); d++; }
+  return d;
+}
+function moveRole(r, d) {
+  var sibs = state.roles.filter(function (x) { return (x.parent || null) === (r.parent || null); });
+  var k = sibs.indexOf(r) + d;
+  if (k < 0 || k >= sibs.length) return;
+  var a = state.roles.indexOf(r), b = state.roles.indexOf(sibs[k]), t = state.roles[a];
+  state.roles[a] = state.roles[b]; state.roles[b] = t; touch();
+}
+
+function person(ri, k, pp) {
+  var path = "roles." + ri + ".people." + k;
+  var av = h("div", { class: "av" });
+  if (pp.photo) av.append(h("img", { src: pp.photo, alt: "", loading: "lazy" }));
+  else av.textContent = (pp.name || "?").trim().charAt(0).toUpperCase() || "?";
+  var w = h("div", { class: "pp" + (editing && !pp.name ? " slot" : "") }, av, T("div", path + ".name", "pn", "Full name"));
+  if (editing) w.append(h("div", { class: "ctl c" },
+    h("button", { type: "button", class: "sm", on: { click: function () { pick(path + ".photo", 600); } } }, pp.photo ? "Change photo" : "Add photo"),
+    h("button", { type: "button", class: "sm danger", on: { click: function () { del("roles." + ri + ".people", k); } } }, "✕")));
+  return w;
+}
+
+function roleCard(r) {
+  var ri = state.roles.indexOf(r), p = "roles." + ri + ".", par = r.parent && byId(r.parent), ppl = [];
+  r.people.forEach(function (pp, k) { if (!editing && !pp.name) return; ppl.push(person(ri, k, pp)); });
+  var card = h("div", { class: "role" + (editing && !r.name ? " slot" : "") },
+    T("h3", p + "name", "", "Role title"),
+    par ? h("div", { class: "rep" }, "Reports to " + (par.name || "—")) : null,
+    ppl.length ? h("div", { class: "ppl" }, ppl) : h("div", { class: "tba" }, "To be announced"));
+  if (editing) {
+    var blocked = descendants(r.id).concat([r.id]);
+    var sel = h("select", { class: "sel" },
+      h("option", { value: "" }, "Reports to: (top level)"),
+      state.roles.filter(function (o) { return blocked.indexOf(o.id) === -1; })
+        .map(function (o) { return h("option", { value: o.id }, "Reports to: " + (o.name || "(unnamed)")); }));
+    sel.value = r.parent || "";
+    sel.addEventListener("change", function () { r.parent = sel.value || null; touch(); });
+    card.append(h("div", { class: "rc" }, sel,
+      h("div", { class: "row" },
+        h("button", { type: "button", class: "sm", on: { click: function () { r.people.push({ name: "", photo: "" }); touch(); } } }, "+ Person"),
+        h("button", { type: "button", class: "sm", on: { click: function () { state.roles.push({ id: newId(), name: "", parent: r.id, people: [] }); touch(); } } }, "+ Sub-role")),
+      h("div", { class: "row" },
+        h("button", { type: "button", class: "sm", on: { click: function () { moveRole(r, -1); } } }, "← Earlier"),
+        h("button", { type: "button", class: "sm", on: { click: function () { moveRole(r, 1); } } }, "Later →"),
+        r.id !== "r1" ? h("button", { type: "button", class: "sm danger", on: { click: function () {
+          var n = descendants(r.id).length;
+          if (!confirm("Delete this role" + (n ? " and its " + n + " sub-role(s)" : "") + "?")) return;
+          var gone = descendants(r.id).concat([r.id]);
+          state.roles = state.roles.filter(function (x) { return gone.indexOf(x.id) === -1; }); touch();
+        } } }, "Delete role") : null)));
+  }
+  return card;
+}
+
+function teamSec() {
+  var levels = [];
+  state.roles.forEach(function (r) {
+    if (!editing && !r.name) return;
+    var d = depth(r); (levels[d] = levels[d] || []).push(r);
+  });
+  var rows = [];
+  levels.forEach(function (lv) {
+    if (!lv) return;
+    if (rows.length) rows.push(h("div", { class: "vline" }));
+    rows.push(h("div", { class: "level" }, lv.map(roleCard)));
+  });
+  return h("section", { class: "soft", id: "team" }, h("div", { class: "wrap" },
+    head("site.teamHead"), rows,
+    editing ? h("div", { class: "addrow" }, h("button", { type: "button", class: "btn sm line", on: { click: function () {
+      state.roles.push({ id: newId(), name: "", parent: null, people: [] }); touch();
+    } } }, "+ Add top-level role")) : null));
+}
+
+/* ---------- contact + footer ---------- */
+function contactSec() {
+  var s = "site.contact.", email = (get(s + "email") || "").replace(/[^\w@.+\-]/g, ""),
+      ig = safeUrl(get(s + "instagram")), fb = safeUrl(get(s + "facebook"));
+  return h("section", { class: "dark", id: "contact" }, h("div", { class: "wrap cgrid" },
+    h("div", null,
+      T("p", s + "eyebrow", "eyebrow", "Small label"), T("h2", s + "heading", "", "Heading"),
+      T("p", s + "text", "lead", "Text", true),
+      h("div", { class: "cta mt" },
+        email ? h("a", { class: "btn", href: "mailto:" + email }, email) : null,
+        ig ? h("a", { class: "btn ghost", href: ig, target: "_blank", rel: "noopener" }, "Instagram") : null,
+        fb ? h("a", { class: "btn ghost", href: fb, target: "_blank", rel: "noopener" }, "Facebook") : null),
+      T("p", s + "address", "addr", "Address", true),
+      editing ? h("div", { class: "fields" },
+        INP(s + "email", "Email", "name@example.com"),
+        INP(s + "instagram", "Instagram link", "https://www.instagram.com/…"),
+        INP(s + "facebook", "Facebook link", "https://www.facebook.com/…")) : null),
+    h("div", { class: "map" }, h("iframe", { src: MAP, loading: "lazy", title: "Map", referrerpolicy: "no-referrer-when-downgrade" }))));
+}
+
+function footer() {
+  return h("footer", null, h("div", { class: "wrap row" },
+    h("div", null, logo(),
+      h("p", null, "x = independently organized TED event"),
+      T("p", "site.footer.disclaimer", "", "License notice", true)),
+    h("div", null, "© " + new Date().getFullYear() + " TEDxMSAUniversity · MSA University")));
+}
+
+/* ---------- render ---------- */
+function render() {
+  var y = window.scrollY, app = document.getElementById("app");
+  app.textContent = "";
+  [nav(), hero(), stats(), about(), nextBand(), eventsSec(), gallerySec(), videosSec(), teamSec(), contactSec(), footer()]
+    .forEach(function (n) { if (n) app.append(n); });
+  renderBar();
+  window.scrollTo({ top: y, behavior: "instant" });
+}
+
+function renderBar() {
+  var b = document.getElementById("bar");
+  if (!editing) { b.hidden = true; return; }
+  b.hidden = false; b.className = dirty ? "dirty" : ""; b.textContent = "";
+  b.append(h("span", { class: "dot" }), h("span", { id: "bst" }, dirty ? "Unsaved changes" : "Board edit mode"),
+    h("button", { class: "btn sm", type: "button", on: { click: save } }, "Save"),
+    h("button", { class: "btn sm ghost", type: "button", on: { click: logout } }, "Log out"));
+}
+function markDirty() {
+  if (!editing) return;
+  var b = document.getElementById("bar"); b.className = dirty ? "dirty" : "";
+  var s = document.getElementById("bst"); if (s) s.textContent = dirty ? "Unsaved changes" : "Board edit mode";
+}
+
+/* ---------- login / save ---------- */
+function openLogin() {
+  var d = document.getElementById("login");
+  document.getElementById("pw").value = ""; document.getElementById("loginerr").textContent = "";
+  d.showModal(); document.getElementById("pw").focus();
+}
+function doLogin() {
+  var pw = document.getElementById("pw").value, err = document.getElementById("loginerr"), go = document.getElementById("loginGo");
+  if (!pw) return;
+  go.disabled = true; err.textContent = "Checking…";
+  api("rpc/verify_board", { method: "POST", body: JSON.stringify({ p: pw }) }).then(function (ok) {
+    go.disabled = false;
+    if (ok === true) {
+      password = pw; editing = true;
+      document.getElementById("login").close(); render();
+      toast("Board edit mode is on. Click any text to edit it.");
+    } else { err.textContent = "Wrong password."; document.getElementById("pw").value = ""; }
+  }).catch(function (e) { go.disabled = false; err.textContent = "Error: " + e.message; });
+}
+function logout() {
+  if (dirty && !confirm("You have unsaved changes. Log out and discard them?")) return;
+  password = null; editing = false;
+  if (dirty) { dirty = false; load(); } else render();
+}
+function save() {
+  if (!loaded) { toast("Content did not load. Refresh the page before saving.", true); return; }
+  toast("Saving…");
+  api("rpc/save_hierarchy", { method: "POST", body: JSON.stringify({ p: password, d: { roles: state.roles, site: state.site } }) })
+    .then(function () { dirty = false; markDirty(); toast("Saved. Your changes are live."); })
+    .catch(function (e) { toast("Save failed: " + e.message, true); });
+}
+
+/* ---------- lightbox ---------- */
+function openLb(src) { var d = document.getElementById("lb"); d.querySelector("img").src = src; d.showModal(); }
+document.getElementById("lb").addEventListener("click", function () { this.close(); });
+document.getElementById("loginGo").addEventListener("click", doLogin);
+document.getElementById("loginCancel").addEventListener("click", function () { document.getElementById("login").close(); });
+document.getElementById("pw").addEventListener("keydown", function (e) { if (e.key === "Enter") doLogin(); });
 
 /* ---------- load ---------- */
-function load() {
-  say("Loading...");
-  api("team_hierarchy?id=eq.1&select=data").then(function (rows) {
-    roles = (rows[0] && rows[0].data && rows[0].data.roles) || [];
-    dirty = false;
-    say("");
-    render();
-  }).catch(function (e) { say("Could not load: " + e.message); });
-}
-
-/* ---------- top bar ---------- */
-function renderBar() {
-  var bar = document.getElementById("bar");
-  bar.innerHTML = "";
-  if (!editing) {
-    bar.appendChild(button("Board login", showLogin));
-  } else {
-    bar.appendChild(el("b", "Board mode. "));
-    bar.appendChild(button("Add top-level role", function () {
-      roles.push({ id: newId(), name: "New role", parent: null, people: [] });
-      dirty = true; render();
-    }));
-    bar.appendChild(document.createTextNode(" "));
-    bar.appendChild(button("Save", save));
-    bar.appendChild(document.createTextNode(" "));
-    bar.appendChild(button("Log out", logout));
-  }
-}
-
-function showLogin() {
-  var bar = document.getElementById("bar");
-  bar.innerHTML = "";
-  var form = el("div");
-  var input = el("input");
-  input.type = "password";
-  input.placeholder = "Board password";
-  input.autocomplete = "current-password";
-  input.onkeydown = function (e) { if (e.key === "Enter") go(); };
-  function go() {
-    var p = input.value;
-    if (!p) return;
-    say("Checking...");
-    api("rpc/verify_board", { method: "POST", body: JSON.stringify({ p: p }) })
-      .then(function (ok) {
-        if (ok === true) { password = p; editing = true; say("Logged in."); render(); }
-        else { say("Wrong password."); input.value = ""; input.focus(); }
+function init(d) {
+  state.site = merge(clone(DEFAULTS), d.site || {});
+  var r = d.roles && d.roles.length ? d.roles : [{ id: "r1", name: "President", parent: null, people: [] }];
+  state.roles = r.map(function (x) {
+    return {
+      id: x.id || newId(), name: x.name || "", parent: x.parent || null,
+      people: (x.people || []).map(function (p) {
+        return typeof p === "string" ? { name: p, photo: "" } : { name: p.name || "", photo: p.photo || "" };
       })
-      .catch(function (e) { say("Error: " + e.message); });
-  }
-  form.appendChild(input);
-  form.appendChild(document.createTextNode(" "));
-  form.appendChild(button("Enter", go));
-  form.appendChild(document.createTextNode(" "));
-  form.appendChild(button("Cancel", function () { say(""); render(); }));
-  bar.appendChild(form);
-  input.focus();
-}
-
-function logout() {
-  if (dirty && !confirm("You have unsaved changes. Log out anyway?")) return;
-  password = null; editing = false;
-  if (dirty) { load(); } else { render(); }
-  say("");
-}
-
-/* ---------- save ---------- */
-function save() {
-  say("Saving...");
-  api("rpc/save_hierarchy", {
-    method: "POST",
-    body: JSON.stringify({ p: password, d: { roles: roles } })
-  }).then(function () {
-    dirty = false;
-    say("Saved.");
-  }).catch(function (e) { say("Save failed: " + e.message); });
-}
-
-/* ---------- tree ---------- */
-function render() {
-  renderBar();
-  var tree = document.getElementById("tree");
-  tree.innerHTML = "";
-  var tops = roles.filter(function (r) { return !r.parent || !byId(r.parent); });
-  if (!tops.length) { tree.textContent = "No roles yet."; return; }
-  var ul = el("ul");
-  tops.forEach(function (r) { ul.appendChild(node(r)); });
-  tree.appendChild(ul);
-}
-
-function node(r) {
-  var li = el("li");
-  if (!editing) {
-    li.appendChild(el("b", r.name));
-    if (r.people && r.people.length) {
-      var pl = el("ul");
-      r.people.forEach(function (p) { pl.appendChild(el("li", p)); });
-      li.appendChild(pl);
-    }
-  } else {
-    var name = el("input");
-    name.value = r.name;
-    name.placeholder = "Role name";
-    name.oninput = function () { r.name = name.value; dirty = true; };
-    li.appendChild(name);
-
-    li.appendChild(document.createTextNode(" Reports to: "));
-    var sel = el("select");
-    var blocked = descendants(r.id).concat([r.id]);
-    var none = el("option", "(top level)"); none.value = ""; sel.appendChild(none);
-    roles.forEach(function (o) {
-      if (blocked.indexOf(o.id) !== -1) return;
-      var opt = el("option", o.name); opt.value = o.id; sel.appendChild(opt);
-    });
-    sel.value = r.parent || "";
-    sel.onchange = function () { r.parent = sel.value || null; dirty = true; render(); };
-    li.appendChild(sel);
-
-    li.appendChild(document.createTextNode(" "));
-    li.appendChild(button("Add sub-role", function () {
-      roles.push({ id: newId(), name: "New role", parent: r.id, people: [] });
-      dirty = true; render();
-    }));
-    if (r.id !== "r1") {
-      li.appendChild(document.createTextNode(" "));
-      li.appendChild(button("Delete", function () {
-        var n = descendants(r.id).length;
-        var m = "Delete \"" + r.name + "\"" + (n ? " and its " + n + " sub-role(s)" : "") + "?";
-        if (!confirm(m)) return;
-        var gone = descendants(r.id).concat([r.id]);
-        roles = roles.filter(function (x) { return gone.indexOf(x.id) === -1; });
-        dirty = true; render();
-      }));
-    }
-
-    li.appendChild(el("br"));
-    li.appendChild(document.createTextNode("People (one per line):"));
-    li.appendChild(el("br"));
-    var ta = el("textarea");
-    ta.rows = Math.max(2, (r.people || []).length + 1);
-    ta.cols = 30;
-    ta.value = (r.people || []).join("\n");
-    ta.oninput = function () {
-      r.people = ta.value.split("\n").map(function (s) { return s.trim(); }).filter(Boolean);
-      dirty = true;
     };
-    li.appendChild(ta);
-  }
-
-  var kids = children(r.id);
-  if (kids.length) {
-    var ul = el("ul");
-    kids.forEach(function (k) { ul.appendChild(node(k)); });
-    li.appendChild(ul);
-  }
-  return li;
+  });
 }
-
-window.onbeforeunload = function () { return dirty ? "Unsaved changes" : undefined; };
-
+function load() {
+  api("team_hierarchy?id=eq.1&select=data").then(function (rows) {
+    init((rows[0] && rows[0].data) || {}); loaded = true; dirty = false; render();
+  }).catch(function (e) {
+    init({}); loaded = false; render(); toast("Could not load saved content: " + e.message, true);
+  });
+}
+window.onbeforeunload = function () { return dirty ? "You have unsaved changes." : undefined; };
 load();
+})();
 </script>
-
 </body>
 </html>
