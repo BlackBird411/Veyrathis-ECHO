@@ -100,6 +100,25 @@ nav{position:sticky;top:0;z-index:50;background:rgba(10,10,10,.93);backdrop-filt
 .next .btn:hover{background:#111;color:#fff;border-color:#111}
 .next .fld{color:#fff}
 
+/* announcements */
+.abar{background:var(--red);color:#fff;font-size:14px}
+.abarin{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;text-align:center;position:relative;padding:9px 44px}
+.abtag{background:#fff;color:var(--red);font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;padding:2px 8px;border-radius:2px}
+.abtx{font-weight:600}
+.abar a{color:#fff;font-weight:700;text-decoration:underline}
+.abx{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:0;color:#fff;font-size:22px;line-height:1;cursor:pointer;padding:4px 8px}
+.ann{background:#fff;border:1px solid #e6e6e6;border-top:4px solid var(--red);display:flex;flex-direction:column}
+.ann .pic{aspect-ratio:16/10}
+.ann .body{padding:24px;display:flex;flex-direction:column;align-items:flex-start;gap:10px;flex:1}
+.ann .body>div{align-self:stretch}
+.ann h3{font-size:26px;letter-spacing:-.02em}
+.ann p{margin:0;color:#444;font-size:16px}
+.ann .body>a.btn{margin-top:auto}
+.annmeta{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.atag{background:var(--red);color:#fff;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:3px 8px;border-radius:2px}
+.adate{color:#777;font-size:13px}
+.ck{display:flex;gap:8px;align-items:center;font-size:13px;margin:10px 0;color:#444;cursor:pointer}
+
 /* events */
 .grid3{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:28px}
 .ev{background:#fff;border:1px solid #e6e6e6;border-top:4px solid var(--red);display:flex;flex-direction:column}
@@ -325,6 +344,12 @@ var DEFAULTS = {
     cta: "Follow for updates",
     link: "https://www.instagram.com/tedxmsauniversity_/"
   },
+  announceHead: {
+    eyebrow: "Stay in the loop",
+    title: "Announcements",
+    lead: "The latest news about our upcoming events, speakers and ways to get involved."
+  },
+  announcements: [],
   eventsHead: {
     eyebrow: "Our story",
     title: "Past events",
@@ -777,6 +802,7 @@ function videoEditor(v, p) {
 
 function nav() {
   var l = [["about", "About"]];
+  if (editing || state.site.announcements.some(function (a) { return a.title; })) l.push(["announcements", "News"]);
   if (editing || visEvents().length) l.push(["events", "Events"]);
   if (editing || visGallery().length) l.push(["gallery", "Gallery"]);
   if (editing || visVideos().length) l.push(["videos", "Reels"]);
@@ -852,6 +878,59 @@ function nextBand() {
       T("div", s + "label", "lab", "Label"), T("h3", s + "theme", "", "Event theme"),
       T("div", s + "date", "meta", "Date"), T("div", s + "venue", "meta", "Venue")),
     h("div", null, cta, editing ? INP(s + "link", "Button link", "https://…") : null)));
+}
+
+/* ---------- announcements ---------- */
+var ANN_TPL = { tag: "Announcement", date: "", title: "", text: "", image: "", cta: "", link: "", banner: false };
+function CK(item, key, label) {
+  var i = h("input", { type: "checkbox" });
+  i.checked = !!item[key];
+  i.addEventListener("change", function () { item[key] = i.checked; dirty = true; markDirty(); render(); });
+  return h("label", { class: "ck" }, i, label);
+}
+function annBanner() { return state.site.announcements.filter(function (a) { return a.title && a.banner; })[0]; }
+
+function announceBar() {
+  var a = annBanner(); if (!a) return null;
+  var key = "tedx-bar:" + a.title, gone = false;
+  if (!editing) { try { gone = sessionStorage.getItem(key) === "1"; } catch (e) {} }
+  if (gone) return null;
+  var link = safeUrl(a.link), ext = !!link;
+  var bar = h("div", { class: "abar" }, h("div", { class: "wrap abarin" },
+    a.tag ? h("span", { class: "abtag" }, a.tag) : null,
+    h("span", { class: "abtx" }, a.title),
+    h("a", { href: link || "#announcements", target: ext ? "_blank" : null, rel: ext ? "noopener" : null }, (a.cta || "Learn more") + " →"),
+    editing ? null : h("button", { class: "abx", type: "button", "aria-label": "Dismiss", on: { click: function () {
+      try { sessionStorage.setItem(key, "1"); } catch (e) {}
+      bar.remove();
+    } } }, "×")));
+  return bar;
+}
+
+function announcementsSec() {
+  var s = "site.announcements", cards = [];
+  state.site.announcements.forEach(function (a, i) {
+    var empty = !a.title;
+    if (!editing && empty) return;
+    var p = s + "." + i + ".", img = PIC(p + "image", "", 1400, "image", 1.6), link = safeUrl(a.link), act = null;
+    if (editing) act = h("div", null,
+      INP(p + "cta", "Button text (optional)", "Get tickets"),
+      INP(p + "link", "Button link (optional)", "https://…"),
+      CK(a, "banner", "Show in the banner at the top of the site"));
+    else if (link) act = h("a", { class: "btn sm", href: link, target: "_blank", rel: "noopener" }, a.cta || "Learn more");
+    cards.push(h("article", { class: "ann" + (editing && empty ? " slot" : "") }, img,
+      h("div", { class: "body" },
+        h("div", { class: "annmeta" }, T("span", p + "tag", "atag", "Label"), T("span", p + "date", "adate", "Date")),
+        T("h3", p + "title", "", "Headline"),
+        T("p", p + "text", "", "Details", true),
+        act, editing ? ctl(s, i) : null)));
+  });
+  if (!editing && !cards.length) return null;
+  return h("section", { id: "announcements" }, h("div", { class: "wrap" },
+    head("site.announceHead"), h("div", { class: "grid3" }, cards),
+    editing ? h("div", { class: "addrow" }, h("button", { type: "button", class: "btn sm line", on: { click: function () {
+      state.site.announcements.unshift(clone(ANN_TPL)); touch();
+    } } }, "+ New announcement")) : null));
 }
 
 function eventsSec() {
@@ -1100,7 +1179,7 @@ function footer() {
 function render() {
   var y = window.scrollY, app = document.getElementById("app");
   app.textContent = "";
-  [nav(), hero(), stats(), about(), nextBand(), eventsSec(), gallerySec(), videosSec(), teamSec(), contactSec(), footer()]
+  [announceBar(), nav(), hero(), stats(), about(), nextBand(), announcementsSec(), eventsSec(), gallerySec(), videosSec(), teamSec(), contactSec(), footer()]
     .forEach(function (n) { if (n) app.append(n); });
   renderBar();
   fitTree();
