@@ -119,7 +119,13 @@ nav{position:sticky;top:0;z-index:50;background:rgba(10,10,10,.93);backdrop-filt
 .vids{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:28px}
 .vid iframe{width:100%;height:540px;border:0;background:#000}
 .vid.wide iframe{height:auto;aspect-ratio:16/9}
+.vid video{display:block;width:100%;max-height:560px;background:#000;object-fit:contain}
 .vid .vt{font-weight:700;margin-top:10px}
+.vup{margin:10px 0;padding:12px;border:1px dashed #bbb;background:#fafafa}
+.vup .note{font-size:12px;color:#666;margin:8px 0 0}
+.vup .bar{height:8px;background:#e6e6e6;border-radius:4px;overflow:hidden;margin-top:8px}
+.vup .bar i{display:block;height:100%;width:0;background:var(--red);transition:width .15s}
+.vup .tx{font-size:12px;color:#444;margin-top:6px}
 .vid a.vl{display:block;padding:28px;background:#111;color:#fff;text-decoration:none;font-weight:700}
 
 /* team */
@@ -680,7 +686,91 @@ function embed(url) {
   if (m) return { src: "https://www.youtube.com/embed/" + m[1], tall: /shorts/i.test(url) };
   return null;
 }
+function isFileVideo(url) { return /\.(mp4|webm|mov)(\?|#|$)/i.test(url || "") && !!safeUrl(url); }
 function visVideos() { return state.site.videos.filter(function (v) { return embed(v.url) || safeUrl(v.url); }); }
+
+/* ---------- video upload (straight to storage via a signed URL) ---------- */
+var VID_TYPES = { mp4: "video/mp4", webm: "video/webm", mov: "video/quicktime" };
+var VID_MAX = 50 * 1024 * 1024;
+var vidBusy = new WeakMap();   // video item -> { pct, el, tx }  (kept out of saved data)
+var vidCount = 0;
+
+function vidType(f) {
+  if (VID_TYPES[(f.name.split(".").pop() || "").toLowerCase()] && !/^video\//.test(f.type)) return VID_TYPES[f.name.split(".").pop().toLowerCase()];
+  return f.type || VID_TYPES[(f.name.split(".").pop() || "").toLowerCase()] || "";
+}
+function vidProgress(v, pct, text) {
+  var b = vidBusy.get(v); if (!b) return;
+  b.pct = pct; b.text = text || b.text;
+  if (b.bar) b.bar.style.width = pct + "%";
+  if (b.tx) b.tx.textContent = b.text;
+}
+function uploadVideo(v, file) {
+  var type = vidType(file);
+  if (["video/mp4", "video/webm", "video/quicktime"].indexOf(type) === -1) { toast("Only MP4, WEBM or MOV videos", true); return; }
+  if (file.size > VID_MAX) { toast("That video is " + Math.round(file.size / 1048576) + " MB. The limit is 50 MB. Compress or trim it and try again.", true); return; }
+  if (vidBusy.has(v)) return;
+  vidBusy.set(v, { pct: 0, text: "Preparing upload…" }); vidCount++;
+  render();
+  fetch(SB_URL + "/functions/v1/upload-media", {
+    method: "POST",
+    headers: { apikey: SB_KEY, "Content-Type": "application/json" },
+    body: JSON.stringify({ password: password, action: "sign", type: type })
+  }).then(function (r) {
+    return r.json().then(function (j) { if (!r.ok) throw new Error(j.error || "Could not start upload"); return j; });
+  }).then(function (j) {
+    return new Promise(function (resolve, reject) {
+      var fd = new FormData();
+      fd.append("cacheControl", "31536000");
+      fd.append("", new Blob([file], { type: type }), file.name);
+      var x = new XMLHttpRequest();
+      x.open("PUT", j.uploadUrl);
+      x.setRequestHeader("apikey", SB_KEY);
+      x.setRequestHeader("x-upsert", "false");
+      x.upload.onprogress = function (e) {
+        if (!e.lengthComputable) return;
+        var p = Math.round(e.loaded / e.total * 100);
+        vidProgress(v, p, "Uploading… " + p + "% (" + Math.round(e.loaded / 1048576) + " / " + Math.round(e.total / 1048576) + " MB)");
+      };
+      x.onload = function () {
+        if (x.status >= 200 && x.status < 300) return resolve(j.publicUrl);
+        var m = ""; try { var b = JSON.parse(x.responseText); m = b.message || b.error || ""; } catch (e) {}
+        reject(new Error(m || ("Upload failed (" + x.status + ")")));
+      };
+      x.onerror = function () { reject(new Error("Network error during upload")); };
+      x.onabort = function () { reject(new Error("Upload cancelled")); };
+      x.send(fd);
+    });
+  }).then(function (url) {
+    vidBusy.delete(v); vidCount--;
+    v.url = url; dirty = true; render();
+    toast("Video uploaded. Press Save to publish.");
+  }).catch(function (e) {
+    vidBusy.delete(v); vidCount--;
+    render(); toast("Video upload failed: " + e.message, true);
+  });
+}
+function pickVideo(v) {
+  var i = document.createElement("input");
+  i.type = "file"; i.accept = "video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov";
+  i.onchange = function () { var f = i.files[0]; if (f) uploadVideo(v, f); };
+  i.click();
+}
+function videoEditor(v, p) {
+  var busy = vidBusy.get(v), fileVid = isFileVideo(v.url), box = h("div", { class: "vup" });
+  if (busy) {
+    busy.bar = h("i", { style: "width:" + busy.pct + "%" });
+    busy.tx = h("div", { class: "tx" }, busy.text || "Uploading…");
+    box.append(h("div", { class: "bar" }, busy.bar), busy.tx);
+    return box;
+  }
+  box.append(h("div", { class: "ctl", style: "margin-top:0" },
+    h("button", { type: "button", class: "sm", on: { click: function () { pickVideo(v); } } }, fileVid ? "Replace video" : "Upload video"),
+    fileVid ? h("button", { type: "button", class: "sm danger", on: { click: function () { v.url = ""; touch(); } } }, "Remove video") : null));
+  box.append(h("div", { class: "note" }, "MP4, WEBM or MOV, up to 50 MB. Shorter, compressed clips load faster."));
+  if (!fileVid) box.append(INP(p + "url", "…or paste an Instagram reel / YouTube link", "https://www.instagram.com/reel/…"));
+  return box;
+}
 
 function nav() {
   var l = [["about", "About"]];
@@ -802,15 +892,16 @@ function gallerySec() {
 function videosSec() {
   var s = "site.videos", items = [];
   state.site.videos.forEach(function (v, i) {
-    var em = embed(v.url), link = safeUrl(v.url), p = s + "." + i + ".";
+    var em = embed(v.url), link = safeUrl(v.url), p = s + "." + i + ".", file = isFileVideo(v.url);
     if (!editing && !em && !link) return;
     var body = null;
     if (em) body = h("iframe", { src: em.src, loading: "lazy", allowfullscreen: "true", title: v.title || "Video", scrolling: "no" });
+    else if (file) body = h("video", { src: link + "#t=0.1", controls: "", playsinline: "", preload: "metadata", title: v.title || "Video" });
     else if (link && !editing) body = h("a", { class: "vl", href: link, target: "_blank", rel: "noopener" }, "Watch →");
-    items.push(h("div", { class: "vid" + (em && !em.tall ? " wide" : "") + (editing && !em && !link ? " slot" : "") },
+    items.push(h("div", { class: "vid" + (em && !em.tall ? " wide" : "") + (editing && !em && !link && !vidBusy.has(v) ? " slot" : "") },
       body, T("div", p + "title", "vt", "Title (optional)"),
-      editing ? INP(p + "url", "Instagram reel or YouTube link", "https://www.instagram.com/reel/…") : null,
-      editing ? ctl(s, i) : null));
+      editing ? videoEditor(v, p) : null,
+      editing && !vidBusy.has(v) ? ctl(s, i) : null));
   });
   if (!editing && !items.length) return null;
   return h("section", { id: "videos" }, h("div", { class: "wrap" },
@@ -1039,7 +1130,7 @@ function load() {
   });
 }
 wireCropper();
-window.onbeforeunload = function () { return dirty ? "You have unsaved changes." : undefined; };
+window.onbeforeunload = function () { return (dirty || vidCount > 0) ? "You have unsaved changes or an upload in progress." : undefined; };
 load();
 })();
 </script>
