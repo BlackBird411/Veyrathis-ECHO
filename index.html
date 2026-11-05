@@ -420,7 +420,24 @@ dialog .err{color:var(--red);font-size:14px;min-height:20px;margin:0 0 10px}
     <button class="btn line" id="ccancel" type="button">Cancel</button>
   </div>
 </dialog>
-
+/* countdowns */
+.cd{display:inline-flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+.cd .cdu{display:flex;flex-direction:column;align-items:center;min-width:64px;padding:10px 8px;background:rgba(0,0,0,.07);border-radius:4px}
+.cd .cdu b{font-size:28px;font-weight:800;line-height:1;font-variant-numeric:tabular-nums}
+.cd .cdu i{font-style:normal;font-size:11px;letter-spacing:.1em;text-transform:uppercase;margin-top:6px;opacity:.75}
+.cd.cdc{display:inline;margin:0;font-weight:800;font-variant-numeric:tabular-nums}
+.cd.cdend{font-weight:700}
+.cdl{font-size:13px;color:#666;margin-top:6px}
+.next .cd{margin-top:20px}
+.next .cd .cdu{background:rgba(255,255,255,.18)}
+.next .cd .cdu b{font-size:clamp(28px,4vw,44px)}
+.hero .cd{margin:-14px 0 36px}
+.hero .cd .cdu{background:rgba(255,255,255,.1)}
+.stat .n .cd{display:flex;gap:6px;flex-wrap:nowrap;margin:0}
+.stat .cd .cdu{min-width:0;flex:1;padding:6px 4px;background:rgba(255,255,255,.07)}
+.stat .cd .cdu b{font-size:clamp(20px,2.4vw,30px);color:var(--red)}
+.stat .fld{color:#bdbdbd;font-size:12px}
+#annpop .cd{margin:0 0 22px}
 <script>
 (function () {
 "use strict";
@@ -966,7 +983,55 @@ function ctaBtn(path, href, ghost) {
   if (e && !editing) e.setAttribute("href", href);
   return e;
 }
-
+/* ---------- countdowns ---------- */
+var TZ = "Africa/Cairo";   // time zone the event times are typed in (so everyone sees the same moment)
+var cdFmt = new Intl.DateTimeFormat("en-US", { timeZone: TZ, hourCycle: "h23", year: "numeric", month: "numeric", day: "numeric", hour: "numeric", minute: "numeric", second: "numeric" });
+function tzOff(ts) {
+  var p = {};
+  cdFmt.formatToParts(new Date(ts)).forEach(function (x) { p[x.type] = +x.value; });
+  return Date.UTC(p.year, p.month - 1, p.day, p.hour, p.minute, p.second) - Math.floor(ts / 1000) * 1000;
+}
+function cdTime(s) {   // "2026-12-05T18:00" typed in event time -> real timestamp, or NaN
+  var m = /^(\d{4})-(\d\d)-(\d\d)T(\d\d):(\d\d)/.exec(s || "");
+  if (!m) return NaN;
+  var g = Date.UTC(+m[1], m[2] - 1, +m[3], +m[4], +m[5]);
+  return g - tzOff(g - tzOff(g));
+}
+function pad2(n) { return n < 10 ? "0" + n : "" + n; }
+function cdEl(str, o) {   // o: { compact, done, rerender }
+  o = o || {};
+  var t = cdTime(str);
+  if (isNaN(t)) return null;
+  var e = h("span", { class: "cd" + (o.compact ? " cdc" : ""), "data-t": t, "data-done": o.done || "Started" });
+  if (o.rerender) e.setAttribute("data-rr", "1");
+  if (!o.compact) ["Days", "Hours", "Min", "Sec"].forEach(function (u) {
+    e.append(h("span", { class: "cdu" }, h("b", null, "00"), h("i", null, u)));
+  });
+  cdTick(e);
+  return e;
+}
+function cdTick(e) {
+  if (e.getAttribute("data-fin") === "1") return;
+  var ms = +e.getAttribute("data-t") - Date.now();
+  if (ms <= 0) {
+    e.setAttribute("data-fin", "1");
+    e.textContent = e.getAttribute("data-done");
+    e.classList.add("cdend");
+    if (e.getAttribute("data-live") === "1" && e.hasAttribute("data-rr") && !editing) render();
+    return;
+  }
+  e.setAttribute("data-live", "1");
+  var s = Math.floor(ms / 1000), d = Math.floor(s / 86400), hh = Math.floor(s % 86400 / 3600), mm = Math.floor(s % 3600 / 60), ss = s % 60;
+  if (e.classList.contains("cdc")) { e.textContent = (d ? d + "d " : "") + pad2(hh) + "h " + pad2(mm) + "m " + pad2(ss) + "s"; return; }
+  var b = e.querySelectorAll("b");
+  b[0].textContent = d; b[1].textContent = pad2(hh); b[2].textContent = pad2(mm); b[3].textContent = pad2(ss);
+}
+setInterval(function () { document.querySelectorAll(".cd").forEach(cdTick); }, 1000);
+function CDI(path, label) {   // board editor: date and time picker
+  var l = INP(path, label || "Countdown to (event time, Cairo)", "", "datetime-local");
+  l.querySelector("input").addEventListener("change", function () { render(); });
+  return l;
+}
 function hero() {
   var s = "site.hero.";
   return h("header", { class: "hero", id: "top" },
@@ -974,18 +1039,23 @@ function hero() {
     h("div", { class: "wrap" },
       T("p", s + "kicker", "eyebrow", "Small line above the headline"),
       h("h1", null, T("span", s + "title", "", "Headline"), " ", T("em", s + "accent", "", "Red words")),
-      T("p", s + "sub", "sub", "Intro sentence", true),
+          T("p", s + "sub", "sub", "Intro sentence", true),
+      cdEl(get(s + "cd"), { done: "Happening now" }),
+      editing ? CDI(s + "cd") : null,
       h("div", { class: "cta" }, ctaBtn(s + "cta1", "#events", false), ctaBtn(s + "cta2", "#team", true)),
       editing ? h("div", { class: "ctl" }, picControls(s + "image", 2000, "background photo", 16 / 9)) : null));
 }
 
 function stats() {
   var items = [];
-  state.site.stats.forEach(function (s, i) {
-    if (!editing && !s.num) return;
+   state.site.stats.forEach(function (s, i) {
+    var hasCd = !isNaN(cdTime(s.cd));
+    if (!editing && !s.num && !hasCd) return;
     var p = "site.stats." + i + ".";
-    items.push(h("div", { class: "stat" + (editing && !s.num ? " slot" : "") },
-      T("div", p + "num", "n", "00"), T("div", p + "label", "l", "Label"),
+    items.push(h("div", { class: "stat" + (editing && !s.num && !hasCd ? " slot" : "") },
+      hasCd ? h("div", { class: "n" }, cdEl(s.cd, { done: "Now" })) : T("div", p + "num", "n", "00"),
+      T("div", p + "label", "l", "Label"),
+      editing ? CDI(p + "cd", "Or show a countdown instead (event time)") : null,
       editing ? ctl("site.stats", i) : null));
   });
   if (!items.length && !editing) return null;
@@ -1023,7 +1093,9 @@ function nextBand() {
   return h("section", { class: "next", id: "next" }, h("div", { class: "wrap nextin" },
     h("div", null,
       T("div", s + "label", "lab", "Label"), T("h3", s + "theme", "", "Event theme"),
-      T("div", s + "date", "meta", "Date"), T("div", s + "venue", "meta", "Venue")),
+       T("div", s + "date", "meta", "Date"), T("div", s + "venue", "meta", "Venue"),
+      cdEl(get(s + "cd"), { done: "It’s happening now!" }),
+      editing ? CDI(s + "cd") : null),
     h("div", null, cta, editing ? INP(s + "link", "Button link", "https://…") : null)));
 }
 
@@ -1104,7 +1176,8 @@ function drawPop() {
     h("div", { class: "pbody" },
       h("div", { class: "annmeta" }, a.tag ? h("span", { class: "atag" }, a.tag) : null, a.date ? h("span", { class: "adate" }, a.date) : null),
       h("h3", null, a.title),
-      a.text ? h("p", { class: "pl" }, a.text) : null,
+         a.text ? h("p", { class: "pl" }, a.text) : null,
+      cdEl(a.cd, { done: "Started" }),
       h("div", { class: "cta" },
        link ? h("a", annAttrs(link, true, "btn"), a.cta || "Learn more")
              : h("button", { class: "btn", type: "button", on: { click: function () { $id("annpop").close(); } } }, "Got it"),
@@ -1135,7 +1208,8 @@ function announceBar() {
   var link = annLink(a.link);
   var bar = h("div", { class: "abar" }, h("div", { class: "wrap abarin" },
     a.tag ? h("span", { class: "abtag" }, a.tag) : null,
-    h("span", { class: "abtx" }, a.title),
+       h("span", { class: "abtx" }, a.title),
+    cdEl(a.cd, { compact: true, done: "Started" }),
     h("a", link ? annAttrs(link, false) : { href: "#announcements" }, (a.cta || "Learn more") + " →"),
     editing ? null : h("button", { class: "abx", type: "button", "aria-label": "Dismiss", on: { click: function () {
       try { sessionStorage.setItem(key, "1"); } catch (e) {}
@@ -1153,6 +1227,7 @@ function announcementsSec() {
     if (editing) act = h("div", null,
       INP(p + "cta", "Button text (optional)", "Get tickets"),
      INP(p + "link", "Button link (optional): https://… or #register (opens the form), #registration, #events, #team", "#register"),
+           CDI(p + "cd", "Countdown to (optional, Cairo time)"),
       CK(a, "popup", "Show as a pop-up when visitors arrive", true),
       CK(a, "banner", "Show in the banner at the top of the site"));
     else if (link) act = h("a", annAttrs(link, false, "btn sm"), a.cta || "Learn more");
@@ -1160,7 +1235,8 @@ function announcementsSec() {
       h("div", { class: "body" },
         h("div", { class: "annmeta" }, T("span", p + "tag", "atag", "Label"), T("span", p + "date", "adate", "Date")),
         T("h3", p + "title", "", "Headline"),
-        T("p", p + "text", "", "Details", true),
+               T("p", p + "text", "", "Details", true),
+        cdEl(a.cd, { done: "Started" }),
         act, editing ? ctl(s, i) : null)));
   });
   if (!editing && !cards.length) return null;
@@ -1179,13 +1255,14 @@ function eventsSec() {
     var empty = !e.theme && !e.year;
     if (!editing && empty) return;
     var p = s + "." + i + ".", img = PIC(p + "image", "", 1400, "photo", 1.6), link = safeUrl(e.link), more = null;
-    if (editing) more = INP(p + "link", "Link (optional)", "https://…");
+    if (editing) more = h("div", null, INP(p + "link", "Link (optional)", "https://…"), CDI(p + "cd", "Countdown to (optional)"));
     else if (link) more = h("a", { class: "more", href: link, target: "_blank", rel: "noopener" }, "Read more →");
     cards.push(h("article", { class: "ev" + (editing && empty ? " slot" : "") }, img,
       h("div", { class: "body" },
         T("div", p + "year", "yr", "Year"), T("h3", p + "theme", "", "Event theme"),
         T("div", p + "date", "when", "Date"), T("div", p + "venue", "when", "Venue"),
-        T("p", p + "desc", "", "Short description of this event", true),
+              T("p", p + "desc", "", "Short description of this event", true),
+        cdEl(e.cd, { done: "Happening now" }),
         more, editing ? ctl(s, i) : null)));
   });
   if (!editing && !cards.length) return null;
@@ -1578,7 +1655,7 @@ function regSec() {
   var s = "site.registrations", cards = [];
   state.site.registrations.forEach(function (f, i) {
     if (!editing && !f.title) return;
-    var p = s + "." + i + ".", open = f.open !== false;
+    var p = s + "." + i + ".", late = cdTime(f.closes) <= Date.now(), open = f.open !== false && !late;
     var btn = h("button", { class: "btn", type: "button", disabled: open ? null : "disabled", on: { click: function () { openReg(f); } } },
       open ? (f.button || "Register") : "Registration closed");
     var adm = null;
@@ -1587,7 +1664,8 @@ function regSec() {
         h("button", { type: "button", class: "btn sm" + (open ? " line" : ""), on: { click: function () { f.open = !open; touch(); } } }, open ? "Close registration" : "Open registration"),
         h("button", { type: "button", class: "btn sm line", on: { click: function () { openResponses(f); } } }, "View responses")),
       INP(p + "button", "Button text", "Register"),
-      INP(p + "thanks", "Message shown after registering", ""),
+           INP(p + "thanks", "Message shown after registering", ""),
+      CDI(p + "closes", "Registration closes automatically at (Cairo time). Clear it to reopen."),
       h("details", { class: "rfields", open: "open" },
         h("summary", null, "Questions (" + f.fields.length + ")"),
         f.fields.map(function (q, qi) { return fieldEditor(s + "." + i + ".fields", f, qi); }),
@@ -1599,7 +1677,8 @@ function regSec() {
       h("div", { class: "rmeta" }, h("span", { class: "pill " + (open ? "ok" : "no") }, open ? "Open" : "Closed")),
       T("h3", p + "title", "", "Form title, e.g. Attendee registration"),
       T("div", p + "when", "when", "Date or deadline (optional)"),
-      T("p", p + "desc", "", "Short description", true),
+          T("p", p + "desc", "", "Short description", true),
+      open && !isNaN(cdTime(f.closes)) ? h("div", null, h("div", { class: "cdl" }, "Registration closes in"), cdEl(f.closes, { done: "Registration closed", rerender: true })) : null,
       btn, adm));
   });
   if (!editing && !cards.length) return null;
