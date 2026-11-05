@@ -387,7 +387,35 @@ dialog .err{color:var(--red);font-size:14px;min-height:20px;margin:0 0 10px}
 .stat .cd .cdu b{font-size:clamp(20px,2.4vw,30px);color:var(--red)}
 .stat .fld{color:#bdbdbd;font-size:12px}
 #annpop .cd{margin:0 0 22px}
-  
+  /* best members */
+.stars{margin-bottom:72px}
+.starsgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:24px}
+.star{position:relative;background:#fff;border-radius:8px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 0 0 1px #ececec,0 12px 30px rgba(0,0,0,.07);transition:transform .3s,box-shadow .3s}
+.star:hover{transform:translateY(-6px);box-shadow:0 0 0 1px #e6e6e6,0 22px 46px rgba(0,0,0,.16)}
+.starimg{position:relative;aspect-ratio:4/5;background:#111;overflow:hidden}
+.starimg .pic{position:absolute;inset:0}
+.starimg .pic img{transition:transform .6s}
+.star:hover .starimg .pic img{transform:scale(1.06)}
+.starimg::after{content:"";position:absolute;inset:auto 0 0 0;height:45%;background:linear-gradient(transparent,rgba(0,0,0,.55));pointer-events:none}
+.starbadge{position:absolute;top:14px;left:14px;z-index:2;background:var(--red);color:#fff;font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;padding:6px 11px;border-radius:99px;box-shadow:0 4px 12px rgba(230,43,30,.4)}
+.starinit{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:88px;font-weight:800;color:#fff;background:linear-gradient(135deg,#1a1a1a,#3a0b07)}
+.starbody{padding:20px 20px 24px;border-top:4px solid var(--red)}
+.starbody h3{margin:0 0 4px;font-size:21px}
+.starrole{color:var(--red);font-weight:700;font-size:13px;letter-spacing:.06em;text-transform:uppercase}
+.starnote{margin:12px 0 0;color:#444;font-size:15px;line-height:1.55}
+.starperiod{margin-top:14px;color:var(--mut);font-size:13px}
+@media(min-width:900px){
+  .star.feat{grid-column:span 2;flex-direction:row}
+  .star.feat .starimg{flex:0 0 46%;aspect-ratio:auto;min-height:420px}
+  .star.feat .starbody{border-top:0;border-left:4px solid var(--red);display:flex;flex-direction:column;justify-content:center;padding:32px}
+  .star.feat h3{font-size:30px}
+  .star.feat .starnote{font-size:17px}
+}
+@media(max-width:700px){
+  .starsgrid{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:16px;padding-bottom:12px}
+  .star{flex:0 0 78%;scroll-snap-align:center}
+}
+@media(prefers-reduced-motion:reduce){.star,.starimg .pic img{transition:none}}
 </style>
 <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
 </head>
@@ -547,6 +575,12 @@ var DEFAULTS = {
     { url: "", title: "" },
     { url: "", title: "" }
   ],
+   starsHead: {
+    eyebrow: "Hall of fame",
+    title: "Our best members",
+    lead: "The people who went above and beyond. Thank you for everything you give to TEDxMSAUniversity."
+  },
+  stars: [],
   teamHead: {
     eyebrow: "The people",
     title: "Meet the team",
@@ -1429,14 +1463,36 @@ function treeNode(r) {
   if (kids.length) li.append(h("ul", null, kids.map(treeNode)));
   return li;
 }
-
+function starsBlock() {
+  var s = "site.stars", cards = [];
+  state.site.stars.forEach(function (m, i) {
+    if (!editing && !m.name) return;
+    var p = s + "." + i + ".";
+    var pic = PIC(p + "photo", "", 900, "photo", 4 / 5) || h("div", { class: "starinit" }, (m.name || "?").trim().charAt(0).toUpperCase());
+    cards.push(h("article", { class: "star" + (i === 0 ? " feat" : "") + (editing && !m.name ? " slot" : "") },
+      h("div", { class: "starimg" }, pic,
+        (editing || m.badge) ? h("span", { class: "starbadge" }, "\u2605 ", T("span", p + "badge", "", "Badge, e.g. Member of the month")) : null),
+      h("div", { class: "starbody" },
+        T("h3", p + "name", "", "Full name"),
+        T("div", p + "role", "starrole", "Role / team"),
+        T("p", p + "note", "starnote", "Why they are one of our best (one or two sentences)", true),
+        T("div", p + "period", "starperiod", "When, e.g. October 2026")),
+      editing ? ctl(s, i) : null));
+  });
+  if (!editing && !cards.length) return null;
+  return h("div", { class: "stars" },
+    head("site.starsHead"),
+    h("div", { class: "starsgrid" }, cards),
+    editing ? addRow(s, { name: "", role: "", badge: "Member of the month", note: "", period: "", photo: "" }, "Add a best member") : null);
+}
 function teamSec() {
   var tops = state.roles.filter(function (r) {
     return (!r.parent || !byId(r.parent)) && (editing || r.name);
   });
   return h("section", { class: "soft", id: "team" }, h("div", { class: "wrap" },
+    starsBlock(),
     head("site.teamHead"),
-    h("div", { class: "treewrap" }, h("div", { class: "tree" }, h("ul", null, tops.map(treeNode)))),
+                                                       h("div", { class: "treewrap" }, h("div", { class: "tree" }, h("ul", null, tops.map(treeNode)))),
     editing ? h("div", { class: "addrow" }, h("button", { type: "button", class: "btn sm line", on: { click: function () {
       state.roles.push({ id: newId(), name: "", parent: null, people: [] }); touch();
     } } }, "+ Add top-level role")) : null));
