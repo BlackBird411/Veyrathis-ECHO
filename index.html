@@ -369,7 +369,25 @@ dialog .err{color:var(--red);font-size:14px;min-height:20px;margin:0 0 10px}
   .treewrap .tree li::after,.treewrap .tree ul ul::before{display:none}
   .treewrap .tree>ul>li::before{display:none}
   .treewrap .tree .role{width:100%}
-}
+}/* countdowns */
+.cd{display:inline-flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+.cd .cdu{display:flex;flex-direction:column;align-items:center;min-width:64px;padding:10px 8px;background:rgba(0,0,0,.07);border-radius:4px}
+.cd .cdu b{font-size:28px;font-weight:800;line-height:1;font-variant-numeric:tabular-nums}
+.cd .cdu i{font-style:normal;font-size:11px;letter-spacing:.1em;text-transform:uppercase;margin-top:6px;opacity:.75}
+.cd.cdc{display:inline;margin:0;font-weight:800;font-variant-numeric:tabular-nums}
+.cd.cdend{font-weight:700}
+.cdl{font-size:13px;color:#666;margin-top:6px}
+.next .cd{margin-top:20px}
+.next .cd .cdu{background:rgba(255,255,255,.18)}
+.next .cd .cdu b{font-size:clamp(28px,4vw,44px)}
+.hero .cd{margin:-14px 0 36px}
+.hero .cd .cdu{background:rgba(255,255,255,.1)}
+.stat .n .cd{display:flex;gap:6px;flex-wrap:nowrap;margin:0}
+.stat .cd .cdu{min-width:0;flex:1;padding:6px 4px;background:rgba(255,255,255,.07)}
+.stat .cd .cdu b{font-size:clamp(20px,2.4vw,30px);color:var(--red)}
+.stat .fld{color:#bdbdbd;font-size:12px}
+#annpop .cd{margin:0 0 22px}
+  
 </style>
 </head>
 <body>
@@ -420,24 +438,7 @@ dialog .err{color:var(--red);font-size:14px;min-height:20px;margin:0 0 10px}
     <button class="btn line" id="ccancel" type="button">Cancel</button>
   </div>
 </dialog>
-/* countdowns */
-.cd{display:inline-flex;gap:10px;flex-wrap:wrap;margin-top:14px}
-.cd .cdu{display:flex;flex-direction:column;align-items:center;min-width:64px;padding:10px 8px;background:rgba(0,0,0,.07);border-radius:4px}
-.cd .cdu b{font-size:28px;font-weight:800;line-height:1;font-variant-numeric:tabular-nums}
-.cd .cdu i{font-style:normal;font-size:11px;letter-spacing:.1em;text-transform:uppercase;margin-top:6px;opacity:.75}
-.cd.cdc{display:inline;margin:0;font-weight:800;font-variant-numeric:tabular-nums}
-.cd.cdend{font-weight:700}
-.cdl{font-size:13px;color:#666;margin-top:6px}
-.next .cd{margin-top:20px}
-.next .cd .cdu{background:rgba(255,255,255,.18)}
-.next .cd .cdu b{font-size:clamp(28px,4vw,44px)}
-.hero .cd{margin:-14px 0 36px}
-.hero .cd .cdu{background:rgba(255,255,255,.1)}
-.stat .n .cd{display:flex;gap:6px;flex-wrap:nowrap;margin:0}
-.stat .cd .cdu{min-width:0;flex:1;padding:6px 4px;background:rgba(255,255,255,.07)}
-.stat .cd .cdu b{font-size:clamp(20px,2.4vw,30px);color:var(--red)}
-.stat .fld{color:#bdbdbd;font-size:12px}
-#annpop .cd{margin:0 0 22px}
+
 <script>
 (function () {
 "use strict";
