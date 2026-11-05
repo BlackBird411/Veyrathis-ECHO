@@ -476,7 +476,9 @@ var SB_URL = "https://fdiounclxvaescxfkcnt.supabase.co";
 var SB_KEY = "sb_publishable_pTmK9ZuSQHh915Ke4IAhIA_ib2ip80H";
 var MAP = "https://maps.google.com/maps?q=26%20July%20Mehwar%20Road%20intersection%20with%20Wahat%20Road%2C%206th%20of%20October&t=m&z=15&output=embed";
 var MSA = "https://msa.edu.eg/msauniversity/wp-content/uploads/2024/09/";
-
+var MEDIA_BASE = "/m/"; // set to "" to switch off
+var MEDIA_FROM = SB_URL + "/storage/v1/object/public/site-media/";
+function cdn(u) { return (MEDIA_BASE && typeof u === "string" && u.indexOf(MEDIA_FROM) === 0) ? MEDIA_BASE + u.slice(MEDIA_FROM.length) : u; }
 var DEFAULTS = {
   hero: {
     kicker: "TEDxMSAUniversity · MSA University, 6th of October City",
@@ -865,7 +867,7 @@ function PIC(path, cls, maxDim, label, aspect) {
   var src = get(path);
   if (!src && !editing) return null;
   var w = h("div", { class: "pic " + (cls || "") + (src ? "" : " empty") });
-  if (src) w.append(h("img", { src: src, alt: "", loading: "lazy" }));
+  if (src) w.append(h("img", { src: cdn(src), alt: "", loading: "lazy" }));
   else w.append(h("span", { class: "ph" }, "No photo yet"));
   if (editing) w.append(picControls(path, maxDim, label, aspect));
   return w;
@@ -1071,7 +1073,7 @@ function CDI(path, label) {   // board editor: date and time picker
 function hero() {
   var s = "site.hero.";
   return h("header", { class: "hero", id: "top" },
-    get(s + "image") ? h("div", { class: "herobg" }, h("img", { src: get(s + "image"), alt: "" })) : null,
+    get(s + "image") ? h("div", { class: "herobg" }, h("img", { src: cdn(get(s + "image")), alt: "" })) : null,
     h("div", { class: "wrap" },
       T("p", s + "kicker", "eyebrow", "Small line above the headline"),
       h("h1", null, T("span", s + "title", "", "Headline"), " ", T("em", s + "accent", "", "Red words")),
@@ -1208,7 +1210,7 @@ function drawPop() {
  var box = $id("annbox"), a = popList[popIdx], n = popList.length, link = annLink(a.link);
   box.textContent = "";
   box.append(
-    a.image ? h("div", { class: "pimg" }, h("img", { src: a.image, alt: "" })) : null,
+    a.image ? h("div", { class: "pimg" }, h("img", { src: cdn(a.image), alt: "" })) : null,
     h("div", { class: "pbody" },
       h("div", { class: "annmeta" }, a.tag ? h("span", { class: "atag" }, a.tag) : null, a.date ? h("span", { class: "adate" }, a.date) : null),
       h("h3", null, a.title),
@@ -1340,7 +1342,7 @@ function addGalleryPhotos() {
     files.reduce(function (p, f, k) {
       return p.then(function () {
         toast("Uploading photo " + (k + 1) + " of " + n + "…");
-        return shrink(f, 1800).then(uploadBlob).then(function (url) {
+        return shrink(f, 1280).then(uploadBlob).then(function (url) {
           var g = state.site.gallery, slot = g.filter(function (x) { return !x.src; })[0];
           if (slot) slot.src = url; else g.push({ src: url, caption: "" });
           dirty = true; ok++;
@@ -1361,9 +1363,9 @@ function gallerySec() {
     if (!editing && !g.src) return;
     var p = s + "." + i + ".";
     var fig = h("figure", { class: editing && !g.src ? "slot" : "" },
-      PIC(p + "src", "", 1800, "photo"), T("figcaption", p + "caption", "", "Caption (optional)"),
+     PIC(p + "src", "", 1280, "photo"), T("figcaption", p + "caption", "", "Caption (optional)"),
       editing ? ctl(s, i) : null);
-    if (!editing && g.src) fig.addEventListener("click", function () { openLb(g.src); });
+    if (!editing && g.src) fig.addEventListener("click", function () { openLb(cdn(g.src)); });
     figs.push(fig);
   });
   if (!editing && !figs.length) return null;
@@ -1379,8 +1381,8 @@ function videosSec() {
     if (!editing && !em && !link) return;
     var body = null;
     if (em) body = h("iframe", { src: em.src, loading: "lazy", allowfullscreen: "true", title: v.title || "Video", scrolling: "no" });
-    else if (file) body = h("video", { src: link + "#t=0.1", controls: "", playsinline: "", preload: "metadata", title: v.title || "Video" });
-    else if (link && !editing) body = h("a", { class: "vl", href: link, target: "_blank", rel: "noopener" }, "Watch →");
+else if (file) body = h("video", { src: link, controls: "", playsinline: "", preload: "none", title: v.title || "Video" });
+else if (link && !editing) body = h("a", { class: "vl", href: link, target: "_blank", rel: "noopener" }, "Watch →");
     items.push(h("div", { class: "vid" + (em && !em.tall ? " wide" : "") + (editing && !em && !link && !vidBusy.has(v) ? " slot" : "") },
       body, T("div", p + "title", "vt", "Title (optional)"),
       editing ? videoEditor(v, p) : null,
@@ -1416,12 +1418,12 @@ function moveRole(r, d) {
 function person(ri, k, pp) {
   var path = "roles." + ri + ".people." + k;
   var av = h("div", { class: "av" });
-  if (pp.photo) av.append(h("img", { src: pp.photo, alt: "", loading: "lazy" }));
+  if (pp.photo) av.append(h("img", { src: cdn(pp.photo), alt: "", loading: "lazy" }));
   else av.textContent = (pp.name || "?").trim().charAt(0).toUpperCase() || "?";
   var w = h("div", { class: "pp" + (editing && !pp.name ? " slot" : "") }, av, T("div", path + ".name", "pn", "Full name"));
   if (editing) w.append(h("div", { class: "ctl c" },
-    h("button", { type: "button", class: "sm", on: { click: function () { pick(path + ".photo", 600, 1, true); } } }, pp.photo ? "Change photo" : "Add photo"),
-    pp.photo ? h("button", { type: "button", class: "sm", on: { click: function () { adjust(path + ".photo", 600, 1, true); } } }, "Adjust") : null,
+    h("button", { type: "button", class: "sm", on: { click: function () { pick(path + ".photo", 400, 1, true); } } }, pp.photo ? "Change photo" : "Add photo"),
+    pp.photo ? h("button", { type: "button", class: "sm", on: { click: function () { adjust(path + ".photo", 400, 1, true); } } }, "Adjust") : null,
     h("button", { type: "button", class: "sm danger", on: { click: function () { del("roles." + ri + ".people", k); } } }, "✕")));
   return w;
 }
