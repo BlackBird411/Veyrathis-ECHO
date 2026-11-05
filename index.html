@@ -1028,6 +1028,27 @@ function nextBand() {
 }
 
 /* ---------- announcements ---------- */
+/* announcement buttons: https link, #section (scrolls), or #register (opens the form) */
+function annLink(u) {
+  u = (u || "").trim();
+  if (/^#[a-z0-9_-]+$/i.test(u)) return { href: u, ext: false };
+  var s = safeUrl(u);
+  return s ? { href: s, ext: true } : null;
+}
+function annAttrs(l, closePop, cls) {
+  var a = { href: l.href };
+  if (cls) a["class"] = cls;
+  if (l.ext) { a.target = "_blank"; a.rel = "noopener"; }
+  a.on = { click: function (ev) {
+    if (closePop) $id("annpop").close();
+    if (l.href === "#register") {
+      ev.preventDefault();
+      var f = state.site.registrations.filter(function (x) { return x.title && x.open !== false; })[0];
+      if (f) openReg(f); else toast("Registration is currently closed.", true);
+    }
+  } };
+  return a;
+}
 var ANN_TPL = { tag: "Announcement", date: "", title: "", text: "", image: "", cta: "", link: "", banner: false, popup: true };
 function CK(item, key, label, def) {
   var i = h("input", { type: "checkbox" });
@@ -1076,7 +1097,7 @@ function popItems(all) {
   return liveAnn().filter(function (a) { return a.popup !== false && (all || !isSeen("popped", a)); });
 }
 function drawPop() {
-  var box = $id("annbox"), a = popList[popIdx], n = popList.length, link = safeUrl(a.link);
+ var box = $id("annbox"), a = popList[popIdx], n = popList.length, link = annLink(a.link);
   box.textContent = "";
   box.append(
     a.image ? h("div", { class: "pimg" }, h("img", { src: a.image, alt: "" })) : null,
@@ -1085,7 +1106,7 @@ function drawPop() {
       h("h3", null, a.title),
       a.text ? h("p", { class: "pl" }, a.text) : null,
       h("div", { class: "cta" },
-        link ? h("a", { class: "btn", href: link, target: "_blank", rel: "noopener" }, a.cta || "Learn more")
+       link ? h("a", annAttrs(link, true, "btn"), a.cta || "Learn more")
              : h("button", { class: "btn", type: "button", on: { click: function () { $id("annpop").close(); } } }, "Got it"),
         h("a", { class: "btn line", href: "#announcements", on: { click: function () { $id("annpop").close(); } } }, "View all news")),
       n > 1 ? h("div", { class: "pnav" },
@@ -1111,11 +1132,11 @@ function announceBar() {
   var key = "tedx-bar:" + a.title, gone = false;
   if (!editing) { try { gone = sessionStorage.getItem(key) === "1"; } catch (e) {} }
   if (gone) return null;
-  var link = safeUrl(a.link), ext = !!link;
+  var link = annLink(a.link);
   var bar = h("div", { class: "abar" }, h("div", { class: "wrap abarin" },
     a.tag ? h("span", { class: "abtag" }, a.tag) : null,
     h("span", { class: "abtx" }, a.title),
-    h("a", { href: link || "#announcements", target: ext ? "_blank" : null, rel: ext ? "noopener" : null }, (a.cta || "Learn more") + " →"),
+    h("a", link ? annAttrs(link, false) : { href: "#announcements" }, (a.cta || "Learn more") + " →"),
     editing ? null : h("button", { class: "abx", type: "button", "aria-label": "Dismiss", on: { click: function () {
       try { sessionStorage.setItem(key, "1"); } catch (e) {}
       bar.remove();
@@ -1128,13 +1149,13 @@ function announcementsSec() {
   state.site.announcements.forEach(function (a, i) {
     var empty = !a.title;
     if (!editing && empty) return;
-    var p = s + "." + i + ".", img = PIC(p + "image", "", 1400, "image", 1.6), link = safeUrl(a.link), act = null;
+    var p = s + "." + i + ".", img = PIC(p + "image", "", 1400, "image", 1.6), link = annLink(a.link), act = null;
     if (editing) act = h("div", null,
       INP(p + "cta", "Button text (optional)", "Get tickets"),
-      INP(p + "link", "Button link (optional)", "https://…"),
+     INP(p + "link", "Button link (optional): https://… or #register (opens the form), #registration, #events, #team", "#register"),
       CK(a, "popup", "Show as a pop-up when visitors arrive", true),
       CK(a, "banner", "Show in the banner at the top of the site"));
-    else if (link) act = h("a", { class: "btn sm", href: link, target: "_blank", rel: "noopener" }, a.cta || "Learn more");
+    else if (link) act = h("a", annAttrs(link, false, "btn sm"), a.cta || "Learn more");
     cards.push(h("article", { class: "ann" + (editing && empty ? " slot" : "") }, img,
       h("div", { class: "body" },
         h("div", { class: "annmeta" }, T("span", p + "tag", "atag", "Label"), T("span", p + "date", "adate", "Date")),
