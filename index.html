@@ -1204,7 +1204,7 @@ function watchNews() {
 /* entrance pop-up */
 var popList = [], popIdx = 0, popPreview = false, popShown = false;
 function popItems(all) {
-  return liveAnn().filter(function (a) { return a.popup !== false && (all || !isSeen("popped", a)); });
+  return liveAnn().filter(function (a) { return a.popup !== false; });
 }
 function drawPop() {
  var box = $id("annbox"), a = popList[popIdx], n = popList.length, link = annLink(a.link);
