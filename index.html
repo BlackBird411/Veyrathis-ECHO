@@ -1395,7 +1395,7 @@ function videosSec() {
     if (!editing && !em && !link) return;
     var body = null;
     if (em) body = h("iframe", { src: em.src, loading: "lazy", allowfullscreen: "true", title: v.title || "Video", scrolling: "no" });
-else if (file) body = h("video", { src: link, controls: "", playsinline: "", preload: "none", title: v.title || "Video" });
+else if (file) body = h("video", { src: cdn(link), controls: "", playsinline: "", preload: "none", title: v.title || "Video" });
 else if (link && !editing) body = h("a", { class: "vl", href: link, target: "_blank", rel: "noopener" }, "Watch →");
     items.push(h("div", { class: "vid" + (em && !em.tall ? " wide" : "") + (editing && !em && !link && !vidBusy.has(v) ? " slot" : "") },
       body, T("div", p + "title", "vt", "Title (optional)"),
