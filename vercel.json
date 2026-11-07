@@ -3,6 +3,8 @@
     { "source": "/m/:file", "destination": "https://fdiounclxvaescxfkcnt.supabase.co/storage/v1/object/public/site-media/:file" }
   ],
   "headers": [
+        { "source": "/m/:file", "headers": [{ "key": "Cache-Control", "value": "public, max-age=31536000, s-maxage=31536000, immutable" }] },
+
     { "source": "/m/:file", "headers": [{ "key": "Cache-Control", "value": "public, max-age=31536000, s-maxage=31536000, immutable" }] }
   ]
 }
