@@ -1,1 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Analytics · TEDxMSAUniversity</title>
+<style>
+:root{--red:#e62b1e;--ink:#0a0a0a;--mut:#6b6b6b;--soft:#f5f5f5;--line:#e3e3e3;--bar:#b4b4b4}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;color:var(--ink);background:#fff;line-height:1.5;-webkit-font-smoothing:antialiased;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+.wrap{max-width:1000px;margin:0 auto;padding:0 20px}
+button,input{font:inherit}
+:focus-visible{outline:3px solid var(--red);outline-offset:2px}
+[hidden]{display:none!important}
 
+header{border-bottom:1px solid var(--line)}
+.top{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px 0}
+.brand{font-weight:800;font-size:18px;letter-spacing:-.01em}
+.brand b{color:var(--red)}
+.brand span{font-weight:400;color:var(--mut);margin-left:10px;font-size:15px}
+.actions{display:flex;gap:8px}
+.btn{border:1.5px solid var(--ink);background:var(--ink);color:#fff;padding:9px 16px;border-radius:3px;font-weight:700;font-size:14px;cursor:pointer}
+.btn.line{background:#fff;color:var(--ink)}
+.btn:disabled{opacity:.5;cursor:default}
+
+/* sign in */
+.login{max-width:420px;padding:72px 0 96px}
+.login h1{font-size:34px;line-height:1.1;letter-spacing:-.02em;margin:0 0 12px}
+.login p{color:var(--mut);margin:0 0 24px}
+.login label{display:block;font-weight:700;font-size:14px;margin-bottom:6px}
+.login input{width:100%;padding:12px 14px;border:1.5px solid var(--ink);border-radius:3px;margin-bottom:14px;font-size:16px}
+.err{color:var(--red);font-weight:700;min-height:1.5em;margin:12px 0 0}
+
+/* summary */
+.hero{display:grid;grid-template-columns:1fr 1fr;gap:32px;padding:48px 0 12px}
+.big{font-size:clamp(64px,13vw,132px);font-weight:800;line-height:.95;letter-spacing:-.04em;font-variant-numeric:tabular-nums}
+.big.red{color:var(--red)}
+.cap{margin-top:10px;font-size:17px;color:var(--mut)}
+.rate{margin:8px 0 0;max-width:62ch;color:var(--mut)}
+
+/* controls */
+.bar-row{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:14px;margin:36px 0 8px;padding-top:20px;border-top:1px solid var(--line)}
+.seg{display:inline-flex;border:1.5px solid var(--ink);border-radius:3px;overflow:hidden}
+.seg button{border:0;background:#fff;color:var(--ink);padding:9px 15px;font-weight:700;font-size:14px;cursor:pointer}
+.seg button+button{border-left:1.5px solid var(--ink)}
+.seg button[aria-pressed="true"]{background:var(--ink);color:#fff}
+.status{color:var(--mut);font-size:14px}
+
+/* figures */
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:0;margin:20px 0 8px;border-top:1px solid var(--line)}
+.kpi{padding:16px 16px 16px 0}
+.kpi+.kpi{padding-left:16px;border-left:1px solid var(--line)}
+.kpi dt{font-size:14px;color:var(--mut)}
+.kpi dd{margin:2px 0 0}
+.kpi .v{font-size:34px;font-weight:800;letter-spacing:-.02em;font-variant-numeric:tabular-nums;line-height:1.15}
+.kpi .s{display:block;font-size:13px;color:var(--mut)}
+
+.readout{min-height:1.6em;margin:28px 0 6px;font-weight:700}
+figure{margin:0 0 22px}
+figcaption{font-weight:700;margin-bottom:4px}
+figcaption small{font-weight:400;color:var(--mut);margin-left:8px}
+svg{display:block;width:100%;height:auto;touch-action:pan-y}
+.bar{fill:var(--bar)}
+.reg .bar{fill:var(--red)}
+.bar.on{fill:var(--ink)}
+.grid{stroke:var(--line);stroke-width:1}
+.tick{font-size:11px;fill:var(--mut)}
+
+details{margin:28px 0 0;border-top:1px solid var(--line)}
+summary{cursor:pointer;font-weight:700;padding:14px 0}
+.tw{overflow-x:auto}
+table{border-collapse:collapse;width:100%;min-width:420px;font-variant-numeric:tabular-nums}
+th,td{text-align:right;padding:9px 10px;border-bottom:1px solid var(--line);font-size:14px}
+th:first-child,td:first-child{text-align:left;padding-left:0}
+th{color:var(--mut);font-weight:400}
+.note{color:var(--mut);font-size:13px;max-width:70ch;margin:24px 0 64px}
+
+@media(max-width:700px){
+  .hero{grid-template-columns:1fr;gap:24px;padding-top:32px}
+  .kpis{grid-template-columns:1fr 1fr}
+  .kpi:nth-child(3){padding-left:0;border-left:0}
+  .kpi:nth-child(n+3){border-top:1px solid var(--line)}
+  .brand span{display:none}
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap top">
+    <div class="brand"><b>TEDx</b>MSAUniversity<span>Analytics</span></div>
+    <div class="actions" id="actions" hidden>
+      <button class="btn line" id="refresh" type="button">Refresh</button>
+      <button class="btn line" id="out" type="button">Sign out</button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="login" id="login">
+    <h1>Board analytics</h1>
+    <p>Enter the board password to see visits and registrations.</p>
+    <form id="loginForm" autocomplete="off">
+      <label for="pw">Board password</label>
+      <input id="pw" type="password" autocomplete="current-password" required>
+      <button class="btn" id="go" type="submit">Open analytics</button>
+      <p class="err" id="loginErr" role="alert"></p>
+    </form>
+  </section>
+
+  <div id="dash" hidden>
+    <section class="hero" aria-label="Summary">
+      <div>
+        <div class="big red" id="regTotal">0</div>
+        <div class="cap">people registered</div>
+      </div>
+      <div>
+        <div class="big" id="daysLeft">0</div>
+        <div class="cap" id="daysCap">days until 19 November</div>
+      </div>
+    </section>
+    <p class="rate" id="rateLine"></p>
+
+    <div class="bar-row">
+      <div class="seg" role="group" aria-label="Date range" id="seg">
+        <button type="button" data-r="7" aria-pressed="false">7 days</button>
+        <button type="button" data-r="30" aria-pressed="true">30 days</button>
+        <button type="button" data-r="90" aria-pressed="false">90 days</button>
+        <button type="button" data-r="0" aria-pressed="false">All time</button>
+      </div>
+      <span class="status" id="status" aria-live="polite"></span>
+    </div>
+
+    <dl class="kpis" id="kpis"></dl>
+
+    <p class="readout" id="readout" aria-live="polite"></p>
+    <figure>
+      <figcaption>Visits <small>sessions per day</small></figcaption>
+      <div id="chartVisits"></div>
+    </figure>
+    <figure>
+      <figcaption>Registrations <small>sign-ups per day</small></figcaption>
+      <div id="chartRegs" class="reg"></div>
+    </figure>
+
+    <details>
+      <summary>Day by day</summary>
+      <div class="tw">
+        <table>
+          <thead><tr><th>Day</th><th>Visits</th><th>New visitors</th><th>Registrations</th></tr></thead>
+          <tbody id="rows"></tbody>
+        </table>
+      </div>
+    </details>
+
+    <p class="note">Numbers update when you press Refresh. A visit is counted once per browser session, and a new visitor is the first visit from a browser each day, so visitor counts are estimates. Registrations include every form submission, even ones whose email failed. Visit tracking started on <span id="trackStart">an earlier day</span>.</p>
+  </div>
+</main>
+
+<script>
+(function () {
+"use strict";
+
+var SB_URL = "https://fdiounclxvaescxfkcnt.supabase.co";
+var SB_KEY = "sb_publishable_pTmK9ZuSQHh915Ke4IAhIA_ib2ip80H";   // public key, same one the website uses
+var EVENT_DAY = "2026-11-19";                                      // event date (Cairo)
+
+var pass = null, byDay = {}, firstDay = null, trackFrom = null, range = 30, shown = [];
+function $(id) { return document.getElementById(id); }
+function num(n) { return Number(n).toLocaleString("en-US"); }
+
+/* ---------- dates (all in Cairo calendar days) ---------- */
+function cairoToday() { return new Intl.DateTimeFormat("en-CA", { timeZone: "Africa/Cairo" }).format(new Date()); }
+function addDays(iso, n) { var d = new Date(iso + "T00:00:00Z"); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); }
+function diff(a, b) { return Math.round((Date.parse(b + "T00:00:00Z") - Date.parse(a + "T00:00:00Z")) / 86400000); }
+function label(iso, long) {
+  return new Date(iso + "T00:00:00Z").toLocaleDateString("en-GB",
+    long ? { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" } : { day: "numeric", month: "short", timeZone: "UTC" });
+}
+
+/* ---------- data ---------- */
+function fetchStats(p) {
+  return fetch(SB_URL + "/rest/v1/rpc/analytics_stats", {
+    method: "POST",
+    headers: { apikey: SB_KEY, "Content-Type": "application/json" },
+    body: JSON.stringify({ p: p })
+  }).then(function (r) {
+    return r.text().then(function (t) {
+      var j = null; try { j = t ? JSON.parse(t) : null; } catch (e) {}
+      if (!r.ok) throw new Error((j && (j.message || j.hint)) || "Request failed (" + r.status + ")");
+      return j || [];
+    });
+  });
+}
+
+function load(fromLogin) {
+  $("status").textContent = "Loading…";
+  $("refresh").disabled = true;
+  return fetchStats(pass).then(function (rows) {
+    byDay = {}; firstDay = null; trackFrom = null;
+    rows.forEach(function (r) {
+      byDay[r.day] = r;
+      if (!firstDay || r.day < firstDay) firstDay = r.day;
+      if (r.visits > 0 && (!trackFrom || r.day < trackFrom)) trackFrom = r.day;
+    });
+    $("login").hidden = true; $("dash").hidden = false; $("actions").hidden = false;
+    $("refresh").disabled = false;
+    render();
+    $("status").textContent = "Updated " + new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+  }).catch(function (e) {
+    $("refresh").disabled = false;
+    if (fromLogin) { pass = null; $("loginErr").textContent = /password/i.test(e.message) ? "Wrong password. Try again." : "Could not load: " + e.message; }
+    else $("status").textContent = "Could not refresh: " + e.message;
+  });
+}
+
+/* ---------- render ---------- */
+function niceMax(m) {
+  if (m <= 5) return 5;
+  var p = Math.pow(10, Math.floor(Math.log10(m))), f = m / p;
+  return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 5 ? 5 : 10) * p;
+}
+
+function rateText(regs, uniques) {
+  if (uniques > 0 && uniques >= regs) return (Math.round(1000 * regs / uniques) / 10) + "%";
+  return null;
+}
+
+function render() {
+  var today = cairoToday(), i, d, r;
+
+  // days in the chosen range, oldest first, zero-filled
+  var n = range === 0 ? Math.max(7, firstDay ? diff(firstDay, today) + 1 : 7) : range;
+  var days = [];
+  for (i = n - 1; i >= 0; i--) {
+    d = addDays(today, -i); r = byDay[d] || {};
+    days.push({ day: d, visits: r.visits || 0, uniques: r.uniques || 0, regs: r.registrations || 0 });
+  }
+  shown = days;
+
+  // all-time totals
+  var allRegs = 0, allUniq = 0, allVisits = 0;
+  Object.keys(byDay).forEach(function (k) { allRegs += byDay[k].registrations; allUniq += byDay[k].uniques; allVisits += byDay[k].visits; });
+
+  // hero
+  $("regTotal").textContent = num(allRegs);
+  var left = diff(today, EVENT_DAY);
+  if (left > 0) { $("daysLeft").textContent = left; $("daysCap").textContent = (left === 1 ? "day" : "days") + " until 19 November"; }
+  else if (left === 0) { $("daysLeft").textContent = "Today"; $("daysCap").textContent = "is the event"; }
+  else { $("daysLeft").textContent = Math.abs(left); $("daysCap").textContent = (left === -1 ? "day" : "days") + " since the event"; }
+
+  var allRate = rateText(allRegs, allUniq);
+  $("rateLine").textContent = allRate
+    ? "About " + allRate + " of new visitors have registered."
+    : (allVisits ? "The registration rate appears once more visitors than registrations have been tracked." : "No visits have been tracked yet.");
+
+  // range totals
+  var sv = 0, su = 0, sr = 0;
+  days.forEach(function (x) { sv += x.visits; su += x.uniques; sr += x.regs; });
+  var last = days[days.length - 1];
+  var rangeRate = rateText(sr, su);
+  $("kpis").innerHTML =
+    kpi("Visits", num(sv), "Today " + num(last.visits)) +
+    kpi("New visitors", num(su), "Today " + num(last.uniques)) +
+    kpi("Registrations", num(sr), "Today " + num(last.regs)) +
+    kpi("Registration rate", rangeRate || "–", rangeRate ? "Registrations per new visitor" : "Needs more tracked visits");
+
+  $("trackStart").textContent = trackFrom ? label(trackFrom, false) : "an earlier day";
+
+  // charts
+  chart($("chartVisits"), days, "visits", "Visits per day");
+  chart($("chartRegs"), days, "regs", "Registrations per day");
+  defaultReadout();
+
+  // table, newest first
+  $("rows").innerHTML = days.slice().reverse().map(function (x) {
+    return "<tr><td>" + label(x.day, true) + "</td><td>" + num(x.visits) + "</td><td>" + num(x.uniques) + "</td><td>" + num(x.regs) + "</td></tr>";
+  }).join("");
+
+  var btns = $("seg").querySelectorAll("button");
+  for (i = 0; i < btns.length; i++) btns[i].setAttribute("aria-pressed", String(+btns[i].getAttribute("data-r") === range));
+}
+
+function kpi(name, value, sub) {
+  return '<div class="kpi"><dt>' + name + '</dt><dd><span class="v">' + value + '</span><span class="s">' + sub + '</span></dd></div>';
+}
+
+/* ---------- charts (plain SVG, no libraries) ---------- */
+var W = 720, H = 180, L = 38, R = 4, T = 10, B = 24;
+
+function chart(host, days, key, aria) {
+  var n = days.length, max = 1, i;
+  days.forEach(function (x) { if (x[key] > max) max = x[key]; });
+  max = niceMax(max);
+  var bw = (W - L - R) / n, barW = Math.max(1, bw * 0.72), ph = H - B - T;
+  var s = '<svg viewBox="0 0 ' + W + " " + H + '" role="img" aria-label="' + aria + ', last ' + n + ' days. The table below has the same numbers.">';
+  [0, 0.5, 1].forEach(function (f) {
+    var y = T + ph * (1 - f);
+    s += '<line class="grid" x1="' + L + '" x2="' + (W - R) + '" y1="' + y + '" y2="' + y + '"/>' +
+         '<text class="tick" x="' + (L - 6) + '" y="' + (y + 4) + '" text-anchor="end">' + Math.round(max * f) + '</text>';
+  });
+  for (i = 0; i < n; i++) {
+    var v = days[i][key], h = ph * v / max;
+    s += '<rect class="bar" data-i="' + i + '" x="' + (L + i * bw + (bw - barW) / 2) + '" y="' + (T + ph - (v ? Math.max(h, 1.5) : 0)) +
+         '" width="' + barW + '" height="' + (v ? Math.max(h, 1.5) : 0) + '"/>';
+  }
+  s += '<text class="tick" x="' + L + '" y="' + (H - 6) + '">' + label(days[0].day, false) + '</text>';
+  if (n > 2) s += '<text class="tick" x="' + (L + (W - L - R) / 2) + '" y="' + (H - 6) + '" text-anchor="middle">' + label(days[Math.floor(n / 2)].day, false) + '</text>';
+  s += '<text class="tick" x="' + (W - R) + '" y="' + (H - 6) + '" text-anchor="end">' + label(days[n - 1].day, false) + '</text></svg>';
+  host.innerHTML = s;
+
+  var svg = host.firstChild;
+  function idx(ev) {
+    var box = svg.getBoundingClientRect();
+    var x = (ev.clientX - box.left) / box.width * W;
+    var k = Math.floor((x - L) / bw);
+    return k < 0 || k >= n ? -1 : k;
+  }
+  svg.addEventListener("pointermove", function (ev) { hover(idx(ev)); });
+  svg.addEventListener("pointerdown", function (ev) { hover(idx(ev)); });
+  svg.addEventListener("pointerleave", function () { hover(-1); });
+}
+
+function hover(k) {
+  var all = document.querySelectorAll(".bar.on"), i;
+  for (i = 0; i < all.length; i++) all[i].classList.remove("on");
+  if (k < 0) { defaultReadout(); return; }
+  var on = document.querySelectorAll('.bar[data-i="' + k + '"]');
+  for (i = 0; i < on.length; i++) on[i].classList.add("on");
+  var x = shown[k];
+  $("readout").textContent = label(x.day, true) + ": " + num(x.visits) + " visits, " + num(x.uniques) + " new visitors, " + num(x.regs) + " registrations";
+}
+
+function defaultReadout() {
+  var best = null;
+  shown.forEach(function (x) { if (x.regs > 0 && (!best || x.regs > best.regs)) best = x; });
+  $("readout").textContent = best
+    ? "Best day for registrations: " + label(best.day, true) + " with " + num(best.regs) + ". Hover or tap a day for its numbers."
+    : "Hover or tap a day to see its numbers.";
+}
+
+/* ---------- events ---------- */
+$("loginForm").addEventListener("submit", function (ev) {
+  ev.preventDefault();
+  var v = $("pw").value; if (!v) return;
+  pass = v; $("loginErr").textContent = "Checking…"; $("go").disabled = true;
+  load(true).then(function () { $("go").disabled = false; if (pass) { $("pw").value = ""; $("loginErr").textContent = ""; } });
+});
+$("refresh").addEventListener("click", function () { load(false); });
+$("out").addEventListener("click", function () { pass = null; location.reload(); });
+$("seg").addEventListener("click", function (ev) {
+  var b = ev.target.closest("button"); if (!b) return;
+  range = +b.getAttribute("data-r"); render();
+});
+})();
+</script>
+</body>
+</html>
