@@ -1,11 +1,10 @@
 {
   "rewrites": [
-    { "source": "/m/:file", "destination": "https://fdiounclxvaescxfkcnt.supabase.co/storage/v1/object/public/site-media/:file" }
+    { "source": "/m/:file", "destination": "https://fdiounclxvaescxfkcnt.supabase.co/storage/v1/object/public/site-media/:file" },
     { "source": "/analytics", "destination": "/analytics.html" }
   ],
   "headers": [
-        { "source": "/m/:file", "headers": [{ "key": "Cache-Control", "value": "public, max-age=31536000, s-maxage=31536000, immutable" }] },
-
-    { "source": "/m/:file", "headers": [{ "key": "Cache-Control", "value": "public, max-age=31536000, s-maxage=31536000, immutable" }] }
+    { "source": "/m/:file", "headers": [{ "key": "Cache-Control", "value": "public, max-age=31536000, s-maxage=31536000, immutable" }] },
+    { "source": "/og-image.jpg", "headers": [{ "key": "Cache-Control", "value": "public, max-age=604800" }] }
   ]
 }
