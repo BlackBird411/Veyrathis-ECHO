@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
 <title>Analytics · TEDxMSAUniversity</title>
 <style>
 :root{--red:#e62b1e;--ink:#0a0a0a;--mut:#6b6b6b;--soft:#f5f5f5;--line:#e3e3e3;--bar:#b4b4b4}
@@ -11,18 +12,23 @@
 html{-webkit-text-size-adjust:100%}
 body{margin:0;font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;color:var(--ink);background:#fff;line-height:1.5;-webkit-font-smoothing:antialiased;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 .wrap{max-width:1000px;margin:0 auto;padding:0 20px}
-button,input{font:inherit}
+.wrap.wide{max-width:1240px}
+button,input,select{font:inherit}
 :focus-visible{outline:3px solid var(--red);outline-offset:2px}
 [hidden]{display:none!important}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 
 header{border-bottom:1px solid var(--line)}
-.top{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px 0}
+.top{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px 0 10px}
 .brand{font-weight:800;font-size:18px;letter-spacing:-.01em}
 .brand b{color:var(--red)}
-.brand span{font-weight:400;color:var(--mut);margin-left:10px;font-size:15px}
 .actions{display:flex;gap:8px}
+.tabs{display:flex;gap:26px}
+.tabs a{display:inline-block;padding:8px 0 12px;color:var(--mut);text-decoration:none;font-weight:700;font-size:15px;border-bottom:3px solid transparent}
+.tabs a[aria-current="page"]{color:var(--ink);border-bottom-color:var(--red)}
 .btn{border:1.5px solid var(--ink);background:var(--ink);color:#fff;padding:9px 16px;border-radius:3px;font-weight:700;font-size:14px;cursor:pointer}
 .btn.line{background:#fff;color:var(--ink)}
+.btn.sm{padding:6px 11px;font-size:13px}
 .btn:disabled{opacity:.5;cursor:default}
 
 /* sign in */
@@ -32,31 +38,28 @@ header{border-bottom:1px solid var(--line)}
 .login label{display:block;font-weight:700;font-size:14px;margin-bottom:6px}
 .login input{width:100%;padding:12px 14px;border:1.5px solid var(--ink);border-radius:3px;margin-bottom:14px;font-size:16px}
 .err{color:var(--red);font-weight:700;min-height:1.5em;margin:12px 0 0}
+.login p.err{margin:12px 0 0}
 
-/* summary */
+/* overview */
 .hero{display:grid;grid-template-columns:1fr 1fr;gap:32px;padding:48px 0 12px}
 .big{font-size:clamp(64px,13vw,132px);font-weight:800;line-height:.95;letter-spacing:-.04em;font-variant-numeric:tabular-nums}
 .big.red{color:var(--red)}
 .cap{margin-top:10px;font-size:17px;color:var(--mut)}
 .rate{margin:8px 0 0;max-width:62ch;color:var(--mut)}
-
-/* controls */
 .bar-row{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:14px;margin:36px 0 8px;padding-top:20px;border-top:1px solid var(--line)}
 .seg{display:inline-flex;border:1.5px solid var(--ink);border-radius:3px;overflow:hidden}
 .seg button{border:0;background:#fff;color:var(--ink);padding:9px 15px;font-weight:700;font-size:14px;cursor:pointer}
 .seg button+button{border-left:1.5px solid var(--ink)}
 .seg button[aria-pressed="true"]{background:var(--ink);color:#fff}
 .status{color:var(--mut);font-size:14px}
-
-/* figures */
 .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:0;margin:20px 0 8px;border-top:1px solid var(--line)}
 .kpi{padding:16px 16px 16px 0}
 .kpi+.kpi{padding-left:16px;border-left:1px solid var(--line)}
 .kpi dt{font-size:14px;color:var(--mut)}
 .kpi dd{margin:2px 0 0}
 .kpi .v{font-size:34px;font-weight:800;letter-spacing:-.02em;font-variant-numeric:tabular-nums;line-height:1.15}
+.kpi .v.bad{color:var(--red)}
 .kpi .s{display:block;font-size:13px;color:var(--mut)}
-
 .readout{min-height:1.6em;margin:28px 0 6px;font-weight:700}
 figure{margin:0 0 22px}
 figcaption{font-weight:700;margin-bottom:4px}
@@ -67,37 +70,78 @@ svg{display:block;width:100%;height:auto;touch-action:pan-y}
 .bar.on{fill:var(--ink)}
 .grid{stroke:var(--line);stroke-width:1}
 .tick{font-size:11px;fill:var(--mut)}
-
 details{margin:28px 0 0;border-top:1px solid var(--line)}
 summary{cursor:pointer;font-weight:700;padding:14px 0}
 .tw{overflow-x:auto}
-table{border-collapse:collapse;width:100%;min-width:420px;font-variant-numeric:tabular-nums}
-th,td{text-align:right;padding:9px 10px;border-bottom:1px solid var(--line);font-size:14px}
-th:first-child,td:first-child{text-align:left;padding-left:0}
-th{color:var(--mut);font-weight:400}
+table.num{border-collapse:collapse;width:100%;min-width:420px;font-variant-numeric:tabular-nums}
+table.num th,table.num td{text-align:right;padding:9px 10px;border-bottom:1px solid var(--line);font-size:14px}
+table.num th:first-child,table.num td:first-child{text-align:left;padding-left:0}
+table.num th{color:var(--mut);font-weight:400}
 .note{color:var(--mut);font-size:13px;max-width:70ch;margin:24px 0 64px}
+
+/* responses */
+.rhead{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:10px;padding:36px 0 4px}
+.rhead h1{font-size:34px;line-height:1.1;letter-spacing:-.02em;margin:0}
+.split{color:var(--mut);margin:6px 0 0;max-width:80ch}
+.toolbar{display:flex;flex-wrap:wrap;gap:12px 14px;align-items:flex-end;margin:22px 0 10px;padding-top:18px;border-top:1px solid var(--line)}
+.fld{display:flex;flex-direction:column;gap:4px;font-size:13px;font-weight:700}
+.fld input,.fld select{padding:9px 11px;border:1.5px solid var(--ink);border-radius:3px;background:#fff;font-size:15px;font-weight:400;color:var(--ink);min-width:150px}
+.fld.grow{flex:1 1 280px}
+.fld.grow input{width:100%}
+.chk{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:700;padding-bottom:9px}
+.chk input{width:18px;height:18px;accent-color:var(--red)}
+.tools{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;margin:6px 0 10px}
+.tools .count{font-weight:700}
+.tools .btns{display:flex;gap:8px;flex-wrap:wrap}
+.tw.res{max-height:72vh;overflow:auto;border:1px solid var(--line)}
+table.rt{border-collapse:collapse;width:100%;min-width:980px;font-size:14px}
+table.rt th,table.rt td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+table.rt thead th{position:sticky;top:0;background:#fff;z-index:1;border-bottom:1.5px solid var(--ink);padding:0}
+table.rt thead th button{display:block;width:100%;text-align:left;border:0;background:transparent;padding:10px 12px;font-weight:700;cursor:pointer;white-space:nowrap}
+table.rt thead th button[data-dir]::after{content:attr(data-dir);margin-left:6px;color:var(--red)}
+table.rt td.dim{color:#b0b0b0}
+table.rt td.nw{white-space:nowrap}
+table.rt a{color:var(--ink);font-weight:700}
+.flag{color:var(--red);font-weight:700}
+.st-bad{color:var(--red);font-weight:700}
+.empty{padding:34px 12px;color:var(--mut)}
+.more{margin:14px 0 0}
+dialog{border:1.5px solid var(--ink);border-radius:4px;padding:24px;max-width:380px;width:calc(100% - 40px)}
+dialog::backdrop{background:rgba(0,0,0,.45)}
+dialog h2{margin:0 0 6px;font-size:20px}
+dialog p{margin:0 0 16px;color:var(--mut);font-size:14px}
+dialog input{width:100%;padding:11px 13px;border:1.5px solid var(--ink);border-radius:3px;margin-bottom:14px;font-size:16px}
+dialog .row{display:flex;gap:8px;justify-content:flex-end}
 
 @media(max-width:700px){
   .hero{grid-template-columns:1fr;gap:24px;padding-top:32px}
   .kpis{grid-template-columns:1fr 1fr}
   .kpi:nth-child(3){padding-left:0;border-left:0}
   .kpi:nth-child(n+3){border-top:1px solid var(--line)}
-  .brand span{display:none}
+  .fld input,.fld select{min-width:0;width:100%}
+  .fld{flex:1 1 140px}
 }
 </style>
 </head>
 <body>
 <header>
-  <div class="wrap top">
-    <div class="brand"><b>TEDx</b>MSAUniversity<span>Analytics</span></div>
-    <div class="actions" id="actions" hidden>
-      <button class="btn line" id="refresh" type="button">Refresh</button>
-      <button class="btn line" id="out" type="button">Sign out</button>
+  <div class="wrap wide">
+    <div class="top">
+      <div class="brand"><b>TEDx</b>MSAUniversity</div>
+      <div class="actions" id="actions" hidden>
+        <button class="btn line" id="refresh" type="button">Refresh</button>
+        <button class="btn line" id="out" type="button">Sign out</button>
+      </div>
     </div>
+    <nav class="tabs" aria-label="Sections">
+      <a href="#overview" id="tabOverview" aria-current="page">Overview</a>
+      <a href="#responses" id="tabResponses">Responses</a>
+    </nav>
   </div>
 </header>
 
-<main class="wrap">
+<!-- ================= OVERVIEW ================= -->
+<main class="wrap" id="viewOverview">
   <section class="login" id="login">
     <h1>Board analytics</h1>
     <p>Enter the board password to see visits and registrations.</p>
@@ -147,7 +191,7 @@ th{color:var(--mut);font-weight:400}
     <details>
       <summary>Day by day</summary>
       <div class="tw">
-        <table>
+        <table class="num">
           <thead><tr><th>Day</th><th>Visits</th><th>New visitors</th><th>Registrations</th></tr></thead>
           <tbody id="rows"></tbody>
         </table>
@@ -157,6 +201,64 @@ th{color:var(--mut);font-weight:400}
     <p class="note">Numbers update when you press Refresh. A visit is counted once per browser session, and a new visitor is the first visit from a browser each day, so visitor counts are estimates. Registrations include every form submission, even ones whose email failed. Visit tracking started on <span id="trackStart">an earlier day</span>.</p>
   </div>
 </main>
+
+<!-- ================= RESPONSES ================= -->
+<main class="wrap wide" id="viewResponses" hidden>
+  <section class="login" id="resLogin">
+    <h1>Responses</h1>
+    <p>Enter the responses password. It is separate from the board password, because this page shows names, phone numbers and ID numbers.</p>
+    <form id="resForm" autocomplete="off">
+      <label for="rpw">Responses password</label>
+      <input id="rpw" type="password" autocomplete="off" required>
+      <button class="btn" id="rgo" type="submit">Open responses</button>
+      <p class="err" id="resErr" role="alert"></p>
+    </form>
+  </section>
+
+  <div id="resDash" hidden>
+    <div class="rhead">
+      <h1>Responses</h1>
+      <span class="status" id="resStatus" aria-live="polite"></span>
+    </div>
+    <p class="split" id="resSplit"></p>
+    <dl class="kpis" id="resKpis"></dl>
+
+    <div class="toolbar" role="search">
+      <div class="fld grow"><label for="q">Search</label><input id="q" type="search" placeholder="Name, email, phone, ID number" autocomplete="off"></div>
+      <div id="filters" style="display:contents"></div>
+      <div class="fld"><label for="stSel">Email</label>
+        <select id="stSel"><option value="">All</option><option value="sent">Sent</option><option value="failed">Failed or not sent</option></select></div>
+      <div class="fld"><label for="dFrom">From</label><input id="dFrom" type="date"></div>
+      <div class="fld"><label for="dTo">To</label><input id="dTo" type="date"></div>
+      <label class="chk"><input id="dupOnly" type="checkbox"> Possible duplicates only</label>
+      <button class="btn line sm" id="clear" type="button">Clear</button>
+    </div>
+
+    <div class="tools">
+      <span class="count" id="shown" aria-live="polite"></span>
+      <span class="btns">
+        <button class="btn line sm" id="copyEmails" type="button">Copy emails</button>
+        <button class="btn sm" id="csv" type="button">Download CSV</button>
+      </span>
+    </div>
+
+    <div class="tw res"><table class="rt" id="rtab"></table></div>
+    <p class="more" id="moreWrap" hidden><button class="btn line sm" id="more" type="button">Show more</button></p>
+    <p class="note">Everything is loaded once when you open this tab, so searching and filtering cost nothing extra. The page locks itself after 10 minutes without use. Photo links open the file in a new tab.</p>
+  </div>
+</main>
+
+<dialog id="pwDlg">
+  <form method="dialog" id="pwForm">
+    <h2>Board password</h2>
+    <p>Resending an email needs the board password.</p>
+    <input id="bpw" type="password" autocomplete="off" aria-label="Board password">
+    <div class="row">
+      <button class="btn line sm" value="cancel" id="pwCancel" type="button">Cancel</button>
+      <button class="btn sm" value="ok" type="submit">Resend</button>
+    </div>
+  </form>
+</dialog>
 
 <script>
 (function () {
@@ -170,8 +272,26 @@ var pass = null, byDay = {}, firstDay = null, trackFrom = null, range = 30, show
 function $(id) { return document.getElementById(id); }
 function num(n) { return Number(n).toLocaleString("en-US"); }
 
+/* small DOM builder: text always goes in as text, never as HTML */
+function el(tag, attrs) {
+  var e = document.createElement(tag), i, k, c;
+  for (k in (attrs || {})) {
+    if (k === "class") e.className = attrs[k];
+    else if (k === "text") e.textContent = attrs[k];
+    else if (k === "on") { for (var ev in attrs.on) e.addEventListener(ev, attrs.on[ev]); }
+    else if (attrs[k] !== null && attrs[k] !== undefined && attrs[k] !== false) e.setAttribute(k, attrs[k]);
+  }
+  for (i = 2; i < arguments.length; i++) {
+    c = arguments[i];
+    if (c === null || c === undefined || c === false) continue;
+    e.appendChild(typeof c === "object" ? c : document.createTextNode(String(c)));
+  }
+  return e;
+}
+
 /* ---------- dates (all in Cairo calendar days) ---------- */
-function cairoToday() { return new Intl.DateTimeFormat("en-CA", { timeZone: "Africa/Cairo" }).format(new Date()); }
+function cairoDay(d) { return new Intl.DateTimeFormat("en-CA", { timeZone: "Africa/Cairo" }).format(d || new Date()); }
+function cairoToday() { return cairoDay(new Date()); }
 function addDays(iso, n) { var d = new Date(iso + "T00:00:00Z"); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); }
 function diff(a, b) { return Math.round((Date.parse(b + "T00:00:00Z") - Date.parse(a + "T00:00:00Z")) / 86400000); }
 function label(iso, long) {
@@ -179,7 +299,27 @@ function label(iso, long) {
     long ? { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" } : { day: "numeric", month: "short", timeZone: "UTC" });
 }
 
-/* ---------- data ---------- */
+/* ---------- tabs ---------- */
+var tab = "overview";
+function showTab(t) {
+  tab = t;
+  $("viewOverview").hidden = t !== "overview";
+  $("viewResponses").hidden = t !== "responses";
+  $("tabOverview").setAttribute("aria-current", t === "overview" ? "page" : "false");
+  $("tabResponses").setAttribute("aria-current", t === "responses" ? "page" : "false");
+  syncActions();
+  if (t === "responses") { if (!rpass) $("rpw").focus(); else touch(); }
+}
+function tabFromHash() { return location.hash === "#responses" ? "responses" : "overview"; }
+window.addEventListener("hashchange", function () { showTab(tabFromHash()); });
+function syncActions() {
+  var open = tab === "overview" ? (!!pass && !$("dash").hidden) : (!!rpass && !$("resDash").hidden);
+  $("actions").hidden = !open;
+}
+
+/* =====================================================================
+   OVERVIEW
+   ===================================================================== */
 function fetchStats(p) {
   return fetch(SB_URL + "/rest/v1/rpc/analytics_stats", {
     method: "POST",
@@ -204,9 +344,9 @@ function load(fromLogin) {
       if (!firstDay || r.day < firstDay) firstDay = r.day;
       if (r.visits > 0 && (!trackFrom || r.day < trackFrom)) trackFrom = r.day;
     });
-    $("login").hidden = true; $("dash").hidden = false; $("actions").hidden = false;
+    $("login").hidden = true; $("dash").hidden = false;
     $("refresh").disabled = false;
-    render();
+    render(); syncActions();
     $("status").textContent = "Updated " + new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
   }).catch(function (e) {
     $("refresh").disabled = false;
@@ -215,22 +355,21 @@ function load(fromLogin) {
   });
 }
 
-/* ---------- render ---------- */
 function niceMax(m) {
   if (m <= 5) return 5;
   var p = Math.pow(10, Math.floor(Math.log10(m))), f = m / p;
   return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 5 ? 5 : 10) * p;
 }
-
 function rateText(regs, uniques) {
   if (uniques > 0 && uniques >= regs) return (Math.round(1000 * regs / uniques) / 10) + "%";
   return null;
 }
+function kpi(name, value, sub, bad) {
+  return '<div class="kpi"><dt>' + name + '</dt><dd><span class="v' + (bad ? " bad" : "") + '">' + value + '</span><span class="s">' + sub + '</span></dd></div>';
+}
 
 function render() {
   var today = cairoToday(), i, d, r;
-
-  // days in the chosen range, oldest first, zero-filled
   var n = range === 0 ? Math.max(7, firstDay ? diff(firstDay, today) + 1 : 7) : range;
   var days = [];
   for (i = n - 1; i >= 0; i--) {
@@ -239,11 +378,9 @@ function render() {
   }
   shown = days;
 
-  // all-time totals
   var allRegs = 0, allUniq = 0, allVisits = 0;
   Object.keys(byDay).forEach(function (k) { allRegs += byDay[k].registrations; allUniq += byDay[k].uniques; allVisits += byDay[k].visits; });
 
-  // hero
   $("regTotal").textContent = num(allRegs);
   var left = diff(today, EVENT_DAY);
   if (left > 0) { $("daysLeft").textContent = left; $("daysCap").textContent = (left === 1 ? "day" : "days") + " until 19 November"; }
@@ -255,7 +392,6 @@ function render() {
     ? "About " + allRate + " of new visitors have registered."
     : (allVisits ? "The registration rate appears once more visitors than registrations have been tracked." : "No visits have been tracked yet.");
 
-  // range totals
   var sv = 0, su = 0, sr = 0;
   days.forEach(function (x) { sv += x.visits; su += x.uniques; sr += x.regs; });
   var last = days[days.length - 1];
@@ -268,12 +404,10 @@ function render() {
 
   $("trackStart").textContent = trackFrom ? label(trackFrom, false) : "an earlier day";
 
-  // charts
   chart($("chartVisits"), days, "visits", "Visits per day");
   chart($("chartRegs"), days, "regs", "Registrations per day");
   defaultReadout();
 
-  // table, newest first
   $("rows").innerHTML = days.slice().reverse().map(function (x) {
     return "<tr><td>" + label(x.day, true) + "</td><td>" + num(x.visits) + "</td><td>" + num(x.uniques) + "</td><td>" + num(x.regs) + "</td></tr>";
   }).join("");
@@ -282,13 +416,8 @@ function render() {
   for (i = 0; i < btns.length; i++) btns[i].setAttribute("aria-pressed", String(+btns[i].getAttribute("data-r") === range));
 }
 
-function kpi(name, value, sub) {
-  return '<div class="kpi"><dt>' + name + '</dt><dd><span class="v">' + value + '</span><span class="s">' + sub + '</span></dd></div>';
-}
-
 /* ---------- charts (plain SVG, no libraries) ---------- */
 var W = 720, H = 180, L = 38, R = 4, T = 10, B = 24;
-
 function chart(host, days, key, aria) {
   var n = days.length, max = 1, i;
   days.forEach(function (x) { if (x[key] > max) max = x[key]; });
@@ -321,7 +450,6 @@ function chart(host, days, key, aria) {
   svg.addEventListener("pointerdown", function (ev) { hover(idx(ev)); });
   svg.addEventListener("pointerleave", function () { hover(-1); });
 }
-
 function hover(k) {
   var all = document.querySelectorAll(".bar.on"), i;
   for (i = 0; i < all.length; i++) all[i].classList.remove("on");
@@ -331,13 +459,299 @@ function hover(k) {
   var x = shown[k];
   $("readout").textContent = label(x.day, true) + ": " + num(x.visits) + " visits, " + num(x.uniques) + " new visitors, " + num(x.regs) + " registrations";
 }
-
 function defaultReadout() {
   var best = null;
   shown.forEach(function (x) { if (x.regs > 0 && (!best || x.regs > best.regs)) best = x; });
   $("readout").textContent = best
     ? "Best day for registrations: " + label(best.day, true) + " with " + num(best.regs) + ". Hover or tap a day for its numbers."
     : "Hover or tap a day to see its numbers.";
+}
+
+/* =====================================================================
+   RESPONSES
+   ===================================================================== */
+var rpass = null, boardPw = null;
+var resRows = [], cols = [], filterCols = [], fsel = {}, sortKey = "date", sortDir = -1, limit = 200, idle = null;
+var URL_RE = /^https?:\/\//i;
+
+function fetchRes(p) {
+  return fetch(SB_URL + "/rest/v1/rpc/responses_list", {
+    method: "POST",
+    headers: { apikey: SB_KEY, "Content-Type": "application/json" },
+    body: JSON.stringify({ p: p })
+  }).then(function (r) {
+    return r.text().then(function (t) {
+      var j = null; try { j = t ? JSON.parse(t) : null; } catch (e) {}
+      if (!r.ok) throw new Error((j && (j.message || j.hint)) || "Request failed (" + r.status + ")");
+      if (!j || !j.ok) throw new Error((j && j.error) || "Request failed");
+      return j.rows || [];
+    });
+  });
+}
+
+function loadRes(fromLogin) {
+  $("resStatus").textContent = "Loading…";
+  $("refresh").disabled = true;
+  return fetchRes(rpass).then(function (rows) {
+    prepare(rows);
+    $("resLogin").hidden = true; $("resDash").hidden = false;
+    $("refresh").disabled = false;
+    buildFilters(); renderRes(true); syncActions(); touch();
+    $("resStatus").textContent = "Updated " + new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+  }).catch(function (e) {
+    $("refresh").disabled = false;
+    if (fromLogin) { rpass = null; $("resErr").textContent = e.message; }
+    else $("resStatus").textContent = "Could not refresh: " + e.message;
+  });
+}
+
+function kindOf(name, vals) {
+  var nonEmpty = vals.filter(Boolean), urls = nonEmpty.filter(function (v) { return URL_RE.test(v); }).length;
+  if (/photo|image|picture|upload/i.test(name) || (nonEmpty.length && urls / nonEmpty.length > 0.6)) return "photo";
+  if (/e-?mail/i.test(name)) return "email";
+  if (/mobile|phone|whatsapp/i.test(name)) return "phone";
+  if (/id number|national|passport|student id/i.test(name)) return "id";
+  return "text";
+}
+
+function prepare(rows) {
+  var order = [], seen = {};
+  rows.slice().reverse().forEach(function (r) {
+    (r.answers || []).forEach(function (a) { if (!seen[a.q]) { seen[a.q] = 1; order.push(a.q); } });
+  });
+  resRows = rows.map(function (r) {
+    var by = {};
+    (r.answers || []).forEach(function (a) { by[a.q] = a.a === null || a.a === undefined ? "" : String(a.a); });
+    var t = new Date(r.created_at);
+    return { id: r.id, form: r.form_title || r.form_id || "", status: r.status || "", error: r.error || "", at: t, day: cairoDay(t), by: by, flags: [], hay: "" };
+  });
+
+  cols = order.map(function (name) {
+    var vals = resRows.map(function (r) { return r.by[name] || ""; });
+    return { name: name, kind: kindOf(name, vals) };
+  });
+
+  // possible duplicates: same ID number or same phone on more than one registration
+  var counts = {};
+  function norm(c, v) { return c.kind === "phone" ? v.replace(/\D/g, "").slice(-10) : v.toLowerCase().replace(/\s+/g, ""); }
+  cols.forEach(function (c) {
+    if (c.kind !== "id" && c.kind !== "phone") return;
+    resRows.forEach(function (r) { var v = norm(c, r.by[c.name] || ""); if (v.length > 3) counts[c.name + "\u0000" + v] = (counts[c.name + "\u0000" + v] || 0) + 1; });
+  });
+  cols.forEach(function (c) {
+    if (c.kind !== "id" && c.kind !== "phone") return;
+    resRows.forEach(function (r) {
+      var v = norm(c, r.by[c.name] || "");
+      if (v.length > 3 && counts[c.name + "\u0000" + v] > 1) r.flags.push("Same " + c.name.toLowerCase() + " as another registration");
+    });
+  });
+
+  resRows.forEach(function (r) {
+    var parts = [r.form, r.day];
+    cols.forEach(function (c) { if (c.kind !== "photo") parts.push(r.by[c.name] || ""); });
+    r.hay = parts.join(" ").toLowerCase();
+  });
+
+  // automatic filters for columns with a few repeating answers (like "Who are you?")
+  filterCols = cols.filter(function (c) {
+    if (c.kind !== "text") return false;
+    var vals = resRows.map(function (r) { return r.by[c.name] || ""; }).filter(Boolean), set = {};
+    vals.forEach(function (v) { set[v] = (set[v] || 0) + 1; });
+    var d = Object.keys(set).length;
+    c.options = Object.keys(set).sort(function (a, b) { return set[b] - set[a]; }).map(function (v) { return { v: v, n: set[v] }; });
+    var forced = /who are you|type|faculty|college|year|gender|role/i.test(c.name);
+    return d >= 2 && d <= 8 && (forced || (vals.length >= 6 && d * 2 <= vals.length));
+  });
+  fsel = {};
+}
+
+function buildFilters() {
+  var host = $("filters");
+  host.textContent = "";
+  filterCols.forEach(function (c) {
+    var sel = el("select", { id: "f_" + filterCols.indexOf(c), on: { change: function () { fsel[c.name] = this.value; renderRes(true); } } },
+      el("option", { value: "", text: "All" }));
+    c.options.forEach(function (o) { sel.appendChild(el("option", { value: o.v, text: o.v + " (" + o.n + ")" })); });
+    host.appendChild(el("div", { class: "fld" }, el("label", { for: sel.id, text: c.name }), sel));
+  });
+}
+
+function visibleRows() {
+  var tokens = $("q").value.toLowerCase().split(/\s+/).filter(Boolean);
+  var from = $("dFrom").value, to = $("dTo").value, st = $("stSel").value, dup = $("dupOnly").checked;
+  var out = resRows.filter(function (r) {
+    for (var i = 0; i < tokens.length; i++) if (r.hay.indexOf(tokens[i]) < 0) return false;
+    if (from && r.day < from) return false;
+    if (to && r.day > to) return false;
+    if (st === "sent" && r.status !== "sent") return false;
+    if (st === "failed" && r.status === "sent") return false;
+    for (var k in fsel) if (fsel[k] && r.by[k] !== fsel[k]) return false;
+    if (dup && !r.flags.length) return false;
+    return true;
+  });
+  out.sort(function (a, b) {
+    var x, y;
+    if (sortKey === "date") { x = a.at.getTime(); y = b.at.getTime(); return (x - y) * sortDir; }
+    if (sortKey === "status") { x = a.status; y = b.status; }
+    else if (sortKey === "flags") { x = a.flags.length; y = b.flags.length; return (x - y) * sortDir; }
+    else { x = a.by[sortKey] || ""; y = b.by[sortKey] || ""; }
+    return String(x).localeCompare(String(y), undefined, { numeric: true, sensitivity: "base" }) * sortDir;
+  });
+  return out;
+}
+
+function fmtWhen(d) {
+  return d.toLocaleString("en-GB", { timeZone: "Africa/Cairo", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", hour12: false });
+}
+
+function summary() {
+  var total = resRows.length, sent = 0, bad = 0, flagged = 0;
+  resRows.forEach(function (r) { if (r.status === "sent") sent++; else bad++; if (r.flags.length) flagged++; });
+  $("resKpis").innerHTML =
+    kpi("Registrations", num(total), "All forms") +
+    kpi("Emails sent", num(sent), total ? Math.round(100 * sent / total) + "% of registrations" : "") +
+    kpi("Emails failed or not sent", num(bad), bad ? "Use Resend on those rows" : "None", bad > 0) +
+    kpi("Possible duplicates", num(flagged), flagged ? "Same ID number or phone" : "None found", flagged > 0);
+
+  // one plain sentence for the first filter column, e.g. "Who are you?: MSA student 320, Outcomer 180"
+  var c = filterCols[0];
+  $("resSplit").textContent = c ? c.name + ": " + c.options.map(function (o) { return o.v + " " + num(o.n); }).join(", ") : "";
+}
+
+function renderRes(resetLimit) {
+  if (resetLimit) limit = 200;
+  summary();
+  var rows = visibleRows(), table = $("rtab");
+  table.textContent = "";
+
+  var heads = [{ key: "date", text: "Registered" }]
+    .concat(cols.map(function (c) { return { key: c.name, text: c.name, sortable: c.kind !== "photo" }; }))
+    .concat([{ key: "status", text: "Email" }, { key: "flags", text: "Flags" }]);
+  var tr = el("tr");
+  heads.forEach(function (h) {
+    var th = el("th", { scope: "col", "aria-sort": sortKey === h.key ? (sortDir > 0 ? "ascending" : "descending") : "none" });
+    if (h.sortable === false) th.appendChild(el("button", { type: "button", text: h.text, disabled: "disabled", style: "cursor:default" }));
+    else th.appendChild(el("button", { type: "button", text: h.text, "data-dir": sortKey === h.key ? (sortDir > 0 ? "▲" : "▼") : null,
+      on: { click: function () { if (sortKey === h.key) sortDir = -sortDir; else { sortKey = h.key; sortDir = h.key === "date" ? -1 : 1; } renderRes(true); } } }));
+    tr.appendChild(th);
+  });
+  table.appendChild(el("thead", null, tr));
+
+  var body = el("tbody");
+  rows.slice(0, limit).forEach(function (r) {
+    var row = el("tr", null, el("td", { class: "nw", text: fmtWhen(r.at) }));
+    cols.forEach(function (c) {
+      var v = r.by[c.name] || "", td;
+      if (!v) { row.appendChild(el("td", { class: "dim", text: "–" })); return; }
+      if (c.kind === "photo") {
+        td = el("td", { class: "nw" });
+        v.split(/,\s*(?=https?:\/\/)/).forEach(function (u, i) {
+          if (!URL_RE.test(u)) { td.appendChild(document.createTextNode(u)); return; }
+          if (i) td.appendChild(document.createTextNode(" · "));
+          td.appendChild(el("a", { href: u, target: "_blank", rel: "noopener noreferrer", text: "Photo " + (i + 1) }));
+        });
+      } else td = el("td", { class: c.kind === "id" || c.kind === "phone" ? "nw" : null, text: v });
+      row.appendChild(td);
+    });
+    var st = el("td", { class: "nw" });
+    if (r.status === "sent") st.appendChild(document.createTextNode("Sent"));
+    else {
+      st.appendChild(el("span", { class: "st-bad", text: "Not sent " }));
+      st.appendChild(el("button", { class: "btn line sm", type: "button", text: "Resend", on: { click: function () { resend(r, this); } } }));
+    }
+    row.appendChild(st);
+    row.appendChild(el("td", { class: r.flags.length ? "flag" : "dim", text: r.flags.length ? r.flags.join("; ") : "–" }));
+    body.appendChild(row);
+  });
+  if (!rows.length) body.appendChild(el("tr", null, el("td", { class: "empty", colspan: heads.length, text: resRows.length ? "No registrations match these filters." : "No registrations yet." })));
+  table.appendChild(body);
+
+  $("shown").textContent = "Showing " + num(Math.min(rows.length, limit)) + " of " + num(rows.length) + (rows.length !== resRows.length ? " (" + num(resRows.length) + " in total)" : "");
+  $("moreWrap").hidden = rows.length <= limit;
+}
+
+/* ---------- export, copy, resend ---------- */
+function csvCell(v) {
+  v = String(v === null || v === undefined ? "" : v);
+  if (/^[=@\t\r]/.test(v) || (/^[+-]/.test(v) && !/^[+-]?[\d\s().-]+$/.test(v))) v = "'" + v;
+  return /[",\n\r]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
+}
+function stamp(d) {
+  var p = {};
+  new Intl.DateTimeFormat("en-GB", { timeZone: "Africa/Cairo", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false })
+    .formatToParts(d).forEach(function (x) { p[x.type] = x.value; });
+  return p.year + "-" + p.month + "-" + p.day + " " + p.hour + ":" + p.minute;
+}
+function downloadCsv() {
+  var rows = visibleRows();
+  var head = ["Registered"].concat(cols.map(function (c) { return c.name; })).concat(["Email status", "Flags"]);
+  var lines = [head.map(csvCell).join(",")];
+  rows.forEach(function (r) {
+    lines.push([stamp(r.at)].concat(cols.map(function (c) { return r.by[c.name] || ""; })).concat([r.status === "sent" ? "Sent" : "Not sent", r.flags.join("; ")]).map(csvCell).join(","));
+  });
+  var blob = new Blob(["\ufeff" + lines.join("\r\n")], { type: "text/csv;charset=utf-8" });
+  var a = el("a", { href: URL.createObjectURL(blob), download: "registrations-" + cairoToday() + ".csv" });
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(function () { URL.revokeObjectURL(a.href); }, 2000);
+  say("Downloaded " + num(rows.length) + " rows.");
+}
+function copyEmails() {
+  var ecols = cols.filter(function (c) { return c.kind === "email"; }), seen = {}, list = [];
+  visibleRows().forEach(function (r) {
+    ecols.forEach(function (c) { var v = (r.by[c.name] || "").trim().toLowerCase(); if (v && !seen[v]) { seen[v] = 1; list.push(v); } });
+  });
+  if (!list.length) { say("No emails in the current list."); return; }
+  var text = list.join(", ");
+  (navigator.clipboard && navigator.clipboard.writeText ? navigator.clipboard.writeText(text) : Promise.reject())
+    .then(function () { say("Copied " + num(list.length) + " emails."); })
+    .catch(function () { window.prompt("Copy these emails:", text); });
+}
+function say(msg) { $("resStatus").textContent = msg; }
+
+function askBoardPw() {
+  if (boardPw) return Promise.resolve(boardPw);
+  return new Promise(function (resolve) {
+    var dlg = $("pwDlg"), input = $("bpw");
+    input.value = "";
+    function done(v) { dlg.close(); $("pwForm").removeEventListener("submit", ok); $("pwCancel").removeEventListener("click", no); dlg.removeEventListener("cancel", no); resolve(v); }
+    function ok(ev) { ev.preventDefault(); done(input.value || null); }
+    function no() { done(null); }
+    $("pwForm").addEventListener("submit", ok); $("pwCancel").addEventListener("click", no); dlg.addEventListener("cancel", no);
+    dlg.showModal(); input.focus();
+  });
+}
+function resend(row, btn) {
+  askBoardPw().then(function (pw) {
+    if (!pw) return;
+    btn.disabled = true; btn.textContent = "Sending…";
+    return fetch(SB_URL + "/functions/v1/register", {
+      method: "POST", headers: { apikey: SB_KEY, "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "resend", password: pw, id: row.id })
+    }).then(function (r) { return r.json().then(function (j) { if (!r.ok) throw new Error(j.error || "Request failed"); return j; }); })
+      .then(function (j) {
+        boardPw = pw;
+        row.status = j.ok ? "sent" : "error"; row.error = j.ok ? "" : (j.error || "");
+        renderRes(false);
+        say(j.ok ? "Email sent." : "Email failed: " + (j.error || "unknown error"));
+      })
+      .catch(function (e) {
+        if (/password/i.test(e.message)) boardPw = null;
+        btn.disabled = false; btn.textContent = "Resend";
+        say(e.message);
+      });
+  });
+}
+
+/* ---------- auto-lock after 10 idle minutes ---------- */
+function touch() {
+  clearTimeout(idle);
+  if (rpass) idle = setTimeout(function () { lockRes("Locked after 10 minutes without use."); }, 10 * 60 * 1000);
+}
+function lockRes(msg) {
+  rpass = null; boardPw = null; resRows = []; clearTimeout(idle);
+  $("rtab").textContent = ""; $("resKpis").textContent = ""; $("resSplit").textContent = "";
+  $("resDash").hidden = true; $("resLogin").hidden = false; $("resErr").textContent = msg || "";
+  syncActions();
 }
 
 /* ---------- events ---------- */
@@ -347,12 +761,36 @@ $("loginForm").addEventListener("submit", function (ev) {
   pass = v; $("loginErr").textContent = "Checking…"; $("go").disabled = true;
   load(true).then(function () { $("go").disabled = false; if (pass) { $("pw").value = ""; $("loginErr").textContent = ""; } });
 });
-$("refresh").addEventListener("click", function () { load(false); });
-$("out").addEventListener("click", function () { pass = null; location.reload(); });
+$("resForm").addEventListener("submit", function (ev) {
+  ev.preventDefault();
+  var v = $("rpw").value; if (!v) return;
+  rpass = v; $("resErr").textContent = "Checking…"; $("rgo").disabled = true;
+  loadRes(true).then(function () { $("rgo").disabled = false; if (rpass) { $("rpw").value = ""; $("resErr").textContent = ""; } });
+});
+$("refresh").addEventListener("click", function () { if (tab === "overview") load(false); else loadRes(false); });
+$("out").addEventListener("click", function () {
+  if (tab === "overview") { pass = null; byDay = {}; $("dash").hidden = true; $("login").hidden = false; $("loginErr").textContent = ""; syncActions(); }
+  else lockRes("");
+});
 $("seg").addEventListener("click", function (ev) {
   var b = ev.target.closest("button"); if (!b) return;
   range = +b.getAttribute("data-r"); render();
 });
+
+var qTimer = null;
+$("q").addEventListener("input", function () { clearTimeout(qTimer); qTimer = setTimeout(function () { renderRes(true); }, 120); });
+["stSel", "dFrom", "dTo", "dupOnly"].forEach(function (id) { $(id).addEventListener("change", function () { renderRes(true); }); });
+$("clear").addEventListener("click", function () {
+  $("q").value = ""; $("stSel").value = ""; $("dFrom").value = ""; $("dTo").value = ""; $("dupOnly").checked = false;
+  fsel = {}; filterCols.forEach(function (c, i) { $("f_" + i).value = ""; });
+  renderRes(true);
+});
+$("more").addEventListener("click", function () { limit += 200; renderRes(false); });
+$("csv").addEventListener("click", downloadCsv);
+$("copyEmails").addEventListener("click", copyEmails);
+["click", "keydown", "input"].forEach(function (e) { $("viewResponses").addEventListener(e, touch); });
+
+showTab(tabFromHash());
 })();
 </script>
 </body>
