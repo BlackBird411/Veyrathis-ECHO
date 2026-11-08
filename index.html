@@ -1027,9 +1027,9 @@ function nav() {
         return h("a", { class: "lk" + (isNews ? " news" : ""), href: "#" + x[0], on: isNews ? { click: markAnnRead } : null },
           x[1], n ? h("span", { class: "badge", "aria-label": n + " new" }, n > 9 ? "9+" : String(n)) : null);
       }),
-         editing ? [h("span", { class: "tag" }, "Editing"),
-h("a", { class: "btn sm line", href: "/analytics.html", target: "_blank", rel: "noopener" }, "Analytics")
-                    : h("button", { class: "btn sm", type: "button", on: { click: openLogin } }, "Board login"))));
+      editing ? [h("span", { class: "tag" }, "Editing"),
+                 h("a", { class: "btn sm line", href: "/analytics.html", target: "_blank", rel: "noopener" }, "Analytics")]
+              : h("button", { class: "btn sm", type: "button", on: { click: openLogin } }, "Board login"))));
 }
 
 function ctaBtn(path, href, ghost) {
