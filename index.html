@@ -430,6 +430,7 @@ dialog .err{color:var(--red);font-size:14px;min-height:20px;margin:0 0 10px}
   .star{flex:0 0 78%;scroll-snap-align:center}
 }
 @media(prefers-reduced-motion:reduce){.star,.starimg .pic img{transition:none}}
+    .vbar{height:8px;background:var(--red);border-radius:4px}
 </style>
 <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
 </head>
@@ -1026,7 +1027,8 @@ function nav() {
         return h("a", { class: "lk" + (isNews ? " news" : ""), href: "#" + x[0], on: isNews ? { click: markAnnRead } : null },
           x[1], n ? h("span", { class: "badge", "aria-label": n + " new" }, n > 9 ? "9+" : String(n)) : null);
       }),
-      editing ? h("span", { class: "tag" }, "Editing")
+         editing ? [h("span", { class: "tag" }, "Editing"),
+                 h("button", { class: "btn sm line", type: "button", on: { click: openVisits } }, "Visits")]
               : h("button", { class: "btn sm", type: "button", on: { click: openLogin } }, "Board login"))));
 }
 
@@ -1728,7 +1730,28 @@ function openResponses(form) {
         h("button", { class: "btn sm", type: "button", on: { click: function () { dlg.close(); } } }, "Close"))));
   }).catch(function (e) { box.textContent = ""; box.append(h("p", null, "Could not load: " + e.message)); });
 }
-
+function openVisits() {
+  var dlg = $id("respdlg"), box = $id("respbox");
+  box.textContent = ""; box.append(h("p", null, "Loading…"));
+  if (!dlg.open) dlg.showModal();
+  api("rpc/visit_stats", { method: "POST", body: JSON.stringify({ p: password }) }).then(function (rows) {
+    rows = rows || [];
+    var tv = 0, tu = 0, max = 1;
+    rows.forEach(function (r) { tv += r.visits; tu += r.uniques; if (r.visits > max) max = r.visits; });
+    var today = rows[0] ? rows[0] : { visits: 0, uniques: 0 };
+    box.textContent = "";
+    box.append(h("div", null,
+      h("h3", null, "Visits"),
+      h("p", null, "Latest day: " + today.visits + " visits, " + today.uniques + " new visitors. Total: " + tv + " visits, about " + tu + " unique visitors."),
+      rows.length ? h("div", { class: "rtw" }, h("table", { class: "rt" },
+        h("thead", null, h("tr", null, h("th", null, "Day"), h("th", null, "Visits"), h("th", null, "Unique"), h("th", null, ""))),
+        h("tbody", null, rows.map(function (r) {
+          var bar = h("div", { class: "vbar" }); bar.style.width = Math.max(2, Math.round(r.visits / max * 160)) + "px";
+          return h("tr", null, h("td", null, r.day), h("td", null, String(r.visits)), h("td", null, String(r.uniques)), h("td", null, bar));
+        })))) : h("p", null, "No visits recorded yet."),
+      h("div", { class: "cta" }, h("button", { class: "btn sm", type: "button", on: { click: function () { dlg.close(); } } }, "Close"))));
+  }).catch(function (e) { box.textContent = ""; box.append(h("p", null, "Could not load: " + e.message)); });
+}
 function regSec() {
   var s = "site.registrations", cards = [];
   state.site.registrations.forEach(function (f, i) {
@@ -1847,10 +1870,18 @@ function init(d) {
     };
   });
 }
+  function trackVisit() {
+  if (editing || password) return;                         // never count the board
+  try { if (sessionStorage.getItem("tedx-v") === "1") return; sessionStorage.setItem("tedx-v", "1"); } catch (e) {}
+  var today = new Date().toISOString().slice(0, 10), first = true;
+  try { first = localStorage.getItem("tedx-vd") !== today; localStorage.setItem("tedx-vd", today); } catch (e) {}
+  api("rpc/track_visit", { method: "POST", body: JSON.stringify({ u: first }), keepalive: true }).catch(function () {});
+}
 function load() {
   api("team_hierarchy?id=eq.1&select=data").then(function (rows) {
     init((rows[0] && rows[0].data) || {}); loaded = true; dirty = false; render();
     setTimeout(entrancePopup, 700);
+    trackVisit();
   }).catch(function (e) {
     init({}); loaded = false; render(); toast("Could not load saved content: " + e.message, true);
   });
