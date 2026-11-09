@@ -654,7 +654,7 @@ function renderRes(resetLimit) {
       row.appendChild(td);
     });
     var st = el("td", { class: "nw" });
-    if (r.status === "sent") st.appendChild(document.createTextNode("Sent "));
+        if (r.status === "sent") st.appendChild(document.createTextNode("Sent "));
     else st.appendChild(el("span", { class: "st-bad", text: "Not sent " }));
     st.appendChild(el("button", { class: "btn line sm", type: "button", text: "Resend", on: { click: function () { resend(r, this); } } }));
     row.appendChild(st);
