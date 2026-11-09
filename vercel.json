@@ -1,6 +1,6 @@
 {
   "rewrites": [
-    { "source": "/m/:file", "destination": "https://fdiounclxvaescxfkcnt.supabase.co/storage/v1/object/public/site-media/:file" },
+{ "source": "/m/:file", "destination": "/api/m?file=:file" },
     { "source": "/analytics", "destination": "/analytics.html" }
   ],
   "headers": [
