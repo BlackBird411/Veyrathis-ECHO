@@ -556,7 +556,11 @@ var DEFAULTS = {
     title: "Sponsors & partners",
     lead: "TEDxMSAUniversity is made possible by the organizations that believe in ideas worth spreading."
   },
-  sponsors: [],
+  whatifHead: {
+    eyebrow: "19 November 2026 · MSA University",
+    title: "WHAT IF?",
+    lead: "Stop fearing the question mark. Start chasing the exclamation point. Meet the voices on our stage and the partners who make it happen."
+  },
   eventsHead: {
     eyebrow: "Our story",
     title: "Past events",
@@ -1016,7 +1020,7 @@ function videoEditor(v, p) {
 
 function nav() {
   var l = [["about", "About"]];
-  if (editing || state.site.announcements.some(function (a) { return a.title; })) l.push(["announcements", "News"]);
+  if (editing || visSpeakers().length || visSponsors().length) l.push(["whatif", "What IF?"]);
   if (editing || state.site.registrations.length) l.push(["registration", "Register"]);   if (editing || visEvents().length) l.push(["events", "Events"]);
   if (editing || visGallery().length) l.push(["gallery", "Gallery"]);
   if (editing || visVideos().length) l.push(["videos", "Reels"]);
@@ -1310,7 +1314,76 @@ function announcementsSec() {
       } } }, "+ New announcement"),
       h("button", { type: "button", class: "btn sm line", on: { click: function () { showPopup(true); } } }, "Preview pop-up")) : null));
 }
+/* ---------- What IF? (speakers + sponsors) ---------- */
+function visSpeakers() { return state.site.speakers.filter(function (x) { return x.name; }); }
+function visSponsors() { return state.site.sponsors.filter(function (x) { return x.name; }); }
 
+function speakersBlock() {
+  var s = "site.speakers", cards = [];
+  state.site.speakers.forEach(function (x, i) {
+    if (!editing && !x.name) return;
+    var p = s + "." + i + ".", link = safeUrl(x.link), more = null;
+    var pic = PIC(p + "photo", "", 900, "photo", 4 / 5) || h("div", { class: "noimg" }, (x.name || "?").trim().charAt(0).toUpperCase());
+    if (editing) more = INP(p + "link", "Link (optional)", "https://…");
+    else if (link) more = h("a", { class: "more", href: link, target: "_blank", rel: "noopener" }, "Learn more →");
+    cards.push(h("article", { class: "spk" + (editing && !x.name ? " slot" : "") }, pic,
+      h("div", { class: "body" },
+        T("h3", p + "name", "", "Full name"),
+        T("div", p + "role", "srole", "Role / title"),
+        T("div", p + "talk", "stalk", "Talk title"),
+        T("p", p + "bio", "sbio", "Short bio (one or two sentences)", true),
+        more, editing ? ctl(s, i) : null)));
+  });
+  if (!editing && !cards.length) return null;
+  return h("div", null,
+    h("div", { style: "margin:0 0 24px" }, T("h3", "site.speakersHead.title", "", "Speakers")),
+    h("div", { class: "spks" }, cards),
+    editing ? addRow(s, { name: "", role: "", talk: "", bio: "", photo: "", link: "" }, "Add speaker") : null);
+}
+
+function sponsorsBlock() {
+  var s = "site.sponsors", list = state.site.sponsors;
+  function tile(x, i) {
+    var p = s + "." + i + ".", link = safeUrl(x.link);
+    if (editing) return h("div", { class: "sp" + (!x.name ? " slot" : "") },
+      PIC(p + "logo", "", 600, "logo"),
+      T("div", p + "name", "sn", "Sponsor name"),
+      INP(p + "tier", "Tier (e.g. Title sponsor, Gold, Partner)", "Gold"),
+      INP(p + "link", "Website (optional)", "https://…"),
+      ctl(s, i));
+    var inner = x.logo ? h("img", { src: cdn(x.logo), alt: x.name, loading: "lazy" }) : h("div", { class: "sn" }, x.name);
+    return link ? h("a", { class: "sp", href: link, target: "_blank", rel: "noopener" }, inner)
+                : h("div", { class: "sp" }, inner);
+  }
+  var body, any = visSponsors().length > 0;
+  if (editing) body = h("div", { class: "sps edit" }, list.map(tile));
+  else {
+    var tiers = [], map = {}, parts = [];
+    list.forEach(function (x, i) {
+      if (!x.name) return;
+      var t = (x.tier || "").trim() || "Partners";
+      if (!map[t]) { map[t] = []; tiers.push(t); }
+      map[t].push(tile(x, i));
+    });
+    tiers.forEach(function (t) {
+      parts.push(h("div", { class: "tier" }, t), h("div", { class: "sps" }, map[t]));
+    });
+    body = h("div", null, parts);
+  }
+  if (!editing && !any) return null;
+  return h("div", null,
+    h("div", { style: "margin:0 0 24px" }, T("h3", "site.sponsorsHead.title", "", "Sponsors & partners")),
+    body,
+    editing ? addRow(s, { name: "", tier: "", logo: "", link: "" }, "Add sponsor") : null);
+}
+
+function whatifSec() {
+  var sp = speakersBlock(), sn = sponsorsBlock();
+  if (!sp && !sn) return null;
+  return h("section", { class: "soft", id: "whatif" }, h("div", { class: "wrap" },
+    head("site.whatifHead"),
+    sp, sp && sn ? h("div", { style: "height:72px" }) : null, sn));
+}
 function eventsSec() {
   var s = "site.events", cards = [];
   state.site.events.forEach(function (e, i) {
@@ -1826,7 +1899,7 @@ h("a", { class: "btn sm line", href: "/analytics.html#responses", target: "_blan
 function render() {
   var y = window.scrollY, app = document.getElementById("app");
   app.textContent = "";
-  [announceBar(), nav(), hero(), stats(), about(), nextBand(), announcementsSec(), regSec(), eventsSec(), gallerySec(), videosSec(), teamSec(), contactSec(), footer()]
+  [announceBar(), nav(), hero(), stats(), about(), nextBand(), announcementsSec(), whatifSec(), regSec(), eventsSec(), gallerySec(), videosSec(), teamSec(), contactSec(), footer()]
     .forEach(function (n) { if (n) app.append(n); });
   renderBar();
   fitTree();
