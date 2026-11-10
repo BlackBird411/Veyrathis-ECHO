@@ -1683,14 +1683,15 @@ function openReg(form) {
     Promise.all(jobs).then(function () {
       return fetch(SB_URL + "/functions/v1/register", { method: "POST", headers: { apikey: SB_KEY }, body: fd });
     }).then(function (r) {
-      return r.json().then(function (j) { if (!r.ok) throw new Error(j.error || "Could not register"); return j; });
+      return r.json().then(function (j) { if (!r.ok) { var er = new Error(j.error || "Could not register"); er.full = !!j.full; throw er; } return j; });
     }).then(function (j) {
       box.textContent = "";
       box.append(h("div", null, h("h3", null, "Thank you!"),
         h("p", null, j.emailed ? (form.thanks || REG_TPL.thanks) : "You are registered, but we could not send your email yet. The team will resend it."),
         h("div", { class: "cta" }, h("button", { class: "btn", type: "button", on: { click: function () { dlg.close(); } } }, "Close"))));
     }).catch(function (e) {
-      err.textContent = e.message; send.disabled = false; send.textContent = form.button || "Register";
+      err.textContent = e.message; send.disabled = !!e.full; send.textContent = e.full ? "Registration full" : (form.button || "Register");
+      if (e.full) { fullForms[form.id] = true; render(); }
       if (window.turnstile && cfId !== null) turnstile.reset(cfId);
     });
   });
@@ -1760,21 +1761,44 @@ function openVisits() {
       h("div", { class: "cta" }, h("button", { class: "btn sm", type: "button", on: { click: function () { dlg.close(); } } }, "Close"))));
   }).catch(function (e) { box.textContent = ""; box.append(h("p", null, "Could not load: " + e.message)); });
 }
+var fullForms = {};
+function loadFull() {
+  var any = state.site.registrations.some(function (f) { return parseInt(f.limit, 10) > 0; });
+  if (!any) { var had = Object.keys(fullForms).length; fullForms = {}; if (had) render(); return; }
+  api("rpc/reg_full_forms", { method: "POST", body: "{}" }).then(function (ids) {
+    fullForms = {}; (ids || []).forEach(function (id) { fullForms[id] = true; }); render();
+  }).catch(function () {});
+}
+function checkRegAlerts() {
+  api("rpc/reg_alerts", { method: "POST", body: JSON.stringify({ p: password }) }).then(function (rows) {
+    var fresh = (rows || []).filter(function (r) { try { return !localStorage.getItem("regAlert:" + r.out_form + ":" + r.out_limit); } catch (e) { return true; } });
+    if (!fresh.length) return;
+    var dlg = $id("respdlg"), box = $id("respbox");
+    box.textContent = "";
+    box.append(h("div", null, h("h3", null, "Registration limit reached"),
+      fresh.map(function (r) { return h("p", null, (r.out_title || "Registration") + ": " + r.out_count + " of " + r.out_limit + " registered" + (r.out_reached ? " (limit reached " + new Date(r.out_reached).toLocaleString() + ")" : "") + ". Registration closed automatically."); }),
+      h("p", null, "To reopen it, raise or clear the limit on the registration card."),
+      h("div", { class: "cta" }, h("button", { class: "btn sm", type: "button", on: { click: function () { dlg.close(); } } }, "Close"))));
+    if (!dlg.open) dlg.showModal();
+    fresh.forEach(function (r) { try { localStorage.setItem("regAlert:" + r.out_form + ":" + r.out_limit, "1"); } catch (e) {} });
+  }).catch(function () {});
+}
 function regSec() {
   var s = "site.registrations", cards = [];
   state.site.registrations.forEach(function (f, i) {
     if (!editing && !f.title) return;
-    var p = s + "." + i + ".", late = cdTime(f.closes) <= Date.now(), open = f.open !== false && !late;
+    var p = s + "." + i + ".", late = cdTime(f.closes) <= Date.now(), full = !!fullForms[f.id], open = f.open !== false && !late && !full;
     var btn = h("button", { class: "btn", type: "button", disabled: open ? null : "disabled", on: { click: function () { openReg(f); } } },
-      open ? (f.button || "Register") : "Registration closed");
+      open ? (f.button || "Register") : (full ? "Registration full" : "Registration closed"));
     var adm = null;
     if (editing) adm = h("div", { class: "radm" },
       h("div", { class: "ctl" },
-        h("button", { type: "button", class: "btn sm" + (open ? " line" : ""), on: { click: function () { f.open = !open; touch(); } } }, open ? "Close registration" : "Open registration"),
+        full ? h("span", { class: "tag" }, "Limit reached") : h("button", { type: "button", class: "btn sm" + (open ? " line" : ""), on: { click: function () { f.open = !open; touch(); } } }, open ? "Close registration" : "Open registration"),
 h("a", { class: "btn sm line", href: "/analytics.html#responses", target: "_blank", rel: "noopener" }, "View responses")),
                          INP(p + "button", "Button text", "Register"),
            INP(p + "thanks", "Message shown after registering", ""),
       CDI(p + "closes", "Registration closes automatically at (Cairo time). Clear it to reopen."),
+      INP(p + "limit", "Registration limit (closes automatically when reached; blank = no limit)", "e.g. 300", "number"),
       h("details", { class: "rfields", open: "open" },
         h("summary", null, "Questions (" + f.fields.length + ")"),
         f.fields.map(function (q, qi) { return fieldEditor(s + "." + i + ".fields", f, qi); }),
@@ -1783,11 +1807,12 @@ h("a", { class: "btn sm line", href: "/analytics.html#responses", target: "_blan
         } } }, "+ Add question"))),
       ctl(s, i));
     cards.push(h("article", { class: "reg" + (editing && !f.title ? " slot" : "") },
-      h("div", { class: "rmeta" }, h("span", { class: "pill " + (open ? "ok" : "no") }, open ? "Open" : "Closed")),
+      h("div", { class: "rmeta" }, h("span", { class: "pill " + (open ? "ok" : "no") }, open ? "Open" : (full ? "Full" : "Closed"))),
       T("h3", p + "title", "", "Form title, e.g. Attendee registration"),
       T("div", p + "when", "when", "Date or deadline (optional)"),
           T("p", p + "desc", "", "Short description", true),
       open && !isNaN(cdTime(f.closes)) ? h("div", null, h("div", { class: "cdl" }, "Registration closes in"), cdEl(f.closes, { done: "Registration closed", rerender: true })) : null,
+      full && !editing ? h("p", { class: "pl" }, "Registration is full. For more information, please email TEDx at " + ((state.site.contact && state.site.contact.email) || "tedx@msa.edu.eg") + ".") : null,
       btn, adm));
   });
   if (!editing && !cards.length) return null;
@@ -1839,6 +1864,7 @@ function doLogin() {
       password = pw; editing = true;
       document.getElementById("login").close(); render();
       toast("Board edit mode is on. Click any text to edit it.");
+      checkRegAlerts();
     } else { err.textContent = "Wrong password."; document.getElementById("pw").value = ""; }
   }).catch(function (e) { go.disabled = false; err.textContent = "Error: " + e.message; });
 }
@@ -1851,7 +1877,7 @@ function save() {
   if (!loaded) { toast("Content did not load. Refresh the page before saving.", true); return; }
   toast("Saving…");
   api("rpc/save_hierarchy", { method: "POST", body: JSON.stringify({ p: password, d: { roles: state.roles, site: state.site } }) })
-    .then(function () { dirty = false; markDirty(); toast("Saved. Your changes are live."); })
+    .then(function () { dirty = false; markDirty(); toast("Saved. Your changes are live."); loadFull(); })
     .catch(function (e) { toast("Save failed: " + e.message, true); });
 }
 
@@ -1889,7 +1915,8 @@ function load() {
   api("team_hierarchy?id=eq.1&select=data").then(function (rows) {
     init((rows[0] && rows[0].data) || {}); loaded = true; dirty = false; render();
     setTimeout(entrancePopup, 700);
-    trackVisit();
+        trackVisit();
+    loadFull();
   }).catch(function (e) {
     init({}); loaded = false; render(); toast("Could not load saved content: " + e.message, true);
   });
