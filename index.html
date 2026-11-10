@@ -1021,8 +1021,8 @@ function nav() {
   if (editing || visGallery().length) l.push(["gallery", "Gallery"]);
   if (editing || visVideos().length) l.push(["videos", "Reels"]);
   l.push(["team", "Team"], ["contact", "Contact"]);
-  var h("nav", null, h("div", { class: "wrap navin" }, logo(),
-    h("div", { class: "links" },
+  var nv = h("nav", null, h("div", { class: "wrap navin" }, logo(),
+                            h("div", { class: "links" },
       l.map(function (x) {
         var isNews = x[0] === "announcements", n = (isNews && !editing) ? unreadAnn() : 0;
         return h("a", { class: "lk" + (isNews ? " news" : ""), href: "#" + x[0], on: isNews ? { click: markAnnRead } : null },
