@@ -432,6 +432,14 @@ dialog .err{color:var(--red);font-size:14px;min-height:20px;margin:0 0 10px}
 }
 @media(prefers-reduced-motion:reduce){.star,.starimg .pic img{transition:none}}
     .vbar{height:8px;background:var(--red);border-radius:4px}
+
+/* ---- iOS keyboard / caret fixes for the registration dialog ---- */
+html:has(dialog[open]){scroll-behavior:auto}
+#regdlg{max-height:calc(100vh - 32px);max-height:calc(100dvh - 32px);overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+#regdlg .cfbox{max-width:100%;overflow:hidden}
+@media (max-width:700px){
+  #regdlg{position:fixed;top:0;left:0;right:0;margin:0;width:100%;max-width:none;height:100vh;height:100dvh;max-height:none;border-radius:0;padding-bottom:calc(28px + env(safe-area-inset-bottom,0px))}
+}
 </style>
 <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
 </head>
@@ -1694,6 +1702,32 @@ function openReg(form) {
   var hp = h("input", { class: "hp", type: "text", tabindex: "-1", autocomplete: "off", "aria-hidden": "true" });
   var send = h("button", { class: "btn", type: "button" }, form.button || "Register");
   var cfBox = h("div", { class: "cfbox" }), cfId = null;
+  var cfWait = null, cfTimer = null;
+  var CF_KEY = "0x4AAAAAAF0ilVcudssnB2B4";
+  /* Turnstile runs ONLY when Register is pressed, never while the person is typing
+     (its challenge makes Instagram/Facebook in-app browsers laggy). */
+  function cfDone(fn, arg) { clearTimeout(cfTimer); var w = cfWait; cfWait = null; if (w) w[fn](arg); }
+  function getToken() {
+    if (!window.turnstile) return Promise.resolve("");
+    return new Promise(function (resolve, reject) {
+      cfWait = { ok: resolve, fail: reject };
+      cfTimer = setTimeout(function () { cfDone("fail", new Error("The human check took too long. Please try again.")); }, 25000);
+      if (cfId === null) {
+        cfId = turnstile.render(cfBox, {
+          sitekey: CF_KEY,
+          execution: "execute",
+          appearance: "interaction-only",
+          callback: function (t) { cfDone("ok", t); },
+          "error-callback": function () { cfDone("fail", new Error("The human check failed. Please try again.")); return true; },
+          "timeout-callback": function () { cfDone("fail", new Error("The human check timed out. Please try again.")); },
+          "before-interactive-callback": function () { cfBox.scrollIntoView({ block: "center", behavior: "auto" }); }
+        });
+      } else {
+        turnstile.reset(cfId);
+      }
+      turnstile.execute(cfId);
+    });
+  }
   function sync() { wraps.forEach(function (w) { w.el.style.display = (w.f.showQ && vals[w.f.showQ] !== w.f.showEq) ? "none" : ""; }); }
   function fileField(f) {
     var n = photoCount(f);
@@ -1749,11 +1783,12 @@ function openReg(form) {
       else if (f.type === "email" && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v)) bad = "Enter a valid email address.";
       ans[f.id] = v;
     });
-     if (!bad && window.turnstile && cfId !== null && !turnstile.getResponse(cfId)) bad = "Please complete the human check.";
     if (bad) { err.textContent = bad; err.scrollIntoView({ block: "center", behavior: "smooth" }); return; }
-    send.disabled = true; send.textContent = "Sending…";
-    fd.append("action", "submit"); fd.append("form", form.id); fd.append("answers", JSON.stringify(ans)); fd.append("hp", hp.value); fd.append("cf", window.turnstile && cfId !== null ? turnstile.getResponse(cfId) : "");
-    Promise.all(jobs).then(function () {
+    send.disabled = true; send.textContent = "Verifying…";
+    fd.append("action", "submit"); fd.append("form", form.id); fd.append("answers", JSON.stringify(ans)); fd.append("hp", hp.value);
+    Promise.all([Promise.all(jobs), getToken()]).then(function (res) {
+      send.textContent = "Sending…";
+      fd.append("cf", res[1] || "");
       return fetch(SB_URL + "/functions/v1/register", { method: "POST", headers: { apikey: SB_KEY }, body: fd });
     }).then(function (r) {
       return r.json().then(function (j) { if (!r.ok) { var er = new Error(j.error || "Could not register"); er.full = !!j.full; throw er; } return j; });
@@ -1777,7 +1812,7 @@ function openReg(form) {
     hp, cfBox, err,
     h("div", { class: "cta" }, send, h("button", { class: "btn line", type: "button", on: { click: function () { dlg.close(); } } }, "Cancel"))));
   sync(); dlg.showModal();
-  if (window.turnstile) cfId = turnstile.render(cfBox, { sitekey: "0x4AAAAAAF0ilVcudssnB2B4" });
+  if (window.matchMedia && matchMedia("(pointer:coarse)").matches && document.activeElement && document.activeElement !== document.body) document.activeElement.blur();
 }
 
 /* board: responses table */
@@ -1994,6 +2029,31 @@ function load() {
     init({}); loaded = false; render(); toast("Could not load saved content: " + e.message, true);
   });
 }
+
+/* ---------- iOS: lock page behind the registration dialog, keep focused field visible ---------- */
+(function () {
+  var dlg = document.getElementById("regdlg"), y = 0, locked = false;
+  if (!dlg) return;
+  function lock() {
+    if (locked) return; locked = true;
+    y = window.scrollY;
+    var b = document.body.style;
+    b.position = "fixed"; b.top = -y + "px"; b.left = "0"; b.right = "0"; b.width = "100%";
+  }
+  function unlock() {
+    if (!locked) return; locked = false;
+    var b = document.body.style;
+    b.position = ""; b.top = ""; b.left = ""; b.right = ""; b.width = "";
+    window.scrollTo(0, y);
+  }
+  new MutationObserver(function () { dlg.open ? lock() : unlock(); })
+    .observe(dlg, { attributes: true, attributeFilter: ["open"] });
+  dlg.addEventListener("focusin", function (e) {
+    var t = e.target;
+    if (!/^(INPUT|SELECT|TEXTAREA)$/.test(t.tagName) || t.type === "checkbox" || t.type === "file") return;
+    setTimeout(function () { if (document.activeElement === t) t.scrollIntoView({ block: "center", behavior: "auto" }); }, 350);
+  });
+})();
 wireCropper();
 window.onbeforeunload = function () { return (dirty || vidCount > 0) ? "You have unsaved changes or an upload in progress." : undefined; };
 load();
