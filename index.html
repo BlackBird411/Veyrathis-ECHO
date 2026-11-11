@@ -440,6 +440,44 @@ html:has(dialog[open]){scroll-behavior:auto}
 @media (max-width:700px){
   #regdlg{position:fixed;top:0;left:0;right:0;margin:0;width:100%;max-width:none;height:100vh;height:100dvh;max-height:none;border-radius:0;padding-bottom:calc(28px + env(safe-area-inset-bottom,0px))}
 }
+    /* 1. About cards: fill red */
+.card.cf{position:relative;overflow:hidden;isolation:isolate;transition:color .35s}
+.card.cf::before{content:"";position:absolute;inset:0;background:var(--red);transform:translateY(101%);transition:transform .5s cubic-bezier(.7,0,.2,1);z-index:-1}
+.card.cf :is(h3,p){transition:color .35s}
+.card.cf.on :is(h3,p){color:#fff}
+.card.cf.on::before{transform:none}
+@media (hover:hover){.card.cf:hover :is(h3,p){color:#fff}.card.cf:hover::before{transform:none}}
+
+/* 2. Gallery: viewfinder hover */
+.gal figure.vf .pic{overflow:hidden}
+.gal figure.vf .pic::before,.gal figure.vf .pic::after{content:"";position:absolute;width:0;height:0;border:0 solid #fff;opacity:0;pointer-events:none;z-index:2;transition:width .35s,height .35s,opacity .35s}
+.gal figure.vf .pic::before{left:12px;top:12px;border-top-width:3px;border-left-width:3px}
+.gal figure.vf .pic::after{right:12px;bottom:12px;border-bottom-width:3px;border-right-width:3px}
+@media (hover:hover){
+  .gal figure.vf .pic img{filter:grayscale(1) brightness(.8);transition:filter .5s,transform .6s}
+  .gal figure.vf:hover .pic img{filter:none;transform:scale(1.04)}
+  .gal figure.vf:hover .pic::before,.gal figure.vf:hover .pic::after{width:32px;height:32px;opacity:1}
+}
+
+/* 3. Registration: ticket */
+.regs.tkr{filter:drop-shadow(0 12px 20px rgba(0,0,0,.12))}
+.reg.tk{position:relative;border:0;border-top:4px solid var(--red);
+  background:repeating-linear-gradient(90deg,#cfcfcf 0 8px,transparent 8px 16px) 24px calc(100% - 94px)/calc(100% - 48px) 2px no-repeat,#fff;
+  -webkit-mask:radial-gradient(circle 12px at 0 calc(100% - 93px),#0000 97%,#000),radial-gradient(circle 12px at 100% calc(100% - 93px),#0000 97%,#000);
+  -webkit-mask-composite:source-in;
+  mask:radial-gradient(circle 12px at 0 calc(100% - 93px),#0000 97%,#000),radial-gradient(circle 12px at 100% calc(100% - 93px),#0000 97%,#000);
+  mask-composite:intersect;transition:transform .3s}
+.reg.tk::after{content:"";position:absolute;right:24px;top:24px;width:84px;height:30px;background:repeating-linear-gradient(90deg,#111 0 2px,transparent 2px 5px,#111 5px 6px,transparent 6px 10px);opacity:.85}
+.reg.tk::before{content:"ADMIT ONE";position:absolute;right:24px;bottom:38px;font-size:11px;font-weight:800;letter-spacing:.3em;color:#aaa}
+.reg.tk>.btn{margin-top:22px}
+@media (hover:hover){.reg.tk:hover{transform:translateY(-4px) rotate(-.4deg)}}
+@media (max-width:420px){.reg.tk::before{display:none}}
+
+/* 4. Hero: rolling words */
+.hero h1 .roll{display:block;height:1.2em;overflow:hidden;color:var(--red);font-size:min(.82em,7vw);line-height:1.2;letter-spacing:-.03em}
+.hero h1 .rl{display:block;transition:transform .8s cubic-bezier(.7,0,.2,1)}
+.hero h1 .rl i{display:block;font-style:normal;height:1.2em;white-space:nowrap}
+@media(prefers-reduced-motion:reduce){.hero h1 .rl,.card.cf,.card.cf::before,.reg.tk{transition:none}}
 </style>
 <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
 </head>
@@ -1106,15 +1144,37 @@ function CDI(path, label) {   // board editor: date and time picker
   l.querySelector("input").addEventListener("change", function () { render(); });
   return l;
 }
+  var heroTimer = null;
+function wordsOf(a) { return String(a.heroWords || "").split(",").map(function (x) { return x.trim(); }).filter(Boolean); }
+function heroAnn() {
+  return state.site.announcements.filter(function (a) { return a.hero && a.heroLead && wordsOf(a).length; })[0];
+}
+function heroH1(s) {
+  clearInterval(heroTimer);
+  var a = heroAnn();
+  if (!a) return h("h1", null, T("span", s + "title", "", "Headline"), " ", T("em", s + "accent", "", "Red words"));
+  var w = wordsOf(a), reduce = window.matchMedia && matchMedia("(prefers-reduced-motion:reduce)").matches;
+  var rl = h("span", { class: "rl" }, w.concat(w.slice(0, 1)).map(function (x) { return h("i", null, x); }));
+  if (w.length > 1 && !reduce) {
+    var ix = 0;
+    heroTimer = setInterval(function () {
+      if (!rl.isConnected) { clearInterval(heroTimer); return; }
+      ix++; rl.style.transform = "translateY(-" + ix * 1.2 + "em)";
+      if (ix === w.length) setTimeout(function () { rl.style.transition = "none"; ix = 0; rl.style.transform = "none"; void rl.offsetWidth; rl.style.transition = ""; }, 850);
+    }, 2600);
+  }
+  return h("h1", { "aria-label": a.heroLead + " " + w.join(", ") }, a.heroLead, h("span", { class: "roll", "aria-hidden": "true" }, rl));
+}
 function hero() {
   var s = "site.hero.";
   return h("header", { class: "hero", id: "top" },
     get(s + "image") ? h("div", { class: "herobg" }, h("img", { src: cdn(get(s + "image")), alt: "" })) : null,
     h("div", { class: "wrap" },
       T("p", s + "kicker", "eyebrow", "Small line above the headline"),
-      h("h1", null, T("span", s + "title", "", "Headline"), " ", T("em", s + "accent", "", "Red words")),
-          T("p", s + "sub", "sub", "Intro sentence", true),
-      cdEl(get(s + "cd"), { done: "Happening now" }),
+      heroH1(s),
+      editing && heroAnn() ? h("p", { class: "sub", style: "font-size:14px;margin:-8px 0 18px;color:#ffb4ae" }, "The headline is coming from the announcement “" + heroAnn().title + "”. Untick “Use this event in the HERO” there to bring the normal headline back.") : null,
+      T("p", s + "sub", "sub", "Intro sentence", true),
+      cdEl(get(s + "cd") || (heroAnn() || {}).cd || "", { done: "Happening now" }),
       editing ? CDI(s + "cd") : null,
       h("div", { class: "cta" }, ctaBtn(s + "cta1", "#events", false), ctaBtn(s + "cta2", "#team", true)),
       editing ? h("div", { class: "ctl" }, picControls(s + "image", 2000, "background photo", 16 / 9)) : null));
@@ -1143,8 +1203,8 @@ function about() {
   state.site.about.cards.forEach(function (c, i) {
     if (!editing && !c.title) return;
     var p = s + "cards." + i + ".";
-    cards.push(h("div", { class: "card" + (editing && !c.title ? " slot" : "") },
-      T("h3", p + "title", "", "Card title"), T("p", p + "text", "", "Card text", true),
+cards.push(h("div", { class: "card" + (editing ? "" : " cf") + (editing && !c.title ? " slot" : "") },
+             T("h3", p + "title", "", "Card title"), T("p", p + "text", "", "Card text", true),
       editing ? ctl(s + "cards", i) : null));
   });
   return h("section", { id: "about" }, h("div", { class: "wrap" },
@@ -1195,7 +1255,7 @@ function annAttrs(l, closePop, cls) {
   } };
   return a;
 }
-var ANN_TPL = { tag: "Announcement", date: "", title: "", text: "", image: "", cta: "", link: "", banner: false, popup: true };
+var ANN_TPL = { tag: "Announcement", date: "", title: "", text: "", image: "", cta: "", link: "", banner: false, popup: true, hero: false, heroLead: "", heroWords: "" };
 function CK(item, key, label, def) {
   var i = h("input", { type: "checkbox" });
   i.checked = item[key] === undefined ? !!def : !!item[key];
@@ -1302,8 +1362,11 @@ function announcementsSec() {
       INP(p + "cta", "Button text (optional)", "Get tickets"),
      INP(p + "link", "Button link (optional): https://… or #register (opens the form), #registration, #events, #team", "#register"),
            CDI(p + "cd", "Countdown to (optional, Cairo time)"),
+      CK(a, "hero", "Use this event in the HERO (rolling words)"),
+      INP(p + "heroLead", "Hero headline start, e.g. WHAT IF", "WHAT IF"),
+      INP(p + "heroWords", "Rolling words, separated by commas, e.g. we listened?, we dared?, we connected?", "we listened?, we dared?, we connected?"),
       CK(a, "popup", "Show as a pop-up when visitors arrive", true),
-      CK(a, "banner", "Show in the banner at the top of the site"));
+                         CK(a, "banner", "Show in the banner at the top of the site"));
     else if (link) act = h("a", annAttrs(link, false, "btn sm"), a.cta || "Learn more");
     cards.push(h("article", { class: "ann" + (editing && empty ? " slot" : "") }, img,
       h("div", { class: "body" },
@@ -1467,8 +1530,8 @@ function gallerySec() {
   state.site.gallery.forEach(function (g, i) {
     if (!editing && !g.src) return;
     var p = s + "." + i + ".";
-    var fig = h("figure", { class: editing && !g.src ? "slot" : "" },
-     PIC(p + "src", "", 1280, "photo"), T("figcaption", p + "caption", "", "Caption (optional)"),
+var fig = h("figure", { class: editing ? (g.src ? "" : "slot") : "vf" },
+            PIC(p + "src", "", 1280, "photo"), T("figcaption", p + "caption", "", "Caption (optional)"),
       editing ? ctl(s, i) : null);
     if (!editing && g.src) fig.addEventListener("click", function () { openLb(cdn(g.src)); });
     figs.push(fig);
@@ -1914,8 +1977,8 @@ h("a", { class: "btn sm line", href: "/analytics.html#responses", target: "_blan
           var n = clone(FLD_TPL); n.id = newId(); f.fields.push(n); touch();
         } } }, "+ Add question"))),
       ctl(s, i));
-    cards.push(h("article", { class: "reg" + (editing && !f.title ? " slot" : "") },
-      h("div", { class: "rmeta" }, h("span", { class: "pill " + (open ? "ok" : "no") }, open ? "Open" : (full ? "Full" : "Closed"))),
+cards.push(h("article", { class: "reg" + (editing ? "" : " tk") + (editing && !f.title ? " slot" : "") },
+             h("div", { class: "rmeta" }, h("span", { class: "pill " + (open ? "ok" : "no") }, open ? "Open" : (full ? "Full" : "Closed"))),
       T("h3", p + "title", "", "Form title, e.g. Attendee registration"),
       T("div", p + "when", "when", "Date or deadline (optional)"),
           T("p", p + "desc", "", "Short description", true),
@@ -1925,8 +1988,8 @@ h("a", { class: "btn sm line", href: "/analytics.html#responses", target: "_blan
   });
   if (!editing && !cards.length) return null;
   return h("section", { id: "registration" }, h("div", { class: "wrap" },
-    head("site.regHead"), h("div", { class: "regs" }, cards),
-    editing ? h("div", { class: "addrow" }, h("button", { type: "button", class: "btn sm line", on: { click: function () {
+head("site.regHead"), h("div", { class: "regs" + (editing ? "" : " tkr") }, cards),
+                                                editing ? h("div", { class: "addrow" }, h("button", { type: "button", class: "btn sm line", on: { click: function () {
       var n = clone(REG_TPL); n.id = newId(); state.site.registrations.push(n); touch();
     } } }, "+ Add registration form")) : null));
 }
@@ -2054,6 +2117,12 @@ function load() {
     setTimeout(function () { if (document.activeElement === t) t.scrollIntoView({ block: "center", behavior: "auto" }); }, 350);
   });
 })();
+  document.addEventListener("click", function (e) {
+  if (!window.matchMedia || !matchMedia("(hover:none)").matches) return;
+  var c = e.target.closest ? e.target.closest(".card.cf") : null;
+  Array.prototype.forEach.call(document.querySelectorAll(".card.cf.on"), function (x) { if (x !== c) x.classList.remove("on"); });
+  if (c) c.classList.toggle("on");
+});
 wireCropper();
 window.onbeforeunload = function () { return (dirty || vidCount > 0) ? "You have unsaved changes or an upload in progress." : undefined; };
 load();
