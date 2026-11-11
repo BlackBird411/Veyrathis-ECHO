@@ -127,8 +127,26 @@ dialog .row{display:flex;gap:8px;justify-content:flex-end}
   .kpi:nth-child(3){padding-left:0;border-left:0}
   .kpi:nth-child(n+3){border-top:1px solid var(--line)}
   .fld input,.fld select{min-width:0;width:100%}
-  .fld{flex:1 1 140px}
+   .fld{flex:1 1 140px}
 }
+/* photo lists (print / save as PDF) */
+#printSheet{display:none}
+#printSheet .ps-row{display:grid;grid-template-columns:10mm 1fr 82mm;align-items:center;gap:4mm;height:36mm;padding:2mm 0;border-bottom:1px solid #e3e3e3;break-inside:avoid;overflow:hidden}
+#printSheet .ps-row:nth-child(even){background:#f5f5f5}
+#printSheet .ps-head{height:auto;background:#0a0a0a;color:#fff;font-weight:700}
+#printSheet .ps-n{text-align:center}
+#printSheet h1{color:#e62b1e;font-size:22px;margin:0 0 2px}
+#printSheet p{color:#6b6b6b;margin:0 0 8px}
+#printSheet .ps-ph{height:32mm;display:flex;gap:2mm;justify-content:center;align-items:center}
+#printSheet .ps-ph img{flex:1 1 0;min-width:0;height:100%;object-fit:contain;background:#e9eef3}
+#printSheet.crop .ps-ph img{object-fit:cover}
+@page{size:A4;margin:12mm}
+@media print{
+  body.printing>*:not(#printSheet){display:none!important}
+  body.printing #printSheet{display:block}
+  *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
+</style>
 </style>
 </head>
 <body>
@@ -246,7 +264,10 @@ dialog .row{display:flex;gap:8px;justify-content:flex-end}
       <span class="count" id="shown" aria-live="polite"></span>
       <span class="btns">
         <button class="btn line sm" id="copyEmails" type="button">Copy emails</button>
-        <button class="btn sm" id="csv" type="button">Download CSV</button>
+              <button class="btn sm" id="csv" type="button">Download CSV</button>
+        <label class="chk"><input id="psCrop" type="checkbox"> Crop photos</label>
+        <button class="btn line sm" id="psMsa" type="button">MSA students PDF</button>
+        <button class="btn line sm" id="psOut" type="button">Outcomers PDF</button>
       </span>
     </div>
 
@@ -715,6 +736,60 @@ function copyEmails() {
 }
 function say(msg) { $("resStatus").textContent = msg; }
 
+/* ---------- photo lists (print / save as PDF) ---------- */
+function psEsc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+function psShrink(img, url) {   // shrink the photo so the PDF stays small; falls back to the original
+  return new Promise(function (resolve) {
+    setTimeout(resolve, 20000);   // never get stuck on one photo
+    function show(src) { img.onload = img.onerror = function () { resolve(); }; img.src = src; }
+    var t = new Image(); t.crossOrigin = "anonymous";
+    t.onload = function () {
+      var src = url;
+      try {
+        var s = Math.min(1, 800 / Math.max(t.naturalWidth, t.naturalHeight)), c = document.createElement("canvas");
+        c.width = Math.max(1, Math.round(t.naturalWidth * s)); c.height = Math.max(1, Math.round(t.naturalHeight * s));
+        c.getContext("2d").drawImage(t, 0, 0, c.width, c.height);
+        src = c.toDataURL("image/jpeg", 0.72);
+      } catch (e) {}
+      show(src);
+    };
+    t.onerror = function () { show(url); };
+    t.src = url;
+  });
+}
+function photoPdf(group) {
+  var isMsa = group === "msa";
+  var list = resRows.filter(function (r) { return (r.by["Who are you?"] || "") === (isMsa ? "MSA student" : "Outcomer"); }).map(function (r) {
+    var id = (r.by["MSA ID number"] || r.by["National ID number"] || "").replace(/[^0-9A-Za-z]/g, "");
+    var ptxt = r.by["University ID photo"] || r.by["National ID photo"] || "";
+    return { name: (r.by["Full name"] || "").replace(/\s+/g, " ").trim(), id: id,
+      photos: ptxt.split(/,\s*(?=https?:\/\/)/).map(function (u) { return u.trim(); }).filter(Boolean) };
+  }).sort(function (a, b) { var x = a.name.toLowerCase(), y = b.name.toLowerCase(); return x < y ? -1 : x > y ? 1 : 0; });
+  if (!list.length) { say("Nothing to print."); return; }
+  var h = "<h1>TEDxMSA: " + (isMsa ? "MSA Students" : "Outcomers") + "</h1><p>" + list.length + " registrations, sorted by name</p>";
+  h += '<div class="ps-row ps-head"><div>#</div><div>Name / ' + (isMsa ? "MSA ID" : "National ID") + "</div><div>ID photo</div></div>";
+  list.forEach(function (p, i) {
+    h += '<div class="ps-row"><div class="ps-n">' + (i + 1) + "</div><div><b>" + psEsc(p.name) + "</b><br>" + psEsc(p.id) + '</div><div class="ps-ph">' +
+      (p.photos.length ? p.photos.slice(0, 3).map(function (u) { return '<img data-src="' + psEsc(u) + '" alt="">'; }).join("") : "no photo") + "</div></div>";
+  });
+  var sheet = $("printSheet");
+  if (!sheet) { sheet = document.createElement("div"); sheet.id = "printSheet"; document.body.appendChild(sheet); }
+  sheet.className = $("psCrop").checked ? "crop" : "";
+  sheet.innerHTML = h;
+  var imgs = Array.prototype.slice.call(sheet.querySelectorAll("img")), done = 0, next = 0;
+  function worker() {
+    if (next >= imgs.length) return Promise.resolve();
+    var im = imgs[next++];
+    return psShrink(im, im.getAttribute("data-src")).then(function () { say("Preparing photos: " + (++done) + " / " + imgs.length); return worker(); });
+  }
+  var ws = []; for (var k = 0; k < 6; k++) ws.push(worker());
+  Promise.all(ws).then(function () {
+    document.body.classList.add("printing"); say("");
+    window.addEventListener("afterprint", function f() { window.removeEventListener("afterprint", f); document.body.classList.remove("printing"); sheet.innerHTML = ""; });
+    window.print();
+  });
+}
+
 /* ---------- right-click highlight (yellow / red) ---------- */
 var menu = null;
 function closeMenu() { if (menu) { menu.remove(); menu = null; } }
@@ -823,7 +898,9 @@ $("clear").addEventListener("click", function () {
 $("more").addEventListener("click", function () { limit += 200; renderRes(false); });
 $("csv").addEventListener("click", downloadCsv);
 $("copyEmails").addEventListener("click", copyEmails);
-["click", "keydown", "input"].forEach(function (e) { $("viewResponses").addEventListener(e, touch); });
+$("psMsa").addEventListener("click", function () { photoPdf("msa"); });
+$("psOut").addEventListener("click", function () { photoPdf("out"); });
+  ["click", "keydown", "input"].forEach(function (e) { $("viewResponses").addEventListener(e, touch); });
 
 showTab(tabFromHash());
 })();
