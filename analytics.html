@@ -254,6 +254,8 @@ dialog .row{display:flex;gap:8px;justify-content:flex-end}
       <div id="filters" style="display:contents"></div>
       <div class="fld"><label for="stSel">Email</label>
         <select id="stSel"><option value="">All</option><option value="sent">Sent</option><option value="failed">Failed or not sent</option></select></div>
+      <div class="fld"><label for="mkSel">Highlight</label>
+        <select id="mkSel"><option value="">All</option><option value="yellow">Yellow</option><option value="red">Red</option><option value="any">Yellow or red</option><option value="none">Not highlighted</option></select></div>
       <div class="fld"><label for="dFrom">From</label><input id="dFrom" type="date"></div>
       <div class="fld"><label for="dTo">To</label><input id="dTo" type="date"></div>
       <label class="chk"><input id="dupOnly" type="checkbox"> Possible duplicates only</label>
@@ -607,13 +609,14 @@ function buildFilters() {
 
 function visibleRows() {
   var tokens = $("q").value.toLowerCase().split(/\s+/).filter(Boolean);
-  var from = $("dFrom").value, to = $("dTo").value, st = $("stSel").value, dup = $("dupOnly").checked;
+  var from = $("dFrom").value, to = $("dTo").value, st = $("stSel").value, dup = $("dupOnly").checked, mk = $("mkSel").value;
   var out = resRows.filter(function (r) {
     for (var i = 0; i < tokens.length; i++) if (r.hay.indexOf(tokens[i]) < 0) return false;
     if (from && r.day < from) return false;
     if (to && r.day > to) return false;
     if (st === "sent" && r.status !== "sent") return false;
     if (st === "failed" && r.status === "sent") return false;
+    if (mk === "any" ? !r.mark : mk === "none" ? r.mark : mk && r.mark !== mk) return false;
     for (var k in fsel) if (fsel[k] && r.by[k] !== fsel[k]) return false;
     if (dup && !r.flags.length) return false;
     return true;
@@ -889,9 +892,9 @@ $("seg").addEventListener("click", function (ev) {
 
 var qTimer = null;
 $("q").addEventListener("input", function () { clearTimeout(qTimer); qTimer = setTimeout(function () { renderRes(true); }, 120); });
-["stSel", "dFrom", "dTo", "dupOnly"].forEach(function (id) { $(id).addEventListener("change", function () { renderRes(true); }); });
+["stSel", "mkSel", "dFrom", "dTo", "dupOnly"].forEach(function (id) { $(id).addEventListener("change", function () { renderRes(true); }); });
 $("clear").addEventListener("click", function () {
-  $("q").value = ""; $("stSel").value = ""; $("dFrom").value = ""; $("dTo").value = ""; $("dupOnly").checked = false;
+   $("q").value = ""; $("stSel").value = ""; $("mkSel").value = ""; $("dFrom").value = ""; $("dTo").value = ""; $("dupOnly").checked = false;
   fsel = {}; filterCols.forEach(function (c, i) { $("f_" + i).value = ""; });
   renderRes(true);
 });
