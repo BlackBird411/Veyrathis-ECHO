@@ -1753,7 +1753,80 @@ function fieldEditor(fp, form, fi) {
     cond,
     ctl(fp, fi));
 }
-
+(function () {
+  var s = document.createElement("style");
+  s.textContent =
+    "#camdlg{max-width:none;width:100vw;height:100dvh;max-height:none;margin:0;padding:0;border-radius:0;background:#000;color:#fff;overflow:hidden}" +
+    "#camdlg::backdrop{background:#000}" +
+    "#camdlg .camstage{position:absolute;inset:0}" +
+    "#camdlg video{width:100%;height:100%;object-fit:cover;display:block}" +
+    "#camdlg .camframe{position:absolute;left:50%;top:46%;width:min(92%,calc(55dvh * 1.586));aspect-ratio:85.6/53.98;transform:translate(-50%,-50%);border:3px solid #fff;border-radius:14px;box-shadow:0 0 0 100vmax rgba(0,0,0,.55);pointer-events:none}" +
+    "#camdlg .camtip{position:absolute;left:0;right:0;top:calc(env(safe-area-inset-top,0px) + 18px);text-align:center;font-weight:700;padding:0 20px;text-shadow:0 1px 6px #000}" +
+    "#camdlg .cambar{position:absolute;left:0;right:0;bottom:0;display:flex;align-items:center;justify-content:space-between;padding:20px 24px calc(env(safe-area-inset-bottom,0px) + 20px)}" +
+    "#camdlg .cambar>*{min-width:84px}" +
+    "#camdlg .camshot{width:72px;height:72px;min-width:72px;border-radius:50%;border:5px solid #fff;background:var(--red);cursor:pointer;padding:0}" +
+    "#camdlg .camshot[disabled]{opacity:.4}" +
+    ".idrow{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:8px}" +
+    ".idthumb{width:128px;aspect-ratio:85.6/53.98;object-fit:cover;border:2px solid #111;border-radius:6px}" +
+    ".idstat{font-size:13px;color:#555;display:block;margin-top:6px}" +
+    ".idlink{background:none;border:0;padding:0;font:inherit;font-size:13px;color:#555;text-decoration:underline;cursor:pointer}";
+  document.head.append(s);
+})();
+ 
+/* Opens the rear camera with a card-shaped frame. When the person taps the
+   shutter, only what is inside the frame is cut out and returned as a JPEG File.
+   onUnavailable() runs if the camera can't be used (permission denied, Instagram
+   or Facebook in-app browser, old browser, ...). */
+function cardCamera(title, onPhoto, onUnavailable) {
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { onUnavailable(); return; }
+ 
+  var dlg = document.createElement("dialog"); dlg.id = "camdlg";
+  var video = h("video", { autoplay: "", playsinline: "" });
+  video.muted = true;
+  var frame = h("div", { class: "camframe" });
+  var shot = h("button", { class: "camshot", type: "button", "aria-label": "Take photo", disabled: "disabled" });
+  var cancel = h("button", { class: "btn ghost sm", type: "button" }, "Cancel");
+  dlg.append(
+    h("div", { class: "camstage" }, video, frame),
+    h("div", { class: "camtip" }, title),
+    h("div", { class: "cambar" }, cancel, shot, h("span"))
+  );
+  document.body.append(dlg);
+ 
+  var stream = null;
+  function stop() { if (stream) { stream.getTracks().forEach(function (t) { t.stop(); }); stream = null; } }
+  dlg.addEventListener("close", function () { stop(); dlg.remove(); });
+  cancel.addEventListener("click", function () { dlg.close(); });
+ 
+  shot.addEventListener("click", function () {
+    var vw = video.videoWidth, vh = video.videoHeight;
+    if (!vw || !vh) return;
+    var vr = video.getBoundingClientRect(), fr = frame.getBoundingClientRect();
+    var sc = Math.max(vr.width / vw, vr.height / vh);              // video is object-fit: cover
+    var ox = (vr.width - vw * sc) / 2, oy = (vr.height - vh * sc) / 2;
+    var sx = (fr.left - vr.left - ox) / sc, sy = (fr.top - vr.top - oy) / sc;
+    var sw = fr.width / sc, sh = fr.height / sc;
+    var outW = Math.min(1600, Math.round(sw)), outH = Math.round(outW * sh / sw);
+    var c = document.createElement("canvas"); c.width = outW; c.height = outH;
+    c.getContext("2d").drawImage(video, sx, sy, sw, sh, 0, 0, outW, outH);
+    c.toBlob(function (b) {
+      dlg.close();
+      if (b) onPhoto(new File([b], "id.jpg", { type: "image/jpeg" }));
+    }, "image/jpeg", 0.9);
+  });
+ 
+  dlg.showModal();
+  navigator.mediaDevices.getUserMedia({
+    video: { facingMode: { ideal: "environment" }, width: { ideal: 1920 }, height: { ideal: 1080 } },
+    audio: false
+  }).then(function (s) {
+    if (!dlg.open) { s.getTracks().forEach(function (t) { t.stop(); }); return; }
+    stream = s; video.srcObject = s;
+    return video.play().then(function () { shot.disabled = false; });
+  }).catch(function () {
+    dlg.close(); onUnavailable();
+  });
+}
 /* public: the form pop-up */
 function openReg(form) {
   var dlg = $id("regdlg"), box = $id("regbox"), vals = {}, files = {}, wraps = [];
@@ -1789,18 +1862,39 @@ function openReg(form) {
   }
   function sync() { wraps.forEach(function (w) { w.el.style.display = (w.f.showQ && vals[w.f.showQ] !== w.f.showEq) ? "none" : ""; }); }
   function fileField(f) {
-    var n = photoCount(f);
-    var req = f.required ? h("span", { class: "req" }, " *") : null;
-    var wrap = h("div", { class: "fgrp" }, h("span", null, f.label, req),
-      h("small", { class: "hint" }, "Upload " + n + " photo" + (n > 1 ? "s" : "") + (f.hint ? ": " + f.hint : "")));
-    files[f.id] = [];
-    for (var i = 0; i < n; i++) (function (i) {
-      var c = h("input", { type: "file", accept: "image/*" });
-      c.addEventListener("change", function () { files[f.id][i] = c.files[0] || null; });
-      wrap.append(h("label", { class: "f" }, n > 1 ? "Photo " + (i + 1) + " of " + n : null, c));
-    })(i);
-    return wrap;
-  }
+  var n = photoCount(f);
+  var req = f.required ? h("span", { class: "req" }, " *") : null;
+  var wrap = h("div", { class: "fgrp" }, h("span", null, f.label, req),
+    h("small", { class: "hint" }, (f.hint ? f.hint + ". " : "") + "Tap “Scan ID” and fit the card inside the frame."));
+  files[f.id] = [];
+  for (var i = 0; i < n; i++) (function (i) {
+    var title = n > 1 ? "Photo " + (i + 1) + " of " + n + ": fit the card inside the frame" : "Fit your ID card inside the frame";
+    var thumb = h("img", { class: "idthumb", alt: "" }); thumb.hidden = true;
+    var stat = h("span", { class: "idstat" }, "No photo yet");
+    var scan = h("button", { class: "btn sm", type: "button" }, "Scan ID");
+    var native = h("input", { type: "file", accept: "image/*", capture: "environment", style: "display:none" });
+    var gallery = h("input", { type: "file", accept: "image/*", style: "display:none" });
+ 
+    function got(file) {
+      if (!file) return;
+      files[f.id][i] = file;
+      thumb.src = URL.createObjectURL(file); thumb.hidden = false;
+      stat.textContent = "Photo ready ✓"; scan.textContent = "Retake";
+    }
+    scan.addEventListener("click", function () { cardCamera(title, got, function () { native.click(); }); });
+    native.addEventListener("change", function () { got(native.files[0]); });
+    gallery.addEventListener("change", function () { got(gallery.files[0]); });
+ 
+    wrap.append(h("div", { class: "idrow" },
+      thumb,
+      h("div", null,
+        scan, " ",
+        h("button", { class: "idlink", type: "button", on: { click: function () { gallery.click(); } } }, "Upload a photo instead"),
+        stat),
+      native, gallery));
+  })(i);
+  return wrap;
+}
    function field(f) {
     if (f.type === "file") return fileField(f);
     var req = f.required ? h("span", { class: "req" }, " *") : null, c;
