@@ -103,7 +103,15 @@ table.rt td.dim{color:#b0b0b0}
 table.rt td.nw{white-space:nowrap}
 table.rt a{color:var(--ink);font-weight:700}
 .flag{color:var(--red);font-weight:700}
-.st-bad{color:var(--red);font-weight:700}
+table.rt tr.mk-yellow td{background:#fff3b0}
+table.rt tr.mk-red td{background:#ffc9c4}
+.ctx{position:fixed;z-index:50;min-width:180px;padding:4px;background:#fff;border:1.5px solid var(--ink);border-radius:4px;box-shadow:0 6px 24px rgba(0,0,0,.18)}
+.ctx button{display:flex;align-items:center;gap:10px;width:100%;padding:9px 10px;border:0;background:transparent;text-align:left;font-size:14px;font-weight:700;cursor:pointer}
+.ctx button:hover,.ctx button:focus-visible{background:var(--soft)}
+.ctx button.yellow::before,.ctx button.red::before{content:"";width:14px;height:14px;border-radius:50%;border:1px solid rgba(0,0,0,.3)}
+.ctx button.yellow::before{background:#ffe14d}
+.ctx button.red::before{background:#ff7a70}
+  .st-bad{color:var(--red);font-weight:700}
 .empty{padding:34px 12px;color:var(--mut)}
 .more{margin:14px 0 0}
 dialog{border:1.5px solid var(--ink);border-radius:4px;padding:24px;max-width:380px;width:calc(100% - 40px)}
@@ -523,7 +531,7 @@ function prepare(rows) {
     var by = {};
     (r.answers || []).forEach(function (a) { by[a.q] = a.a === null || a.a === undefined ? "" : String(a.a); });
     var t = new Date(r.created_at);
-    return { id: r.id, form: r.form_title || r.form_id || "", status: r.status || "", error: r.error || "", at: t, day: cairoDay(t), by: by, flags: [], hay: "" };
+    return { id: r.id, form: r.form_title || r.form_id || "", status: r.status || "", error: r.error || "", at: t, day: cairoDay(t), by: by, flags: [], hay: "", mark: r.mark || "", note: r.mark_note || "" };
   });
 
   cols = order.map(function (name) {
@@ -639,7 +647,7 @@ function renderRes(resetLimit) {
 
   var body = el("tbody");
   rows.slice(0, limit).forEach(function (r) {
-    var row = el("tr", null, el("td", { class: "nw", text: fmtWhen(r.at) }));
+var row = el("tr", { class: r.mark ? "mk-" + r.mark : null, title: r.note || null, on: { contextmenu: function (ev) { openMenu(ev, r); } } }, el("td", { class: "nw", text: fmtWhen(r.at) }));
     cols.forEach(function (c) {
       var v = r.by[c.name] || "", td;
       if (!v) { row.appendChild(el("td", { class: "dim", text: "–" })); return; }
@@ -658,7 +666,8 @@ function renderRes(resetLimit) {
     else st.appendChild(el("span", { class: "st-bad", text: "Not sent " }));
     st.appendChild(el("button", { class: "btn line sm", type: "button", text: "Resend", on: { click: function () { resend(r, this); } } }));
     row.appendChild(st);
-    row.appendChild(el("td", { class: r.flags.length ? "flag" : "dim", text: r.flags.length ? r.flags.join("; ") : "–" }));
+    var fl = r.flags.concat(r.note ? [r.note] : []);
+    row.appendChild(el("td", { class: fl.length ? "flag" : "dim", text: fl.length ? fl.join("; ") : "–" }));
     body.appendChild(row);
   });
   if (!rows.length) body.appendChild(el("tr", null, el("td", { class: "empty", colspan: heads.length, text: resRows.length ? "No registrations match these filters." : "No registrations yet." })));
@@ -706,6 +715,34 @@ function copyEmails() {
 }
 function say(msg) { $("resStatus").textContent = msg; }
 
+/* ---------- right-click highlight (yellow / red) ---------- */
+var menu = null;
+function closeMenu() { if (menu) { menu.remove(); menu = null; } }
+function openMenu(ev, r) {
+  ev.preventDefault(); closeMenu();
+  function item(text, color) {
+    return el("button", { type: "button", role: "menuitem", class: color || null, text: text, on: { click: function () { closeMenu(); setMark(r, color); } } });
+  }
+  menu = el("div", { class: "ctx", role: "menu" }, item("Highlight yellow", "yellow"), item("Highlight red", "red"), r.mark ? item("Clear highlight", "") : null);
+  document.body.appendChild(menu);
+  menu.style.left = Math.max(8, Math.min(ev.clientX, window.innerWidth - menu.offsetWidth - 8)) + "px";
+  menu.style.top = Math.max(8, Math.min(ev.clientY, window.innerHeight - menu.offsetHeight - 8)) + "px";
+}
+function setMark(r, color) {
+  var was = r.mark, wasNote = r.note;
+  r.mark = color; if (!color) r.note = "";
+  renderRes(false);
+  fetch(SB_URL + "/rest/v1/rpc/responses_mark", {
+    method: "POST", headers: { apikey: SB_KEY, "Content-Type": "application/json" },
+    body: JSON.stringify({ p: rpass, rid: r.id, color: color || null })
+  }).then(function (x) { return x.json(); })
+    .then(function (j) { if (!j || !j.ok) throw new Error((j && (j.error || j.message)) || "Request failed"); touch(); })
+    .catch(function (e) { r.mark = was; r.note = wasNote; renderRes(false); say("Could not save highlight: " + e.message); });
+}
+document.addEventListener("click", closeMenu);
+document.addEventListener("scroll", closeMenu, true);
+window.addEventListener("resize", closeMenu);
+document.addEventListener("keydown", function (e) { if (e.key === "Escape") closeMenu(); });
 function askBoardPw() {
   if (boardPw) return Promise.resolve(boardPw);
   return new Promise(function (resolve) {
