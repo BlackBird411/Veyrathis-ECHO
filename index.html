@@ -1946,9 +1946,17 @@ function openReg(form) {
     }).then(function (r) {
       return r.json().then(function (j) { if (!r.ok) { var er = new Error(j.error || "Could not register"); er.full = !!j.full; throw er; } return j; });
     }).then(function (j) {
-      box.textContent = "";
+           box.textContent = "";
+      var qrBox = null;
+      if (j.qr) {
+        qrBox = h("div", { style: "text-align:center;margin:16px 0" },
+          h("img", { src: "https://api.qrserver.com/v1/create-qr-code/?size=400x400&margin=10&format=png&data=" + encodeURIComponent(j.qr), alt: "Your entry QR code", width: "260", height: "260", style: "background:#fff;padding:8px;border-radius:12px;max-width:100%;height:auto" }),
+          h("p", { style: "font-weight:700;margin:10px 0 0" }, "Take a screenshot of this QR code now."),
+          h("p", { style: "margin:4px 0 0;opacity:.8" }, "If you typed your email wrong, this screenshot is your entry ticket."));
+      }
       box.append(h("div", null, h("h3", null, "Thank you!"),
         h("p", null, j.emailed ? (form.thanks || REG_TPL.thanks) : "You are registered, but we could not send your email yet. The team will resend it."),
+        qrBox,
         h("div", { class: "cta" }, h("button", { class: "btn", type: "button", on: { click: function () { dlg.close(); } } }, "Close"))));
     }).catch(function (e) {
       err.textContent = e.message; send.disabled = !!e.full; send.textContent = e.full ? "Registration full" : (form.button || "Register");
