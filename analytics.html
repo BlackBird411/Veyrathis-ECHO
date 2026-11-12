@@ -105,12 +105,16 @@ table.rt a{color:var(--ink);font-weight:700}
 .flag{color:var(--red);font-weight:700}
 table.rt tr.mk-yellow td{background:#fff3b0}
 table.rt tr.mk-red td{background:#ffc9c4}
-.ctx{position:fixed;z-index:50;min-width:180px;padding:4px;background:#fff;border:1.5px solid var(--ink);border-radius:4px;box-shadow:0 6px 24px rgba(0,0,0,.18)}
+table.rt tr.mk-green td{background:#c9f0cc}
+table.rt tr.mk-blue td{background:#c9ddff}
+  .ctx{position:fixed;z-index:50;min-width:180px;padding:4px;background:#fff;border:1.5px solid var(--ink);border-radius:4px;box-shadow:0 6px 24px rgba(0,0,0,.18)}
 .ctx button{display:flex;align-items:center;gap:10px;width:100%;padding:9px 10px;border:0;background:transparent;text-align:left;font-size:14px;font-weight:700;cursor:pointer}
 .ctx button:hover,.ctx button:focus-visible{background:var(--soft)}
-.ctx button.yellow::before,.ctx button.red::before{content:"";width:14px;height:14px;border-radius:50%;border:1px solid rgba(0,0,0,.3)}
+.ctx button.yellow::before,.ctx button.red::before,.ctx button.green::before,.ctx button.blue::before{content:"";width:14px;height:14px;border-radius:50%;border:1px solid rgba(0,0,0,.3)}
 .ctx button.yellow::before{background:#ffe14d}
 .ctx button.red::before{background:#ff7a70}
+.ctx button.green::before{background:#4fcf6a}
+.ctx button.blue::before{background:#5b9bff}
   .st-bad{color:var(--red);font-weight:700}
 .empty{padding:34px 12px;color:var(--mut)}
 .more{margin:14px 0 0}
@@ -255,7 +259,7 @@ dialog .row{display:flex;gap:8px;justify-content:flex-end}
       <div class="fld"><label for="stSel">Email</label>
         <select id="stSel"><option value="">All</option><option value="sent">Sent</option><option value="failed">Failed or not sent</option></select></div>
       <div class="fld"><label for="mkSel">Highlight</label>
-        <select id="mkSel"><option value="">All</option><option value="yellow">Yellow</option><option value="red">Red</option><option value="any">Yellow or red</option><option value="none">Not highlighted</option></select></div>
+        <select id="mkSel"><option value="">All</option><option value="yellow">Yellow</option><option value="red">Red</option><option value="green">Green</option><option value="blue">Blue</option><option value="any">Any highlight</option><option value="none">Not highlighted</option></select></div>
       <div class="fld"><label for="dFrom">From</label><input id="dFrom" type="date"></div>
       <div class="fld"><label for="dTo">To</label><input id="dTo" type="date"></div>
       <label class="chk"><input id="dupOnly" type="checkbox"> Possible duplicates only</label>
@@ -801,7 +805,7 @@ function openMenu(ev, r) {
   function item(text, color) {
     return el("button", { type: "button", role: "menuitem", class: color || null, text: text, on: { click: function () { closeMenu(); setMark(r, color); } } });
   }
-  menu = el("div", { class: "ctx", role: "menu" }, item("Highlight yellow", "yellow"), item("Highlight red", "red"), r.mark ? item("Clear highlight", "") : null);
+  menu = el("div", { class: "ctx", role: "menu" }, item("Highlight yellow", "yellow"), item("Highlight red", "red"), item("Highlight green", "green"), item("Highlight blue", "blue"), r.mark ? item("Clear highlight", "") : null);
   document.body.appendChild(menu);
   menu.style.left = Math.max(8, Math.min(ev.clientX, window.innerWidth - menu.offsetWidth - 8)) + "px";
   menu.style.top = Math.max(8, Math.min(ev.clientY, window.innerHeight - menu.offsetHeight - 8)) + "px";
