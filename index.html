@@ -512,6 +512,13 @@ html:has(dialog[open]){scroll-behavior:auto}
 #closing .cbar{position:absolute;left:0;bottom:0;width:100%;height:3px;background:var(--red);transform-origin:left;animation:cbar 8s linear forwards}
 @keyframes cbar{from{transform:scaleX(1)}to{transform:scaleX(0)}}
 @media(prefers-reduced-motion:reduce){.fbeam,.fmqt,#closing .cbar,#closing .cpic,#closing[open]{animation:none}.fl{opacity:1;transform:none;animation:none}}
+    .fin.nopic{grid-template-columns:1fr}
+.finale.off{opacity:.6}
+.fedit{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin:0 0 22px;padding:10px 14px;border:1px dashed #555}
+.finale .ck{color:#ddd;margin:0}
+.fhidden{font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#ffb3ad}
+.finale .pic.empty{background:#111;border-color:#555}
+.finale .pic .ph{color:#888}
 </style>
 <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
 </head>
@@ -585,8 +592,9 @@ var DEFAULTS = {
     sub: "TEDxMSAUniversity is the independently organized TEDx community of MSA University — a stage for bold ideas, honest stories and the people behind them.",
     cta1: "Our events",
     cta2: "Meet the team",
-    image: ""
+     image: ""
   },
+  finale: { on: false, name: "Yousef Al 3ashry", tag: "The final closing of the event", sub: "Live on stage · 19.11.2026 · MSA University", image: "" },
   stats: [
     { num: "2017", label: "Year of our first event" },
     { num: "10", label: "Speakers on our first stage" },
@@ -1330,49 +1338,61 @@ function watchNews() {
   annObs.observe(el);
 }
 
-/* ---------- final closing act ---------- */
-var CLOSING = {
-  on: true,
-  name: "Yousef Al 3ashry",
-  tag: "The final closing of the event",
-  sub: "Live on stage · 19.11.2026 · MSA University",
-  image: MEDIA_FROM + "yousef.jpg"
-};
+/* ---------- final closing act (board-editable) ---------- */
 function finWords(name) {
   var i = 0;
   return name.split(" ").map(function (w) {
     return h("span", { class: "fw" }, w.split("").map(function (c) { return h("span", { class: "fl", style: "--i:" + (i++) }, c); }));
   });
 }
-function noPic(ev) { ev.target.parentNode.remove(); }
+function noPic(ev) { if (editing) ev.target.remove(); else ev.target.parentNode.remove(); }
+function finOn() { var f = state.site.finale; return !!(f && f.on !== false && f.name); }
+function finPic() {
+  var f = state.site.finale, src = f.image;
+  if (!src && !editing) return null;
+  var w = h("div", { class: "pic fpic" + (src ? "" : " empty") });
+  if (src) w.append(h("img", { src: cdn(src), alt: f.name, on: { error: noPic } }));
+  else w.append(h("span", { class: "ph" }, "No photo yet"));
+  if (editing) w.append(picControls("site.finale.image", 1400, "photo", 4 / 5));
+  return w;
+}
 function closingSec() {
-  if (!CLOSING.on) return null;
+  var f = state.site.finale;
+  if (!finOn() && !editing) return null;
   var mq = [];
-  for (var k = 0; k < 8; k++) mq.push(CLOSING.tag, h("b", null, "✦"), CLOSING.name, h("b", null, "✦"));
-  return h("section", { class: "finale", id: "finale" },
+  for (var k = 0; k < 8; k++) mq.push(f.tag, h("b", null, "✦"), f.name, h("b", null, "✦"));
+  return h("section", { class: "finale" + (finOn() ? "" : " off"), id: "finale" },
     h("div", { class: "fbeam" }),
-    h("div", { class: "wrap fin" },
+    h("div", { class: "wrap fin" + (f.image || editing ? "" : " nopic") },
       h("div", null,
-        h("p", { class: "eyebrow" }, CLOSING.tag),
-        h("h2", { class: "fname", "aria-label": CLOSING.name }, finWords(CLOSING.name)),
-        h("p", { class: "fsub" }, CLOSING.sub),
+        editing ? h("div", { class: "fedit" },
+          CK(f, "on", "Show on the website", false),
+          finOn() ? null : h("span", { class: "fhidden" }, "Hidden from visitors"),
+          h("button", { type: "button", class: "btn sm ghost", on: { click: function () { openClosing(true); } } }, "Preview entry screen")) : null,
+        T("p", "site.finale.tag", "eyebrow", "Small line above the name"),
+        editing ? T("h2", "site.finale.name", "fname", "Name") : h("h2", { class: "fname", "aria-label": f.name }, finWords(f.name)),
+        T("p", "site.finale.sub", "fsub", "Line under the name"),
         h("a", { class: "btn", href: "#registration" }, "Get your ticket")),
-      CLOSING.image ? h("div", { class: "fpic" }, h("img", { src: cdn(CLOSING.image), alt: CLOSING.name, on: { error: noPic } })) : null),
+      finPic()),
     h("div", { class: "fmq", "aria-hidden": "true" }, h("div", { class: "fmqt" }, mq)));
 }
-var closingTimer = null;
-function openClosing() {
-  var seen = false;
-  try { seen = sessionStorage.getItem("tedx-fin") === "1"; sessionStorage.setItem("tedx-fin", "1"); } catch (e) {}
-  if (!CLOSING.on || seen) return false;
+var closingTimer = null, closingPreview = false;
+function openClosing(force) {
+  var f = state.site.finale;
+  if (!force) {
+    var seen = false;
+    try { seen = sessionStorage.getItem("tedx-fin") === "1"; sessionStorage.setItem("tedx-fin", "1"); } catch (e) {}
+    if (!finOn() || seen) return false;
+  }
+  closingPreview = !!force;
   var box = $id("closingbox"); box.textContent = "";
   box.append(
     h("div", { class: "fbeam" }),
     h("div", { class: "cin" },
-      CLOSING.image ? h("div", { class: "cpic" }, h("img", { src: cdn(CLOSING.image), alt: "", on: { error: noPic } })) : null,
-      h("p", { class: "eyebrow" }, CLOSING.tag),
-      h("div", { class: "fname" }, finWords(CLOSING.name)),
-      h("p", { class: "fsub" }, CLOSING.sub),
+      f.image ? h("div", { class: "cpic" }, h("img", { src: cdn(f.image), alt: "", on: { error: noPic } })) : null,
+      h("p", { class: "eyebrow" }, f.tag),
+      h("div", { class: "fname" }, finWords(f.name)),
+      h("p", { class: "fsub" }, f.sub),
       h("button", { class: "btn", type: "button" }, "Enter the site")),
     h("div", { class: "cbar" }));
   var d = $id("closing"); if (!d.open) d.showModal();
@@ -1381,6 +1401,7 @@ function openClosing() {
 }
 function closeClosing() { clearTimeout(closingTimer); var d = $id("closing"); if (d.open) d.close(); }
 
+/* entrance pop-up */
 /* entrance pop-up */
   var popList = [], popIdx = 0, popPreview = false, popShown = false;
 function popItems(all) {
@@ -2242,8 +2263,8 @@ function save() {
 function openLb(src) { var d = document.getElementById("lb"); d.querySelector("img").src = src; d.showModal(); }
 document.getElementById("lb").addEventListener("click", function () { this.close(); });
 $id("closing").addEventListener("click", closeClosing);
-$id("closing").addEventListener("close", function () { clearTimeout(closingTimer); showPopup(false); });
-$id("annx").addEventListener("click", function () { $id("annpop").close(); });
+$id("closing").addEventListener("close", function () { clearTimeout(closingTimer); if (!closingPreview) showPopup(false); closingPreview = false; });
+  $id("annx").addEventListener("click", function () { $id("annpop").close(); });
   $id("annpop").addEventListener("click", function (e) { if (e.target === this) this.close(); });
 $id("annpop").addEventListener("close", function () { if (!popPreview) markSeen("popped", popList); });
 document.getElementById("loginGo").addEventListener("click", doLogin);
