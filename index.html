@@ -478,6 +478,40 @@ html:has(dialog[open]){scroll-behavior:auto}
 #annpop .roll .rl{display:block;transition:transform .8s cubic-bezier(.7,0,.2,1)}
 #annpop .roll .rl i{display:block;font-style:normal;height:1.3em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 @media(prefers-reduced-motion:reduce){#annpop .rl,.card.cf,.card.cf::before,.reg.tk{transition:none}}
+/* final closing act */
+.finale{position:relative;background:#000;color:#fff;overflow:hidden;padding:110px 0 0;isolation:isolate}
+.finale::before{content:"";position:absolute;inset:-30% -10% auto;height:120%;z-index:-1;background:radial-gradient(60% 55% at 70% 40%,rgba(230,43,30,.38),transparent 70%)}
+.fbeam{position:absolute;left:50%;top:-45%;width:170%;aspect-ratio:1;z-index:-1;transform:translateX(-50%);pointer-events:none;background:conic-gradient(from 0deg,transparent 0 40deg,rgba(255,255,255,.07) 50deg,transparent 62deg 160deg,rgba(230,43,30,.14) 172deg,transparent 186deg 360deg);animation:fspin 18s linear infinite}
+@keyframes fspin{to{transform:translateX(-50%) rotate(360deg)}}
+.fin{display:grid;grid-template-columns:1.15fr .85fr;gap:48px;align-items:center;padding-bottom:90px}
+.fname{margin:0;font-size:clamp(46px,8.5vw,118px);font-weight:900;letter-spacing:-.04em;line-height:.95;text-transform:uppercase}
+.fw{display:inline-block;white-space:nowrap;margin-right:.22em}
+.fl{display:inline-block;color:transparent;-webkit-text-stroke:2px #fff;opacity:0;transform:translateY(40px) rotate(4deg);animation:flin .7s cubic-bezier(.2,.8,.2,1) forwards;animation-delay:calc(var(--i)*55ms + .2s)}
+.fw:last-child .fl{color:var(--red);-webkit-text-stroke:0}
+@keyframes flin{to{opacity:1;transform:none}}
+.fsub{color:#bdbdbd;font-size:19px;margin:22px 0 30px}
+.fpic{position:relative;width:100%;max-width:420px;aspect-ratio:4/5;justify-self:end;margin-right:18px}
+.fpic::before{content:"";position:absolute;inset:18px -18px -18px 18px;border:3px solid var(--red);z-index:-1}
+.fpic img{width:100%;height:100%;object-fit:cover;box-shadow:0 0 90px rgba(230,43,30,.35)}
+.fmq{border-top:1px solid #222;border-bottom:1px solid #222;background:#0a0a0a;overflow:hidden;white-space:nowrap}
+.fmqt{display:inline-block;padding:16px 0;font-weight:800;letter-spacing:.14em;text-transform:uppercase;font-size:14px;color:#bdbdbd;animation:fmq 30s linear infinite}
+.fmqt b{color:var(--red);margin:0 22px}
+@keyframes fmq{to{transform:translateX(-50%)}}
+@media(max-width:820px){.fin{grid-template-columns:1fr;gap:56px}.fpic{order:-1;justify-self:center;max-width:300px;margin-right:0}.finale{padding-top:80px}}
+#closing{border:0;padding:0;width:100vw;height:100vh;height:100dvh;max-width:none;max-height:none;background:#000;color:#fff;overflow:hidden}
+#closing::backdrop{background:#000}
+#closing[open]{display:block;animation:cfade .5s ease}
+@keyframes cfade{from{opacity:0}to{opacity:1}}
+#closingbox{position:relative;width:100%;height:100%;display:flex;align-items:center;justify-content:center;overflow:hidden;cursor:pointer;isolation:isolate}
+#closing .cin{position:relative;text-align:center;padding:24px;max-width:900px;width:100%}
+#closing .cpic{width:min(220px,48vw);aspect-ratio:1;border-radius:50%;margin:0 auto 28px;overflow:hidden;border:3px solid var(--red);box-shadow:0 0 90px rgba(230,43,30,.55);animation:cpop .9s .1s both cubic-bezier(.2,.8,.2,1)}
+#closing .cpic img{width:100%;height:100%;object-fit:cover}
+@keyframes cpop{from{opacity:0;transform:scale(.6)}to{opacity:1;transform:none}}
+#closing .fname{font-size:clamp(44px,11vw,130px)}
+#closing .fsub{margin:22px 0 28px}
+#closing .cbar{position:absolute;left:0;bottom:0;width:100%;height:3px;background:var(--red);transform-origin:left;animation:cbar 8s linear forwards}
+@keyframes cbar{from{transform:scaleX(1)}to{transform:scaleX(0)}}
+@media(prefers-reduced-motion:reduce){.fbeam,.fmqt,#closing .cbar,#closing .cpic,#closing[open]{animation:none}.fl{opacity:1;transform:none;animation:none}}
 </style>
 <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
 </head>
@@ -503,8 +537,10 @@ html:has(dialog[open]){scroll-behavior:auto}
 
 <dialog id="annpop" aria-label="Announcements">
   <button class="pclose" id="annx" type="button" aria-label="Close">×</button>
-  <div id="annbox"></div>
+   <div id="annbox"></div>
 </dialog>
+
+<dialog id="closing" aria-label="The final closing of the event"><div id="closingbox"></div></dialog>
 
 <dialog id="crop">
   <h3>Adjust photo</h3>
@@ -1294,8 +1330,59 @@ function watchNews() {
   annObs.observe(el);
 }
 
+/* ---------- final closing act ---------- */
+var CLOSING = {
+  on: true,
+  name: "Yousef Al 3ashry",
+  tag: "The final closing of the event",
+  sub: "Live on stage · 19.11.2026 · MSA University",
+  image: MEDIA_FROM + "yousef.jpg"
+};
+function finWords(name) {
+  var i = 0;
+  return name.split(" ").map(function (w) {
+    return h("span", { class: "fw" }, w.split("").map(function (c) { return h("span", { class: "fl", style: "--i:" + (i++) }, c); }));
+  });
+}
+function noPic(ev) { ev.target.parentNode.remove(); }
+function closingSec() {
+  if (!CLOSING.on) return null;
+  var mq = [];
+  for (var k = 0; k < 8; k++) mq.push(CLOSING.tag, h("b", null, "✦"), CLOSING.name, h("b", null, "✦"));
+  return h("section", { class: "finale", id: "finale" },
+    h("div", { class: "fbeam" }),
+    h("div", { class: "wrap fin" },
+      h("div", null,
+        h("p", { class: "eyebrow" }, CLOSING.tag),
+        h("h2", { class: "fname", "aria-label": CLOSING.name }, finWords(CLOSING.name)),
+        h("p", { class: "fsub" }, CLOSING.sub),
+        h("a", { class: "btn", href: "#registration" }, "Get your ticket")),
+      CLOSING.image ? h("div", { class: "fpic" }, h("img", { src: cdn(CLOSING.image), alt: CLOSING.name, on: { error: noPic } })) : null),
+    h("div", { class: "fmq", "aria-hidden": "true" }, h("div", { class: "fmqt" }, mq)));
+}
+var closingTimer = null;
+function openClosing() {
+  var seen = false;
+  try { seen = sessionStorage.getItem("tedx-fin") === "1"; sessionStorage.setItem("tedx-fin", "1"); } catch (e) {}
+  if (!CLOSING.on || seen) return false;
+  var box = $id("closingbox"); box.textContent = "";
+  box.append(
+    h("div", { class: "fbeam" }),
+    h("div", { class: "cin" },
+      CLOSING.image ? h("div", { class: "cpic" }, h("img", { src: cdn(CLOSING.image), alt: "", on: { error: noPic } })) : null,
+      h("p", { class: "eyebrow" }, CLOSING.tag),
+      h("div", { class: "fname" }, finWords(CLOSING.name)),
+      h("p", { class: "fsub" }, CLOSING.sub),
+      h("button", { class: "btn", type: "button" }, "Enter the site")),
+    h("div", { class: "cbar" }));
+  var d = $id("closing"); if (!d.open) d.showModal();
+  clearTimeout(closingTimer); closingTimer = setTimeout(closeClosing, 8000);
+  return true;
+}
+function closeClosing() { clearTimeout(closingTimer); var d = $id("closing"); if (d.open) d.close(); }
+
 /* entrance pop-up */
-var popList = [], popIdx = 0, popPreview = false, popShown = false;
+  var popList = [], popIdx = 0, popPreview = false, popShown = false;
 function popItems(all) {
   return liveAnn().filter(function (a) { return a.popup !== false; });
 }
@@ -1329,7 +1416,8 @@ function showPopup(all) {
 }
 function entrancePopup() {
   if (popShown || editing) return;
-  popShown = true; showPopup(false);
+  popShown = true;
+  if (!openClosing()) showPopup(false);
 }
 
 function announceBar() {
@@ -2095,7 +2183,7 @@ head("site.regHead"), h("div", { class: "regs" + (editing ? "" : " tkr") }, card
 function render() {
   var y = window.scrollY, app = document.getElementById("app");
   app.textContent = "";
-  [announceBar(), nav(), hero(), stats(), about(), nextBand(), announcementsSec(), whatifSec(), regSec(), eventsSec(), gallerySec(), videosSec(), teamSec(), contactSec(), footer()]
+  [announceBar(), nav(), hero(), closingSec(), stats(), about(), nextBand(), announcementsSec(), whatifSec(), regSec(), eventsSec(), gallerySec(), videosSec(), teamSec(), contactSec(), footer()]
     .forEach(function (n) { if (n) app.append(n); });
   renderBar();
   fitTree();
@@ -2153,8 +2241,10 @@ function save() {
 /* ---------- lightbox ---------- */
 function openLb(src) { var d = document.getElementById("lb"); d.querySelector("img").src = src; d.showModal(); }
 document.getElementById("lb").addEventListener("click", function () { this.close(); });
+$id("closing").addEventListener("click", closeClosing);
+$id("closing").addEventListener("close", function () { clearTimeout(closingTimer); showPopup(false); });
 $id("annx").addEventListener("click", function () { $id("annpop").close(); });
-$id("annpop").addEventListener("click", function (e) { if (e.target === this) this.close(); });
+  $id("annpop").addEventListener("click", function (e) { if (e.target === this) this.close(); });
 $id("annpop").addEventListener("close", function () { if (!popPreview) markSeen("popped", popList); });
 document.getElementById("loginGo").addEventListener("click", doLogin);
 document.getElementById("loginCancel").addEventListener("click", function () { document.getElementById("login").close(); });
