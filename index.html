@@ -1379,11 +1379,7 @@ function closingSec() {
 var closingTimer = null, closingPreview = false;
 function openClosing(force) {
   var f = state.site.finale;
-  if (!force) {
-    var seen = false;
-    try { seen = sessionStorage.getItem("tedx-fin") === "1"; sessionStorage.setItem("tedx-fin", "1"); } catch (e) {}
-    if (!finOn() || seen) return false;
-  }
+  if (!force && !finOn()) return false;
   closingPreview = !!force;
   var box = $id("closingbox"); box.textContent = "";
   box.append(
