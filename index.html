@@ -227,8 +227,17 @@ a.sp:hover{transform:translateY(-3px);box-shadow:0 10px 28px rgba(0,0,0,.08)}
 #regdlg .cta{margin-top:12px}
   #regdlg .fgrp{display:block;font-size:13px;font-weight:700;margin-top:16px;color:#222}
 #regdlg .fgrp .hint{display:block;font-weight:400;color:#555;margin-top:4px;font-size:13px}
-#regdlg .fgrp label.f{margin-top:8px;font-weight:600}
-.hp{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden;opacity:0}
+/* "very important" notice shown before the form and after registering */
+#regdlg .vip-tag{display:inline-block;background:var(--red);color:#fff;font-size:12px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;padding:4px 10px;border-radius:2px;margin-bottom:10px}
+#regdlg .vip-list{list-style:none;margin:14px 0 0;padding:0;display:flex;flex-direction:column;gap:10px}
+#regdlg .vip-list li{display:flex;gap:12px;align-items:flex-start;background:#fff5f4;border-left:4px solid var(--red);padding:11px 12px;font-size:15px;line-height:1.4;color:#222}
+#regdlg .vip-list li b{color:var(--red-d)}
+#regdlg .vip-list .n{flex:none;width:24px;height:24px;border-radius:50%;background:var(--red);color:#fff;font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:center;margin-top:1px}
+#regdlg .vip-help{margin:14px 0 0;padding:12px 14px;border:2px solid var(--red);background:#fff;font-size:15px;line-height:1.45;color:#111}
+#regdlg .vip-help a{color:var(--red-d);font-weight:800;word-break:break-all}
+#regdlg .vip-note{margin:16px 0 0;padding:14px;border:3px solid var(--red);background:#fff5f4;text-align:left;font-size:16px;line-height:1.45;color:#111}
+#regdlg .vip-note b{color:var(--red-d)}
+    .hp{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden;opacity:0}
 #respdlg{max-width:1000px;width:calc(100% - 32px);padding:24px;max-height:calc(100vh - 32px);overflow:auto}
 #respdlg h3{font-size:24px}
 .rtw{overflow-x:auto;margin:14px 0;border:1px solid #e6e6e6}
@@ -1932,6 +1941,15 @@ function cardCamera(title, onPhoto, onUnavailable) {
     dlg.close(); onUnavailable();
   });
 }
+/* "no email?" contact line: shown before AND after registering */
+var HELP_MAIL = "tedx@msa.edu.eg";
+function helpLine() {
+  return h("p", { class: "vip-help" },
+    h("b", null, "Didn't receive an email? "),
+    "Send us an email at ",
+    h("a", { href: "mailto:" + HELP_MAIL + "?subject=" + encodeURIComponent("I didn't receive my QR email") }, HELP_MAIL),
+    " and tell us you didn't receive it. For any other issue, contact us at the same address.");
+}
 /* public: the form pop-up */
 function openReg(form) {
   var dlg = $id("regdlg"), box = $id("regbox"), vals = {}, files = {}, wraps = [];
@@ -2061,8 +2079,15 @@ function openReg(form) {
       }
       box.append(h("div", null, h("h3", null, "Thank you!"),
         h("p", null, j.emailed ? (form.thanks || REG_TPL.thanks) : "You are registered, but we could not send your email yet. The team will resend it."),
+        j.emailed ? h("div", { class: "vip-note", role: "note" },
+          h("b", null, "Now check your inbox. "),
+          "The QR code in the email we sent you is the one that matters most. ",
+          h("b", null, "Show the email's QR code to the ushers"),
+          ", not only the one on this screen. Check your spam/junk folder too.") : null,
         qrBox,
+        helpLine(),
         h("div", { class: "cta" }, h("button", { class: "btn", type: "button", on: { click: function () { dlg.close(); } } }, "Close"))));
+      
     }).catch(function (e) {
       err.textContent = e.message; send.disabled = !!e.full; send.textContent = e.full ? "Registration full" : (form.button || "Register");
       if (e.full) { fullForms[form.id] = true; render(); }
@@ -2070,14 +2095,33 @@ function openReg(form) {
     });
   });
 
+    function showForm() {
+    box.textContent = "";
+    box.append(h("div", null,
+      h("h3", null, form.title),
+      h("p", { class: "pl" }, form.desc || ""),
+      wraps.map(function (w) { return w.el; }),
+      hp, cfBox, err,
+      h("div", { class: "cta" }, send, h("button", { class: "btn line", type: "button", on: { click: function () { dlg.close(); } } }, "Cancel"))));
+    sync();
+    box.scrollTop = 0; dlg.scrollTop = 0;
+  }
+  /* step 1: very important pop-up, then the form */
+  function item(n, kids) { return h("li", null, h("span", { class: "n" }, String(n)), h("span", null, kids)); }
   box.textContent = "";
   box.append(h("div", null,
-    h("h3", null, form.title),
-    h("p", { class: "pl" }, form.desc || ""),
-    wraps.map(function (w) { return w.el; }),
-    hp, cfBox, err,
-    h("div", { class: "cta" }, send, h("button", { class: "btn line", type: "button", on: { click: function () { dlg.close(); } } }, "Cancel"))));
-  sync(); dlg.showModal();
+    h("span", { class: "vip-tag" }, "Very important"),
+    h("h3", null, "Read this before you register"),
+    h("ul", { class: "vip-list" },
+      item(1, [h("b", null, "Enter your EMAIL ADDRESS correctly. "), "Your QR code is sent to it. If you mistype it, you will not get your ticket."]),
+      item(2, [h("b", null, "Do the captcha. "), "A quick human check runs when you press Register. Wait for it to finish."]),
+      item(3, [h("b", null, "Send a clear photo of your ID. "), "MSAian: your university ID. Outcomer: your national ID. The whole card must be visible and readable, with no blur or glare."]),
+      item(4, [h("b", null, "Check your inbox after you register. "), "The QR code in the email is more important than the one shown on screen."])),
+    helpLine(),
+    h("div", { class: "cta", style: "margin-top:16px" },
+      h("button", { class: "btn", type: "button", on: { click: showForm } }, "I understand, continue"),
+      h("button", { class: "btn line", type: "button", on: { click: function () { dlg.close(); } } }, "Cancel"))));
+  dlg.showModal();
   if (window.matchMedia && matchMedia("(pointer:coarse)").matches && document.activeElement && document.activeElement !== document.body) document.activeElement.blur();
 }
 
