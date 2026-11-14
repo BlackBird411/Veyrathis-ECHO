@@ -780,7 +780,7 @@ function psShrink(img, url) {   // shrink the photo so the PDF stays small; fall
 }
 function photoPdf(group) {
   var isMsa = group === "msa";
-  var list = resRows.filter(function (r) { return (r.by["Who are you?"] || "") === (isMsa ? "MSA student" : "Outcomer"); }).map(function (r) {
+  var list = resRows.filter(function (r) { return !r.dupOld && (r.by["Who are you?"] || "") === (isMsa ? "MSA student" : "Outcomer"); }).map(function (r) {
     var id = (r.by["MSA ID number"] || r.by["National ID number"] || "").replace(/[^0-9A-Za-z]/g, "");
     var ptxt = r.by["University ID photo"] || r.by["National ID photo"] || "";
     return { name: (r.by["Full name"] || "").replace(/\s+/g, " ").trim(), id: id,
