@@ -1951,7 +1951,7 @@ function helpLine() {
     " and tell us you didn't receive it. For any other issue, contact us at the same address.");
 }
 /* public: the form pop-up */
-function openReg(form) {
+function openReg(form, asBoard) {
   var dlg = $id("regdlg"), box = $id("regbox"), vals = {}, files = {}, wraps = [];
   var err = h("div", { class: "err", role: "alert" });
   var hp = h("input", { class: "hp", type: "text", tabindex: "-1", autocomplete: "off", "aria-hidden": "true" });
@@ -2047,7 +2047,7 @@ function openReg(form) {
       if (bad || !f.label || (f.showQ && vals[f.showQ] !== f.showEq)) return;
         if (f.type === "file") {
         var need = photoCount(f), got = (files[f.id] || []).slice(0, need);
-        if (f.required && got.filter(Boolean).length < need) { bad = "Please add " + need + " photo" + (need > 1 ? "s" : "") + ": " + f.label; return; }
+         if (f.required && !asBoard && got.filter(Boolean).length < need) { bad =  "Please add " + need + " photo" + (need > 1 ? "s" : "") + ": " + f.label; return; }
         got.forEach(function (file, i) {
           if (file) jobs.push(shrink(file, 1600).then(function (b) { fd.append("f_" + f.id + "_" + i, b, "id.jpg"); }));
         });
@@ -2062,13 +2062,24 @@ function openReg(form) {
     if (bad) { err.textContent = bad; err.scrollIntoView({ block: "center", behavior: "smooth" }); return; }
     send.disabled = true; send.textContent = "Verifying…";
     fd.append("action", "submit"); fd.append("form", form.id); fd.append("answers", JSON.stringify(ans)); fd.append("hp", hp.value);
-    Promise.all([Promise.all(jobs), getToken()]).then(function (res) {
-      send.textContent = "Sending…";
+if (asBoard) fd.append("password", password);
+Promise.all([Promise.all(jobs), asBoard ? Promise.resolve("") : getToken()]).then(function (res) {
+  send.textContent = "Sending…";
       fd.append("cf", res[1] || "");
       return fetch(SB_URL + "/functions/v1/register", { method: "POST", headers: { apikey: SB_KEY }, body: fd });
     }).then(function (r) {
       return r.json().then(function (j) { if (!r.ok) { var er = new Error(j.error || "Could not register"); er.full = !!j.full; throw er; } return j; });
     }).then(function (j) {
+      if (asBoard) {
+        loadFull();
+        box.textContent = "";
+        box.append(h("div", null, h("h3", null, "Registered (board)"),
+          h("p", null, j.emailed ? "Done. The QR code email was sent." : "Registered, but the QR email could not be sent. Use “Resend” in the responses table."),
+          h("div", { class: "cta" },
+            h("button", { class: "btn", type: "button", on: { click: function () { openReg(form, true); } } }, "Register another"),
+            h("button", { class: "btn line", type: "button", on: { click: function () { dlg.close(); } } }, "Close"))));
+        return;
+      }
            box.textContent = "";
       box.append(h("div", null, h("h3", null, "Thank you!"),
         h("p", null, j.emailed ? (form.thanks || REG_TPL.thanks) : "You are registered, but we could not send your email yet. The team will resend it."),
@@ -2089,7 +2100,9 @@ function openReg(form) {
     function showForm() {
     box.textContent = "";
     box.append(h("div", null,
+          asBoard ? h("span", { class: "vip-tag" }, "Board registration") : null,
       h("h3", null, form.title),
+      asBoard ? h("p", { class: "vip-note", role: "note" }, "You are adding a person as the board. This ignores “closed” and the registration limit, skips the captcha, and the ID photo is optional. They still get the QR code email, and an email that is already registered is refused.") : null,
       h("p", { class: "pl" }, form.desc || ""),
       wraps.map(function (w) { return w.el; }),
       hp, cfBox, err,
@@ -2112,7 +2125,8 @@ item(4, [h("b", null, "Check your inbox after you register. "), "Your QR code is
     h("div", { class: "cta", style: "margin-top:16px" },
       h("button", { class: "btn", type: "button", on: { click: showForm } }, "I understand, continue"),
       h("button", { class: "btn line", type: "button", on: { click: function () { dlg.close(); } } }, "Cancel"))));
-  dlg.showModal();
+  if (asBoard) showForm();
+  if (!dlg.open) dlg.showModal();
   if (window.matchMedia && matchMedia("(pointer:coarse)").matches && document.activeElement && document.activeElement !== document.body) document.activeElement.blur();
 }
 
@@ -2202,7 +2216,8 @@ function regSec() {
     var adm = null;
     if (editing) adm = h("div", { class: "radm" },
       h("div", { class: "ctl" },
-        full ? h("span", { class: "tag" }, "Limit reached") : h("button", { type: "button", class: "btn sm" + (open ? " line" : ""), on: { click: function () { f.open = !open; touch(); } } }, open ? "Close registration" : "Open registration"),
+         full ? h("span", { class: "tag" }, "Limit reached") : h("button", { type: "button", class: "btn sm" + (open ? " line" : ""), on: { click: function () { f.open = !open; touch(); } } }, open ? "Close registration" : "Open registration"),
+h("button", { type: "button", class: "btn sm", on: { click: function () { openReg(f, true); } } }, "Register someone (board)"),
 h("a", { class: "btn sm line", href: "/analytics.html#responses", target: "_blank", rel: "noopener" }, "View responses")),
                          INP(p + "button", "Button text", "Register"),
            INP(p + "thanks", "Message shown after registering", ""),
