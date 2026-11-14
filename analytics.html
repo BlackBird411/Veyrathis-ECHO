@@ -107,7 +107,8 @@ table.rt tr.mk-yellow td{background:#fff3b0}
 table.rt tr.mk-red td{background:#ffc9c4}
 table.rt tr.mk-green td{background:#c9f0cc}
 table.rt tr.mk-blue td{background:#c9ddff}
-  .ctx{position:fixed;z-index:50;min-width:180px;padding:4px;background:#fff;border:1.5px solid var(--ink);border-radius:4px;box-shadow:0 6px 24px rgba(0,0,0,.18)}
+table.rt tr.dupold td{opacity:.55}
+table.rt tr.dupold td.flag{opacity:1;font-weight:600}  .ctx{position:fixed;z-index:50;min-width:180px;padding:4px;background:#fff;border:1.5px solid var(--ink);border-radius:4px;box-shadow:0 6px 24px rgba(0,0,0,.18)}
 .ctx button{display:flex;align-items:center;gap:10px;width:100%;padding:9px 10px;border:0;background:transparent;text-align:left;font-size:14px;font-weight:700;cursor:pointer}
 .ctx button:hover,.ctx button:focus-visible{background:var(--soft)}
 .ctx button.yellow::before,.ctx button.red::before,.ctx button.green::before,.ctx button.blue::before{content:"";width:14px;height:14px;border-radius:50%;border:1px solid rgba(0,0,0,.3)}
@@ -558,7 +559,7 @@ function prepare(rows) {
     var by = {};
     (r.answers || []).forEach(function (a) { by[a.q] = a.a === null || a.a === undefined ? "" : String(a.a); });
     var t = new Date(r.created_at);
-    return { id: r.id, form: r.form_title || r.form_id || "", status: r.status || "", error: r.error || "", at: t, day: cairoDay(t), by: by, flags: [], hay: "", mark: r.mark || "", note: r.mark_note || "" };
+    return { id: r.id, form: r.form_title || r.form_id || "", status: r.status || "", error: r.error || "", at: t, day: cairoDay(t), by: by, flags: [], hay: "", mark: r.mark || "", note: r.mark_note || "", dupOld: !!r.dup_old, dupAt: r.dup_at ? new Date(r.dup_at) : null, dupBy: r.dup_by || "" };
   });
 
   cols = order.map(function (name) {
@@ -579,6 +580,14 @@ function prepare(rows) {
       var v = norm(c, r.by[c.name] || "");
       if (v.length > 3 && counts[c.name + "\u0000" + v] > 1) r.flags.push("Same " + c.name.toLowerCase() + " as another registration");
     });
+  });
+
+  // old duplicates: the newest registration of the same person counts, older ones stay but are marked
+  var replaced = {};
+  resRows.forEach(function (r) { if (r.dupOld && r.dupBy) replaced[r.dupBy] = (replaced[r.dupBy] || 0) + 1; });
+  resRows.forEach(function (r) {
+    if (r.dupOld) r.flags.unshift("Old duplicate: replaced by a newer registration" + (r.dupAt ? " (" + stamp(r.dupAt) + ")" : ""));
+    else if (replaced[r.id]) r.flags.unshift("Newest registration (replaces " + replaced[r.id] + " older)");
   });
 
   resRows.forEach(function (r) {
@@ -641,10 +650,15 @@ function fmtWhen(d) {
 }
 
 function summary() {
-  var total = resRows.length, sent = 0, bad = 0, flagged = 0;
-  resRows.forEach(function (r) { if (r.status === "sent") sent++; else bad++; if (r.flags.length) flagged++; });
+  var total = 0, sent = 0, bad = 0, flagged = 0, oldDup = 0;
+  resRows.forEach(function (r) {
+    if (r.flags.length) flagged++;
+    if (r.dupOld) { oldDup++; return; }
+    total++;
+    if (r.status === "sent") sent++; else bad++;
+  });
   $("resKpis").innerHTML =
-    kpi("Registrations", num(total), "All forms") +
+    kpi("Registrations", num(total), oldDup ? "Newest of each person · " + num(oldDup) + " old duplicate" + (oldDup === 1 ? "" : "s") + " not counted" : "All forms") +
     kpi("Emails sent", num(sent), total ? Math.round(100 * sent / total) + "% of registrations" : "") +
     kpi("Emails failed or not sent", num(bad), bad ? "Use Resend on those rows" : "None", bad > 0) +
     kpi("Possible duplicates", num(flagged), flagged ? "Same ID number or phone" : "None found", flagged > 0);
@@ -675,7 +689,7 @@ function renderRes(resetLimit) {
 
   var body = el("tbody");
   rows.slice(0, limit).forEach(function (r) {
-var row = el("tr", { class: r.mark ? "mk-" + r.mark : null, title: r.note || null, on: { contextmenu: function (ev) { openMenu(ev, r); } } }, el("td", { class: "nw", text: fmtWhen(r.at) }));
+var row = el("tr", { class: (r.mark ? "mk-" + r.mark : "") + (r.dupOld ? " dupold" : "") || null, title: r.note || null, on: { contextmenu: function (ev) { openMenu(ev, r); } } }, el("td", { class: "nw", text: fmtWhen(r.at) }));
     cols.forEach(function (c) {
       var v = r.by[c.name] || "", td;
       if (!v) { row.appendChild(el("td", { class: "dim", text: "–" })); return; }
