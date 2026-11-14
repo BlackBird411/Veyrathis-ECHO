@@ -205,7 +205,8 @@ a.sp:hover{transform:translateY(-3px);box-shadow:0 10px 28px rgba(0,0,0,.08)}
 .pill.no{background:#fdeceb;color:#a3190f}
 .reg>.btn{align-self:flex-start;margin-top:6px}
 .btn[disabled]{opacity:.5;cursor:not-allowed}
-.radm{border-top:1px dashed #ddd;margin-top:6px;padding-top:6px}
+.shut{opacity:.45;filter:grayscale(1);pointer-events:none;cursor:not-allowed}   /* register button in pop-up/banner/news while registration is closed or full */
+    .radm{border-top:1px dashed #ddd;margin-top:6px;padding-top:6px}
 .thx{font-size:14px;color:#555;border:1px dashed #ccc;padding:8px;margin:4px 0 8px}
 .rfields{margin-top:8px}
 .rfields summary{cursor:pointer;font-weight:700;font-size:14px;padding:6px 0}
@@ -1291,17 +1292,28 @@ function annLink(u) {
   var s = safeUrl(u);
   return s ? { href: s, ext: true } : null;
 }
+/* the first registration form that is open right now: switched on, before its closing time, and not full */
+function openRegForm() {
+  return state.site.registrations.filter(function (x) {
+    return x.title && x.open !== false && !(cdTime(x.closes) <= Date.now()) && !fullForms[x.id];
+  })[0];
+}
 function annAttrs(l, closePop, cls) {
   var a = { href: l.href };
-  if (cls) a["class"] = cls;
+  var shut = l.href === "#register" && !openRegForm();   // closed or full: shade the button and do nothing
+  if (cls || shut) a["class"] = (cls || "") + (shut ? " shut" : "");
+  if (shut) { a["aria-disabled"] = "true"; a.tabindex = "-1"; }
   if (l.ext) { a.target = "_blank"; a.rel = "noopener"; }
   a.on = { click: function (ev) {
-    if (closePop) $id("annpop").close();
     if (l.href === "#register") {
       ev.preventDefault();
-      var f = state.site.registrations.filter(function (x) { return x.title && x.open !== false; })[0];
-      if (f) openReg(f); else toast("Registration is currently closed.", true);
+      var f = openRegForm();
+      if (!f) return;
+      if (closePop) $id("annpop").close();
+      openReg(f);
+      return;
     }
+    if (closePop) $id("annpop").close();
   } };
   return a;
 }
@@ -2187,9 +2199,10 @@ function openVisits() {
 var fullForms = {};
 function loadFull() {
   var any = state.site.registrations.some(function (f) { return parseInt(f.limit, 10) > 0; });
-  if (!any) { var had = Object.keys(fullForms).length; fullForms = {}; if (had) render(); return; }
+  if (!any) { var had = Object.keys(fullForms).length; fullForms = {}; if (had) { render(); var pd0 = $id("annpop"); if (pd0 && pd0.open && popList.length) drawPop(); } return; }
   api("rpc/reg_full_forms", { method: "POST", body: "{}" }).then(function (ids) {
     fullForms = {}; (ids || []).forEach(function (id) { fullForms[id] = true; }); render();
+    var pd = $id("annpop"); if (pd && pd.open && popList.length) drawPop();
   }).catch(function () {});
 }
 function checkRegAlerts() {
