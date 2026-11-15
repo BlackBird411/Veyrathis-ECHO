@@ -2234,6 +2234,17 @@ function checkRegAlerts() {
     fresh.forEach(function (r) { try { localStorage.setItem("regAlert:" + r.out_form + ":" + r.out_limit, "1"); } catch (e) {} });
   }).catch(function () {});
 }
+function dupReg(f, i) {
+  var n = clone(f), map = {};
+  n.id = newId();
+  n.title = (f.title || "Registration") + " (copy)";
+  n.open = false;
+  delete n.closes; delete n.limit;
+  (n.fields || []).forEach(function (q, k) { var o = q.id; q.id = newId() + "q" + k; map[o] = q.id; });
+  (n.fields || []).forEach(function (q) { if (q.showQ && map[q.showQ]) q.showQ = map[q.showQ]; });
+  state.site.registrations.splice(i + 1, 0, n);
+  touch();
+}
 function regSec() {
   var s = "site.registrations", cards = [];
   state.site.registrations.forEach(function (f, i) {
@@ -2246,6 +2257,7 @@ function regSec() {
       h("div", { class: "ctl" },
          full ? h("span", { class: "tag" }, "Limit reached") : h("button", { type: "button", class: "btn sm" + (open ? " line" : ""), on: { click: function () { f.open = !open; touch(); } } }, open ? "Close registration" : "Open registration"),
 h("button", { type: "button", class: "btn sm", on: { click: function () { openReg(f, true); } } }, "Register someone (board)"),
+h("button", { type: "button", class: "btn sm line", on: { click: function () { dupReg(f, i); } } }, "Duplicate form"),
 h("a", { class: "btn sm line", href: "/analytics.html#responses", target: "_blank", rel: "noopener" }, "View responses")),
                          INP(p + "button", "Button text", "Register"),
            INP(p + "thanks", "Message shown after registering", ""),
