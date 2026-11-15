@@ -1330,7 +1330,7 @@ function CK(item, key, label, def) {
 function annBanner() { return state.site.announcements.filter(function (a) { return annLive(a) && a.banner; })[0]; }
 /* what each visitor has already seen (kept in their own browser only) */
 var seenMem = { popped: {}, read: {} };
-function annKey(a) { return a.id || ("t:" + a.title); }
+function annKey(a) { return (a.id || ("t:" + a.title)) + (a.rev ? ":" + a.rev : ""); }
 function readSeen() {
   try { var r = JSON.parse(localStorage.getItem("tedx-ann") || "null"); if (r && typeof r === "object") return r; }
   catch (e) { return seenMem; }
