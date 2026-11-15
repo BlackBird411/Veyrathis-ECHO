@@ -257,6 +257,7 @@ dialog .row{display:flex;gap:8px;justify-content:flex-end}
     <div class="toolbar" role="search">
       <div class="fld grow"><label for="q">Search</label><input id="q" type="search" placeholder="Name, email, phone, ID number" autocomplete="off"></div>
       <div id="filters" style="display:contents"></div>
+      <div class="fld"><label for="formSel">Form</label><select id="formSel"><option value="">All forms</option></select></div>
       <div class="fld"><label for="stSel">Email</label>
         <select id="stSel"><option value="">All</option><option value="sent">Sent</option><option value="failed">Failed or not sent</option></select></div>
       <div class="fld"><label for="mkSel">Highlight</label>
@@ -612,6 +613,12 @@ function prepare(rows) {
 function buildFilters() {
   var host = $("filters");
   host.textContent = "";
+    var fs = $("formSel"), cur = fs.value, cnt = {};
+  resRows.forEach(function (r) { if (!r.dupOld) cnt[r.form] = (cnt[r.form] || 0) + 1; });
+  fs.textContent = "";
+  fs.appendChild(el("option", { value: "", text: "All forms" }));
+  Object.keys(cnt).forEach(function (k) { fs.appendChild(el("option", { value: k, text: k + " (" + cnt[k] + ")" })); });
+  fs.value = cur;
   filterCols.forEach(function (c) {
     var sel = el("select", { id: "f_" + filterCols.indexOf(c), on: { change: function () { fsel[c.name] = this.value; renderRes(true); } } },
       el("option", { value: "", text: "All" }));
@@ -622,7 +629,7 @@ function buildFilters() {
 
 function visibleRows() {
   var tokens = $("q").value.toLowerCase().split(/\s+/).filter(Boolean);
-  var from = $("dFrom").value, to = $("dTo").value, st = $("stSel").value, dup = $("dupOnly").checked, mk = $("mkSel").value;
+  var from = $("dFrom").value, to = $("dTo").value, st = $("stSel").value, dup = $("dupOnly").checked, mk = $("mkSel").value, fm = $("formSel").value;
   var out = resRows.filter(function (r) {
     for (var i = 0; i < tokens.length; i++) if (r.hay.indexOf(tokens[i]) < 0) return false;
     if (from && r.day < from) return false;
@@ -630,6 +637,7 @@ function visibleRows() {
     if (st === "sent" && r.status !== "sent") return false;
     if (st === "failed" && r.status === "sent") return false;
     if (mk === "any" ? !r.mark : mk === "none" ? r.mark : mk && r.mark !== mk) return false;
+    if (fm && r.form !== fm) return false;
     for (var k in fsel) if (fsel[k] && r.by[k] !== fsel[k]) return false;
     if (dup && !r.flags.length) return false;
     return true;
@@ -638,6 +646,7 @@ function visibleRows() {
     var x, y;
     if (sortKey === "date") { x = a.at.getTime(); y = b.at.getTime(); return (x - y) * sortDir; }
     if (sortKey === "status") { x = a.status; y = b.status; }
+    else if (sortKey === "form") { x = a.form; y = b.form; }
     else if (sortKey === "flags") { x = a.flags.length; y = b.flags.length; return (x - y) * sortDir; }
     else { x = a.by[sortKey] || ""; y = b.by[sortKey] || ""; }
     return String(x).localeCompare(String(y), undefined, { numeric: true, sensitivity: "base" }) * sortDir;
@@ -664,8 +673,11 @@ function summary() {
     kpi("Possible duplicates", num(flagged), flagged ? "Same ID number or phone" : "None found", flagged > 0);
 
   // one plain sentence for the first filter column, e.g. "Who are you?: MSA student 320, Outcomer 180"
-  var c = filterCols[0];
-  $("resSplit").textContent = c ? c.name + ": " + c.options.map(function (o) { return o.v + " " + num(o.n); }).join(", ") : "";
+  var byForm = {}; resRows.forEach(function (r) { if (!r.dupOld) byForm[r.form] = (byForm[r.form] || 0) + 1; });
+  var fk = Object.keys(byForm), c = filterCols[0];
+  $("resSplit").textContent =
+    (fk.length > 1 ? "By form: " + fk.map(function (k) { return k + " " + num(byForm[k]); }).join(", ") + (c ? "  |  " : "") : "") +
+    (c ? c.name + ": " + c.options.map(function (o) { return o.v + " " + num(o.n); }).join(", ") : "");
 }
 
 function renderRes(resetLimit) {
@@ -674,8 +686,8 @@ function renderRes(resetLimit) {
   var rows = visibleRows(), table = $("rtab");
   table.textContent = "";
 
-  var heads = [{ key: "date", text: "Registered" }]
-    .concat(cols.map(function (c) { return { key: c.name, text: c.name, sortable: c.kind !== "photo" }; }))
+var heads = [{ key: "date", text: "Registered" }, { key: "form", text: "Form" }]
+  .concat(cols.map(function (c) { return { key: c.name, text: c.name, sortable: c.kind !== "photo" }; }))
     .concat([{ key: "status", text: "Email" }, { key: "flags", text: "Flags" }]);
   var tr = el("tr");
   heads.forEach(function (h) {
@@ -689,7 +701,7 @@ function renderRes(resetLimit) {
 
   var body = el("tbody");
   rows.slice(0, limit).forEach(function (r) {
-var row = el("tr", { class: (r.mark ? "mk-" + r.mark : "") + (r.dupOld ? " dupold" : "") || null, title: r.note || null, on: { contextmenu: function (ev) { openMenu(ev, r); } } }, el("td", { class: "nw", text: fmtWhen(r.at) }));
+var row = el("tr", { class: (r.mark ? "mk-" + r.mark : "") + (r.dupOld ? " dupold" : "") || null, title: r.note || null, on: { contextmenu: function (ev) { openMenu(ev, r); } } }, el("td", { class: "nw", text: fmtWhen(r.at) }), el("td", { class: "nw", text: r.form || "–" }));
     cols.forEach(function (c) {
       var v = r.by[c.name] || "", td;
       if (!v) { row.appendChild(el("td", { class: "dim", text: "–" })); return; }
@@ -733,10 +745,10 @@ function stamp(d) {
 }
 function downloadCsv() {
   var rows = visibleRows();
-  var head = ["Registered"].concat(cols.map(function (c) { return c.name; })).concat(["Email status", "Flags"]);
+ var head = ["Registered", "Form"].concat(cols.map(function (c) { return c.name; })).concat(["Email status", "Flags"]);
   var lines = [head.map(csvCell).join(",")];
   rows.forEach(function (r) {
-    lines.push([stamp(r.at)].concat(cols.map(function (c) { return r.by[c.name] || ""; })).concat([r.status === "sent" ? "Sent" : "Not sent", r.flags.join("; ")]).map(csvCell).join(","));
+    lines.push([stamp(r.at), r.form].concat(cols.map(function (c) { return r.by[c.name] || ""; })).concat([r.status === "sent" ? "Sent" : "Not sent", r.flags.join("; ")]).map(csvCell).join(","));
   });
   var blob = new Blob(["\ufeff" + lines.join("\r\n")], { type: "text/csv;charset=utf-8" });
   var a = el("a", { href: URL.createObjectURL(blob), download: "registrations-" + cairoToday() + ".csv" });
@@ -910,9 +922,9 @@ $("seg").addEventListener("click", function (ev) {
 
 var qTimer = null;
 $("q").addEventListener("input", function () { clearTimeout(qTimer); qTimer = setTimeout(function () { renderRes(true); }, 120); });
-["stSel", "mkSel", "dFrom", "dTo", "dupOnly"].forEach(function (id) { $(id).addEventListener("change", function () { renderRes(true); }); });
+["stSel", "mkSel", "formSel", "dFrom", "dTo", "dupOnly"].forEach(function (id) { $(id).addEventListener("change", function () { renderRes(true); }); });
 $("clear").addEventListener("click", function () {
-   $("q").value = ""; $("stSel").value = ""; $("mkSel").value = ""; $("dFrom").value = ""; $("dTo").value = ""; $("dupOnly").checked = false;
+   $("q").value = ""; $("stSel").value = ""; $("mkSel").value = ""; $("formSel").value = ""; $("dFrom").value = ""; $("dTo").value = ""; $("dupOnly").checked = false;
   fsel = {}; filterCols.forEach(function (c, i) { $("f_" + i).value = ""; });
   renderRes(true);
 });
