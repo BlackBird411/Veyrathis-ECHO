@@ -147,9 +147,11 @@ nav{position:sticky;top:0;z-index:50;background:rgba(10,10,10,.93);backdrop-filt
 #annpop h3{font-size:30px;letter-spacing:-.02em;margin:14px 0 10px}
 #annpop p{margin:0 0 22px;color:#444;font-size:16px}
 #annpop .pnav{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:22px;padding-top:16px;border-top:1px solid #eee}
-.dots{display:flex;gap:7px}
-.dots button{width:9px;height:9px;border-radius:50%;border:0;padding:0;background:#ccc;cursor:pointer}
-.dots button.on{background:var(--red)}
+.dots{display:flex;gap:0}
+.dots button{width:9px;height:9px;box-sizing:content-box;border-radius:50%;border:0;padding:8px;background-color:#ccc;background-clip:content-box;cursor:pointer}
+.dots button.on{background-color:var(--red)}
+body:has(#annpop[open]){overflow:hidden}
+.ann.off{opacity:.55}
 .pclose{position:absolute;top:12px;right:12px;z-index:2;width:34px;height:34px;border-radius:50%;border:0;background:rgba(0,0,0,.7);color:#fff;font-size:22px;line-height:1;cursor:pointer}
 .pclose:hover{background:var(--red)}
 @media(prefers-reduced-motion:reduce){#annpop[open],.badge{animation:none}}
@@ -1120,6 +1122,7 @@ function videoEditor(v, p) {
 
 function nav() {
   var l = [["about", "About"]];
+  if (editing || liveAnn().length) l.push(["announcements", "News"]);
   if (editing || visSpeakers().length || visSponsors().length) l.push(["whatif", "What IF?"]);
   if (editing || state.site.registrations.length) l.push(["registration", "Register"]);   if (editing || visEvents().length) l.push(["events", "Events"]);
   if (editing || visGallery().length) l.push(["gallery", "Gallery"]);
@@ -1324,8 +1327,7 @@ function CK(item, key, label, def) {
   i.addEventListener("change", function () { item[key] = i.checked; dirty = true; markDirty(); render(); });
   return h("label", { class: "ck" }, i, label);
 }
-function annBanner() { return state.site.announcements.filter(function (a) { return a.title && a.banner; })[0]; }
-
+function annBanner() { return state.site.announcements.filter(function (a) { return annLive(a) && a.banner; })[0]; }
 /* what each visitor has already seen (kept in their own browser only) */
 var seenMem = { popped: {}, read: {} };
 function annKey(a) { return a.id || ("t:" + a.title); }
@@ -1341,8 +1343,13 @@ function markSeen(kind, list) {
   seenMem = s;
   try { localStorage.setItem("tedx-ann", JSON.stringify(s)); } catch (e) {}
 }
-function liveAnn() { return state.site.announcements.filter(function (a) { return a.title; }); }
-function unreadAnn() { return liveAnn().filter(function (a) { return !isSeen("read", a); }).length; }
+function annLive(a) {
+  if (!a.title || a.on === false) return false;
+  var f = cdTime(a.from), u = cdTime(a.until), n = Date.now();
+  return !(f > n) && !(u <= n);
+}
+function liveAnn() { return state.site.announcements.filter(annLive); }
+  function unreadAnn() { return liveAnn().filter(function (a) { return !isSeen("read", a); }).length; }
 function markAnnRead() {
   if (editing) return;
   markSeen("read", liveAnn());
@@ -1422,14 +1429,13 @@ function closeClosing() { clearTimeout(closingTimer); var d = $id("closing"); if
 /* entrance pop-up */
   var popList = [], popIdx = 0, popPreview = false, popShown = false;
 function popItems(all) {
-  return liveAnn().filter(function (a) { return a.popup !== false; });
+  return liveAnn().filter(function (a) { return a.popup !== false && (all || !isSeen("popped", a)); });
 }
 function drawPop() {
  var box = $id("annbox"), a = popList[popIdx], n = popList.length, link = annLink(a.link);
-  box.textContent = "";
+  if (!popPreview) markSeen("popped", [a]);  box.textContent = "";
   box.append(
-    a.image ? h("div", { class: "pimg" }, h("img", { src: cdn(a.image), alt: "" })) : null,
-    h("div", { class: "pbody" },
+    a.image ? h("div", { class: "pimg" }, h("img", { src: cdn(a.image), alt: "", on: { error: noPic } })) : null,    h("div", { class: "pbody" },
       h("div", { class: "annmeta" }, a.tag ? h("span", { class: "atag" }, a.tag) : null, a.date ? h("span", { class: "adate" }, a.date) : null),
       h("h3", null, a.title),
       rollEl(a),
@@ -1479,20 +1485,28 @@ function announceBar() {
 function announcementsSec() {
   var s = "site.announcements", cards = [];
   state.site.announcements.forEach(function (a, i) {
-    var empty = !a.title;
-    if (!editing && empty) return;
+  var empty = !a.title, hidden = !empty && !annLive(a);
+    if (!editing && !annLive(a)) return;
     var p = s + "." + i + ".", img = PIC(p + "image", "", 1400, "image", 1.6), link = annLink(a.link), act = null;
-    if (editing) act = h("div", null,
+   if (editing) act = h("div", null,
+      CK(a, "on", "Visible on the website", true),
       INP(p + "cta", "Button text (optional)", "Get tickets"),
      INP(p + "link", "Button link (optional): https://… or #register (opens the form), #registration, #events, #team", "#register"),
            CDI(p + "cd", "Countdown to (optional, Cairo time)"),
       INP(p + "rollWords", "Pop-up rolling words (optional), separated by commas, e.g. we listened?, we dared?, we connected?", "we listened?, we dared?, we connected?"),
-      CK(a, "popup", "Show as a pop-up when visitors arrive", true),
-                         CK(a, "banner", "Show in the banner at the top of the site"));
+           CK(a, "popup", "Show as a pop-up when visitors arrive", true),
+      CK(a, "banner", "Show in the banner at the top of the site"),
+      CDI(p + "from", "Show from (optional, Cairo time)"),
+      CDI(p + "until", "Hide after (optional, Cairo time)"),
+      h("button", { type: "button", class: "btn sm line", on: { click: function () {
+        a.rev = (a.rev || 0) + 1; dirty = true; markDirty();
+        toast("Pop-up will show again to everyone who already saw it.");
+      } } }, "Show again to everyone"));
     else if (link) act = h("a", annAttrs(link, false, "btn sm"), a.cta || "Learn more");
-    cards.push(h("article", { class: "ann" + (editing && empty ? " slot" : "") }, img,
+    cards.push(h("article", { class: "ann" + (editing && empty ? " slot" : "") + (editing && hidden ? " off" : "") }, img,
       h("div", { class: "body" },
-        h("div", { class: "annmeta" }, T("span", p + "tag", "atag", "Label"), T("span", p + "date", "adate", "Date")),
+        editing && hidden ? h("span", { class: "fhidden", style: "color:var(--red)" }, "Hidden from visitors") : null,
+        h("div", { class: "annmeta" },
         T("h3", p + "title", "", "Headline"),
                T("p", p + "text", "", "Details", true),
         cdEl(a.cd, { done: "Started" }),
@@ -2325,7 +2339,6 @@ $id("closing").addEventListener("click", closeClosing);
 $id("closing").addEventListener("close", function () { clearTimeout(closingTimer); if (!closingPreview) showPopup(false); closingPreview = false; });
   $id("annx").addEventListener("click", function () { $id("annpop").close(); });
   $id("annpop").addEventListener("click", function (e) { if (e.target === this) this.close(); });
-$id("annpop").addEventListener("close", function () { if (!popPreview) markSeen("popped", popList); });
 document.getElementById("loginGo").addEventListener("click", doLogin);
 document.getElementById("loginCancel").addEventListener("click", function () { document.getElementById("login").close(); });
 document.getElementById("pw").addEventListener("keydown", function (e) { if (e.key === "Enter") doLogin(); });
