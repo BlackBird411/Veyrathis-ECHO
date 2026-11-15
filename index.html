@@ -1485,16 +1485,16 @@ function announceBar() {
 function announcementsSec() {
   var s = "site.announcements", cards = [];
   state.site.announcements.forEach(function (a, i) {
-  var empty = !a.title, hidden = !empty && !annLive(a);
+    var empty = !a.title, hidden = !empty && !annLive(a);
     if (!editing && !annLive(a)) return;
     var p = s + "." + i + ".", img = PIC(p + "image", "", 1400, "image", 1.6), link = annLink(a.link), act = null;
-   if (editing) act = h("div", null,
+    if (editing) act = h("div", null,
       CK(a, "on", "Visible on the website", true),
       INP(p + "cta", "Button text (optional)", "Get tickets"),
-     INP(p + "link", "Button link (optional): https://… or #register (opens the form), #registration, #events, #team", "#register"),
-           CDI(p + "cd", "Countdown to (optional, Cairo time)"),
+      INP(p + "link", "Button link (optional): https://… or #register (opens the form), #registration, #events, #team", "#register"),
+      CDI(p + "cd", "Countdown to (optional, Cairo time)"),
       INP(p + "rollWords", "Pop-up rolling words (optional), separated by commas, e.g. we listened?, we dared?, we connected?", "we listened?, we dared?, we connected?"),
-           CK(a, "popup", "Show as a pop-up when visitors arrive", true),
+      CK(a, "popup", "Show as a pop-up when visitors arrive", true),
       CK(a, "banner", "Show in the banner at the top of the site"),
       CDI(p + "from", "Show from (optional, Cairo time)"),
       CDI(p + "until", "Hide after (optional, Cairo time)"),
@@ -1506,9 +1506,9 @@ function announcementsSec() {
     cards.push(h("article", { class: "ann" + (editing && empty ? " slot" : "") + (editing && hidden ? " off" : "") }, img,
       h("div", { class: "body" },
         editing && hidden ? h("span", { class: "fhidden", style: "color:var(--red)" }, "Hidden from visitors") : null,
-        h("div", { class: "annmeta" },
+        h("div", { class: "annmeta" }, T("span", p + "tag", "atag", "Label"), T("span", p + "date", "adate", "Date")),
         T("h3", p + "title", "", "Headline"),
-               T("p", p + "text", "", "Details", true),
+        T("p", p + "text", "", "Details", true),
         cdEl(a.cd, { done: "Started" }),
         act, editing ? ctl(s, i) : null)));
   });
