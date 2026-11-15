@@ -1125,7 +1125,8 @@ function nav() {
   var l = [["about", "About"]];
   if (editing || liveAnn().length) l.push(["announcements", "News"]);
   if (editing || visSpeakers().length || visSponsors().length) l.push(["whatif", "What IF?"]);
-  if (editing || state.site.registrations.length) l.push(["registration", "Register"]);   if (editing || visEvents().length) l.push(["events", "Events"]);
+  if (editing || state.site.registrations.some(function (f) { return !f.hidden; })) l.push(["registration", "Register"]);
+  if (editing || visEvents().length) l.push(["events", "Events"]);
   if (editing || visGallery().length) l.push(["gallery", "Gallery"]);
   if (editing || visVideos().length) l.push(["videos", "Reels"]);
   l.push(["team", "Team"], ["contact", "Contact"]);
@@ -1299,7 +1300,7 @@ function annLink(u) {
 /* the first registration form that is open right now: switched on, before its closing time, and not full */
 function openRegForm() {
   return state.site.registrations.filter(function (x) {
-    return x.title && x.open !== false && !(cdTime(x.closes) <= Date.now()) && !fullForms[x.id];
+    return x.title && !x.hidden && x.open !== false && !(cdTime(x.closes) <= Date.now()) && !fullForms[x.id];
   })[0];
 }
 function annAttrs(l, closePop, cls) {
@@ -1982,6 +1983,7 @@ function openReg(form, asBoard) {
   var dlg = $id("regdlg"), box = $id("regbox"), vals = {}, files = {}, wraps = [];
   var err = h("div", { class: "err", role: "alert" });
   var hp = h("input", { class: "hp", type: "text", tabindex: "-1", autocomplete: "off", "aria-hidden": "true" });
+  var codeIn = h("input", { type: "text", autocomplete: "off", maxlength: "60", placeholder: "Access code" });
   var send = h("button", { class: "btn", type: "button" }, form.button || "Register");
   var cfBox = h("div", { class: "cfbox" }), cfId = null;
   var cfWait = null, cfTimer = null;
@@ -2086,9 +2088,10 @@ function openReg(form, asBoard) {
       else if (f.type === "email" && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v)) bad = "Enter a valid email address.";
       ans[f.id] = v;
     });
+ if (!bad && form.hidden && !asBoard && !codeIn.value.trim()) bad = "Enter the access code.";
     if (bad) { err.textContent = bad; err.scrollIntoView({ block: "center", behavior: "smooth" }); return; }
     send.disabled = true; send.textContent = "Verifying…";
-    fd.append("action", "submit"); fd.append("form", form.id); fd.append("answers", JSON.stringify(ans)); fd.append("hp", hp.value);
+    fd.append("action", "submit"); fd.append("form", form.id); fd.append("answers", JSON.stringify(ans)); fd.append("hp", hp.value); fd.append("code", codeIn.value);
 if (asBoard) fd.append("password", password);
 Promise.all([Promise.all(jobs), asBoard ? Promise.resolve("") : getToken()]).then(function (res) {
   send.textContent = "Sending…";
@@ -2131,6 +2134,7 @@ Promise.all([Promise.all(jobs), asBoard ? Promise.resolve("") : getToken()]).the
       h("h3", null, form.title),
       asBoard ? h("p", { class: "vip-note", role: "note" }, "You are adding a person as the board. This ignores “closed” and the registration limit, skips the captcha, and the ID photo is optional. They still get the QR code email, and an email that is already registered is refused.") : null,
       h("p", { class: "pl" }, form.desc || ""),
+                 form.hidden && !asBoard ? h("label", { class: "f" }, h("span", null, "Access code", h("span", { class: "req" }, " *")), codeIn) : null,
       wraps.map(function (w) { return w.el; }),
       hp, cfBox, err,
       h("div", { class: "cta" }, send, h("button", { class: "btn line", type: "button", on: { click: function () { dlg.close(); } } }, "Cancel"))));
@@ -2248,7 +2252,7 @@ function dupReg(f, i) {
 function regSec() {
   var s = "site.registrations", cards = [];
   state.site.registrations.forEach(function (f, i) {
-    if (!editing && !f.title) return;
+if (!editing && (!f.title || f.hidden)) return;
     var p = s + "." + i + ".", late = cdTime(f.closes) <= Date.now(), full = !!fullForms[f.id], open = f.open !== false && !late && !full;
     var btn = h("button", { class: "btn", type: "button", disabled: open ? null : "disabled", on: { click: function () { openReg(f); } } },
       open ? (f.button || "Register") : (full ? "Registration full" : "Registration closed"));
@@ -2263,6 +2267,8 @@ h("a", { class: "btn sm line", href: "/analytics.html#responses", target: "_blan
            INP(p + "thanks", "Message shown after registering", ""),
       CDI(p + "closes", "Registration closes automatically at (Cairo time). Clear it to reopen."),
       INP(p + "limit", "Registration limit (closes automatically when reached; blank = no limit)", "e.g. 300", "number"),
+                         CK(f, "hidden", "Hidden: not listed on the website. Only people with its link can open it, and they need the access code."),
+f.hidden ? h("p", { class: "pl" }, "Private link: " + location.origin + "/?form=" + f.id) : null,
       h("details", { class: "rfields", open: "open" },
         h("summary", null, "Questions (" + f.fields.length + ")"),
         f.fields.map(function (q, qi) { return fieldEditor(s + "." + i + ".fields", f, qi); }),
@@ -2382,12 +2388,21 @@ function init(d) {
   try { first = localStorage.getItem("tedx-vd") !== today; localStorage.setItem("tedx-vd", today); } catch (e) {}
   api("rpc/track_visit", { method: "POST", body: JSON.stringify({ u: first }), keepalive: true }).catch(function () {});
 }
+  function openFromLink() {
+  var id = new URLSearchParams(location.search).get("form");
+  if (!id) return;
+  var f = state.site.registrations.filter(function (x) { return x.id === id; })[0];
+  if (!f || !f.title) return;
+  if (f.open === false || cdTime(f.closes) <= Date.now()) { toast("Registration is closed.", true); return; }
+  openReg(f);
+}  
 function load() {
   api("team_hierarchy?id=eq.1&select=data").then(function (rows) {
     init((rows[0] && rows[0].data) || {}); loaded = true; dirty = false; render();
-    setTimeout(entrancePopup, 700);
+  if (!new URLSearchParams(location.search).get("form")) setTimeout(entrancePopup, 700);
         trackVisit();
     loadFull();
+    openFromLink();
   }).catch(function (e) {
     init({}); loaded = false; render(); toast("Could not load saved content: " + e.message, true);
   });
