@@ -600,7 +600,7 @@ function prepare(rows) {
   // automatic filters for columns with a few repeating answers (like "Who are you?")
   filterCols = cols.filter(function (c) {
     if (c.kind !== "text") return false;
-    var vals = resRows.map(function (r) { return r.by[c.name] || ""; }).filter(Boolean), set = {};
+    var vals = resRows.filter(function (r) { return r.mark !== "red"; }).map(function (r) { return r.by[c.name] || ""; }).filter(Boolean), set = {};
     vals.forEach(function (v) { set[v] = (set[v] || 0) + 1; });
     var d = Object.keys(set).length;
     c.options = Object.keys(set).sort(function (a, b) { return set[b] - set[a]; }).map(function (v) { return { v: v, n: set[v] }; });
@@ -659,15 +659,16 @@ function fmtWhen(d) {
 }
 
 function summary() {
-  var total = 0, sent = 0, bad = 0, flagged = 0, oldDup = 0;
+  var total = 0, sent = 0, bad = 0, flagged = 0, oldDup = 0, red = 0;
   resRows.forEach(function (r) {
     if (r.flags.length) flagged++;
     if (r.dupOld) { oldDup++; return; }
+    if (r.mark === "red") { red++; return; }
     total++;
     if (r.status === "sent") sent++; else bad++;
   });
   $("resKpis").innerHTML =
-    kpi("Registrations", num(total), oldDup ? "Newest of each person · " + num(oldDup) + " old duplicate" + (oldDup === 1 ? "" : "s") + " not counted" : "All forms") +
+    kpi("Registrations", num(total), (oldDup ? "Newest of each person · " + num(oldDup) + " old duplicate" + (oldDup === 1 ? "" : "s") + " not counted" : "All forms") + (red ? " · " + num(red) + " red not counted" : "")) +
     kpi("Emails sent", num(sent), total ? Math.round(100 * sent / total) + "% of registrations" : "") +
     kpi("Emails failed or not sent", num(bad), bad ? "Use Resend on those rows" : "None", bad > 0) +
     kpi("Possible duplicates", num(flagged), flagged ? "Same ID number or phone" : "None found", flagged > 0);
