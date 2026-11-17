@@ -789,7 +789,7 @@ function summary() {
     if (r.status === "sent") sent++; else bad++;
   });
   $("resKpis").innerHTML =
-    kpi("Registrations", num(total), (oldDup ? "Newest of each person · " + num(oldDup) + " old duplicate" + (oldDup === 1 ? "" : "s") + " not counted" : "All forms") + (red ? " · " + num(red) + " red not counted" : "")) +
+    kpi("Registrations", num(total), (oldDup ? "Newest of each person · " + num(oldDup) + " old duplicate" + (oldDup === 1 ? "" : "s") + " not counted" : "All forms") + (red ? " · " + num(red) + " red: not counted, QR deactivated" : "")) +
     kpi("Emails sent", num(sent), total ? Math.round(100 * sent / total) + "% of registrations" : "") +
     kpi("Emails failed or not sent", num(bad), bad ? "Use Resend on those rows" : "None", bad > 0) +
     kpi("Possible duplicates", num(flagged), flagged ? "Same ID number or phone" : "None found", flagged > 0);
@@ -951,9 +951,13 @@ function closeMenu() { if (menu) { menu.remove(); menu = null; } }
 function openMenu(ev, r) {
   ev.preventDefault(); closeMenu();
   function item(text, color) {
-    return el("button", { type: "button", role: "menuitem", class: color || null, text: text, on: { click: function () { closeMenu(); setMark(r, color); } } });
+    return el("button", { type: "button", role: "menuitem", class: color || null, text: text, on: { click: function () {
+      closeMenu();
+      if (color === "red" && r.mark !== "red" && !confirm("Highlight red? This person's QR code will stop working at the door (it will say \"QR deactivated\").")) return;
+      setMark(r, color);
+    } } });
   }
-  menu = el("div", { class: "ctx", role: "menu" }, item("Highlight yellow", "yellow"), item("Highlight red", "red"), item("Highlight green", "green"), item("Highlight blue", "blue"), r.mark ? item("Clear highlight", "") : null);
+  menu = el("div", { class: "ctx", role: "menu" }, item("Highlight yellow", "yellow"), item("Highlight red (deactivates QR)", "red"), item("Highlight green", "green"), item("Highlight blue", "blue"), r.mark ? item(r.mark === "red" ? "Clear highlight (reactivates QR)" : "Clear highlight", "") : null);
   document.body.appendChild(menu);
   menu.style.left = Math.max(8, Math.min(ev.clientX, window.innerWidth - menu.offsetWidth - 8)) + "px";
   menu.style.top = Math.max(8, Math.min(ev.clientY, window.innerHeight - menu.offsetHeight - 8)) + "px";
