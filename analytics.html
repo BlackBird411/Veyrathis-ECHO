@@ -318,6 +318,8 @@ dialog .row{display:flex;gap:8px;justify-content:flex-end}
         <button class="btn line sm" id="psMsa" type="button">MSA students PDF</button>
 <button class="btn line sm" id="psOut" type="button">Outcomers PDF</button>
 <button class="btn line sm" id="psAll" type="button">All rows PDF</button>
+<button class="btn line sm" id="psAllMsa" type="button">MSA rows PDF</button>
+<button class="btn line sm" id="psAllOut" type="button">Outcomer rows PDF</button>
       </span>
     </div>
 
@@ -920,14 +922,15 @@ function psShrink(img, url) {   // shrink the photo so the PDF stays small; fall
     t.src = url;
   });
 }
-  function rowsPdf() {
+function rowsPdf(group) {
+  var want = group === "msa" ? "MSA student" : group === "out" ? "Outcomer" : "";
   var pc = cols.filter(function (c) { return c.kind !== "photo"; });
-  var list = resRows.filter(function (r) { return r.mark !== "red"; }).sort(function (a, b) {
+  var list = resRows.filter(function (r) { return r.mark !== "red" && (!want || (r.by["Who are you?"] || "") === want); }).sort(function (a, b) {
     var x = (a.by["Full name"] || "").toLowerCase(), y = (b.by["Full name"] || "").toLowerCase();
     return x < y ? -1 : x > y ? 1 : 0;
   });
   if (!list.length) { say("Nothing to print."); return; }
-  var h = "<h1>TEDxMSA: All registrations</h1><p>" + list.length + " rows, no photos, red excluded</p><table><thead><tr><th>#</th><th>Registered</th><th>Form</th>" +
+  var h = "<h1>TEDxMSA: " + (want ? want + "s" : "All registrations") + "</h1><p>" + list.length + " rows, no photos, red excluded</p><table><thead><tr><th>#</th><th>Registered</th><th>Form</th>" +
     pc.map(function (c) { return "<th>" + psEsc(c.name) + "</th>"; }).join("") + "</tr></thead><tbody>";
   list.forEach(function (r, i) {
     h += "<tr><td>" + (i + 1) + "</td><td>" + psEsc(stamp(r.at)) + "</td><td>" + psEsc(r.form) + "</td>" +
@@ -1405,7 +1408,9 @@ $("csv").addEventListener("click", downloadCsv);
 $("copyEmails").addEventListener("click", copyEmails);
 $("psMsa").addEventListener("click", function () { photoPdf("msa"); });
 $("psOut").addEventListener("click", function () { photoPdf("out"); });
-$("psAll").addEventListener("click", rowsPdf);
+$("psAll").addEventListener("click", function () { rowsPdf(); });
+$("psAllMsa").addEventListener("click", function () { rowsPdf("msa"); });
+$("psAllOut").addEventListener("click", function () { rowsPdf("out"); });
   ["click", "keydown", "input"].forEach(function (e) { $("viewResponses").addEventListener(e, touch); $("viewMail").addEventListener(e, touch); });
 
 showTab(tabFromHash());
