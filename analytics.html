@@ -107,6 +107,9 @@ table.rt tr.mk-yellow td{background:#fff3b0}
 table.rt tr.mk-red td{background:#ffc9c4}
 table.rt tr.mk-green td{background:#c9f0cc}
 table.rt tr.mk-blue td{background:#c9ddff}
+  table.rt tr.mk-black td{background:#2b2b2b;color:#fff}
+table.rt tr.mk-black a{color:#fff}
+.ctx button.black::before{content:"";width:14px;height:14px;border-radius:50%;border:1px solid rgba(0,0,0,.3);background:#0a0a0a}
 table.rt tr.dupold td{opacity:.55}
 table.rt tr.dupold td.flag{opacity:1;font-weight:600}  .ctx{position:fixed;z-index:50;min-width:180px;padding:4px;background:#fff;border:1.5px solid var(--ink);border-radius:4px;box-shadow:0 6px 24px rgba(0,0,0,.18)}
 .ctx button{display:flex;align-items:center;gap:10px;width:100%;padding:9px 10px;border:0;background:transparent;text-align:left;font-size:14px;font-weight:700;cursor:pointer}
@@ -302,7 +305,7 @@ dialog .row{display:flex;gap:8px;justify-content:flex-end}
       <div class="fld"><label for="stSel">Email</label>
         <select id="stSel"><option value="">All</option><option value="sent">Sent</option><option value="failed">Failed or not sent</option></select></div>
       <div class="fld"><label for="mkSel">Highlight</label>
-        <select id="mkSel"><option value="">All</option><option value="yellow">Yellow</option><option value="red">Red</option><option value="green">Green</option><option value="blue">Blue</option><option value="any">Any highlight</option><option value="none">Not highlighted</option></select></div>
+        <select id="mkSel"><option value="">All</option><option value="yellow">Yellow</option><option value="red">Red</option><option value="green">Green</option><option value="blue">Blue</option><option value="black">Black</option><option value="any">Any highlight</option><option value="none">Not highlighted</option></select></div>
       <div class="fld"><label for="dFrom">From</label><input id="dFrom" type="date"></div>
       <div class="fld"><label for="dTo">To</label><input id="dTo" type="date"></div>
       <label class="chk"><input id="dupOnly" type="checkbox"> Possible duplicates only</label>
@@ -732,7 +735,7 @@ function prepare(rows) {
   // automatic filters for columns with a few repeating answers (like "Who are you?")
   filterCols = cols.filter(function (c) {
     if (c.kind !== "text") return false;
-    var vals = resRows.filter(function (r) { return r.mark !== "red"; }).map(function (r) { return r.by[c.name] || ""; }).filter(Boolean), set = {};
+    var vals = resRows.filter(function (r) { return r.mark !== "red" && r.mark !== "black"; }).map(function (r) { return r.by[c.name] || ""; }).filter(Boolean), set = {};
     vals.forEach(function (v) { set[v] = (set[v] || 0) + 1; });
     var d = Object.keys(set).length;
     c.options = Object.keys(set).sort(function (a, b) { return set[b] - set[a]; }).map(function (v) { return { v: v, n: set[v] }; });
@@ -791,16 +794,17 @@ function fmtWhen(d) {
 }
 
 function summary() {
-  var total = 0, sent = 0, bad = 0, flagged = 0, oldDup = 0, red = 0;
+  var total = 0, sent = 0, bad = 0, flagged = 0, oldDup = 0, red = 0, black = 0;
   resRows.forEach(function (r) {
     if (r.flags.length) flagged++;
     if (r.dupOld) { oldDup++; return; }
-    if (r.mark === "red") { red++; return; }
+    if (r.mark === "red") { red++; return; }  
+    if (r.mark === "black") { black++; return; }
     total++;
     if (r.status === "sent") sent++; else bad++;
   });
   $("resKpis").innerHTML =
-    kpi("Registrations", num(total), (oldDup ? "Newest of each person · " + num(oldDup) + " old duplicate" + (oldDup === 1 ? "" : "s") + " not counted" : "All forms") + (red ? " · " + num(red) + " red: not counted, QR deactivated" : "")) +
+    kpi("Registrations", num(total), (oldDup ? "Newest of each person · " + num(oldDup) + " old duplicate" + (oldDup === 1 ? "" : "s") + " not counted" : "All forms") + (red ? " · " + num(red) + " red: not counted, QR deactivated" : "") + (black ? " · " + num(black) + " black: not counted" : "")) +
     kpi("Emails sent", num(sent), total ? Math.round(100 * sent / total) + "% of registrations" : "") +
     kpi("Emails failed or not sent", num(bad), bad ? "Use Resend on those rows" : "None", bad > 0) +
     kpi("Possible duplicates", num(flagged), flagged ? "Same ID number or phone" : "None found", flagged > 0);
@@ -975,7 +979,7 @@ function rowsPdf(group) {
   var isMsa = group === "msa";
   var idKey = isMsa ? "MSA ID number" : "National ID number";
   var list = resRows.filter(function (r) {
-    return !r.dupOld && r.mark !== "red" && (r.by["Who are you?"] || "") === (isMsa ? "MSA student" : "Outcomer");
+    return !r.dupOld && r.mark !== "red" && r.mark !== "black" && (r.by["Who are you?"] || "") === (isMsa ? "MSA student" : "Outcomer");
  }).map(function (r) {
 var en = (r.by["Full name"] || "").replace(/\s+/g, " ").trim();
 return { name: en, id: arDigits(r.by[idKey] || "").replace(/[^0-9A-Za-z]/g, "") };
@@ -1024,7 +1028,7 @@ function rowsDoc(group) {
   var isMsa = group === "msa";
   var idKey = isMsa ? "MSA ID number" : "National ID number";
   var list = resRows.filter(function (r) {
-    return !r.dupOld && r.mark !== "red" && (r.by["Who are you?"] || "") === (isMsa ? "MSA student" : "Outcomer");
+    return !r.dupOld && r.mark !== "red" && r.mark !== "black" && (r.by["Who are you?"] || "") === (isMsa ? "MSA student" : "Outcomer");
     }).map(function (r) {
     var id = arDigits(r.by[idKey] || "").replace(/[^0-9A-Za-z]/g, "");
     var en = (r.by["Full name"] || "").replace(/\s+/g, " ").trim();
@@ -1065,7 +1069,7 @@ function rowsDoc(group) {
 }
 function photoPdf(group) {
   var isMsa = group === "msa";
-  var list = resRows.filter(function (r) { return !r.dupOld && r.mark !== "red" && (r.by["Who are you?"] || "") === (isMsa ? "MSA student" : "Outcomer"); }).map(function (r) {
+  var list = resRows.filter(function (r) { return !r.dupOld && r.mark !== "red" && r.mark !== "black" && (r.by["Who are you?"] || "") === (isMsa ? "MSA student" : "Outcomer"); }).map(function (r) {
     var id = arDigits(r.by["MSA ID number"] || r.by["National ID number"] || "").replace(/[^0-9A-Za-z]/g, "");
     var ptxt = r.by["University ID photo"] || r.by["National ID photo"] || "";
     return { name: (r.by["Full name"] || "").replace(/\s+/g, " ").trim(), id: id,
@@ -1108,7 +1112,7 @@ function openMenu(ev, r) {
       setMark(r, color);
     } } });
   }
-  menu = el("div", { class: "ctx", role: "menu" }, item("Highlight yellow", "yellow"), item("Highlight red (deactivates QR)", "red"), item("Highlight green", "green"), item("Highlight blue", "blue"), r.mark ? item(r.mark === "red" ? "Clear highlight (reactivates QR)" : "Clear highlight", "") : null);
+  menu = el("div", { class: "ctx", role: "menu" }, item("Highlight yellow", "yellow"), item("Highlight red (deactivates QR)", "red"), item("Highlight green", "green"), item("Highlight blue", "blue"), item("Highlight black (not counted)", "black"), r.mark ? item(r.mark === "red" ? "Clear highlight (reactivates QR)" : "Clear highlight", "") : null);
   document.body.appendChild(menu);
   menu.style.left = Math.max(8, Math.min(ev.clientX, window.innerWidth - menu.offsetWidth - 8)) + "px";
   menu.style.top = Math.max(8, Math.min(ev.clientY, window.innerHeight - menu.offsetHeight - 8)) + "px";
@@ -1288,18 +1292,18 @@ function rcptCount() { return Object.keys(rcpt).length; }
 
 function buildGroups() {
   groups = [];
-  function live(r) { return !r.dupOld && r.mark !== "red"; }
+  function live(r) { return !r.dupOld && r.mark !== "red" && r.mark !== "black"; }
   function add(label, test, dyn) {
     var seen = {}, n = 0;
     if (!dyn) resRows.forEach(function (r) { if (!test(r)) return; var e = emailOf(r); if (e && !seen[e]) { seen[e] = 1; n++; } });
     if (dyn || n) groups.push({ label: label + (dyn ? "" : " (" + n + ")"), test: test, dyn: !!dyn });
   }
-  add("Everyone (newest registration of each person, red excluded)", live);
+  add("Everyone (newest registration of each person, red and black excluded)", live);
   groups.push({ label: "Whatever the Responses tab is showing right now", dyn: true });
-  [["yellow", "Yellow"], ["red", "Red"], ["green", "Green"], ["blue", "Blue"]].forEach(function (m) {
+  [["yellow", "Yellow"], ["red", "Red"], ["green", "Green"], ["blue", "Blue"], ["black", "Black"]].forEach(function (m) {
     add("Highlighted " + m[1], function (r) { return !r.dupOld && r.mark === m[0]; });
   });
-  add("Any highlight except red", function (r) { return !r.dupOld && r.mark && r.mark !== "red"; });
+  add("Any highlight except red", function (r) { return !r.dupOld && r.mark && r.mark !== "red" && r.mark !== "black"; });
   filterCols.forEach(function (c) {
     c.options.forEach(function (o) { add(c.name + ": " + o.v, function (r) { return live(r) && r.by[c.name] === o.v; }); });
   });
@@ -1322,9 +1326,9 @@ function addGroup() {
   var g = groups[+$("aGroup").value];
   if (!g) return;
   var test = g.test;
-  if (g.dyn && !test) {   // red means "not counted", so it is left out unless the Responses tab is filtered to red on purpose
-    var ids = {}, redOk = $("mkSel").value === "red";
-    visibleRows().forEach(function (r) { if (r.mark !== "red" || redOk) ids[r.id] = 1; });
+  if (g.dyn && !test) {   // red and black mean "not counted", so they are left out unless the Responses tab is filtered to that colour on purpose
+    var ids = {}, redOk = /^(red|black)$/.test($("mkSel").value);
+    visibleRows().forEach(function (r) { if ((r.mark !== "red" && r.mark !== "black") || redOk) ids[r.id] = 1; });
     test = function (r) { return !!ids[r.id]; };
   }
   var added = 0, had = 0, none = 0;
