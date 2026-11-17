@@ -978,7 +978,7 @@ function rowsPdf(group) {
     return !r.dupOld && r.mark !== "red" && (r.by["Who are you?"] || "") === (isMsa ? "MSA student" : "Outcomer");
  }).map(function (r) {
 var en = (r.by["Full name"] || "").replace(/\s+/g, " ").trim();
-return { name: isMsa ? (arName(r) || toArabic(en)) : en, id: arDigits(r.by[idKey] || "").replace(/[^0-9A-Za-z]/g, "") };
+return { name: en, id: arDigits(r.by[idKey] || "").replace(/[^0-9A-Za-z]/g, "") };
 }).sort(function (a, b) {
 if (isMsa) return a.name.localeCompare(b.name, "ar");
 var x = a.name.toLowerCase(), y = b.name.toLowerCase(); return x < y ? -1 : x > y ? 1 : 0;
@@ -1025,10 +1025,14 @@ function rowsDoc(group) {
   var idKey = isMsa ? "MSA ID number" : "National ID number";
   var list = resRows.filter(function (r) {
     return !r.dupOld && r.mark !== "red" && (r.by["Who are you?"] || "") === (isMsa ? "MSA student" : "Outcomer");
-  }).map(function (r) {
+    }).map(function (r) {
     var id = arDigits(r.by[idKey] || "").replace(/[^0-9A-Za-z]/g, "");
-    return { name: (r.by["Full name"] || "").replace(/\s+/g, " ").trim(), id: isMsa ? id : toArDigits(id) };   // MSA IDs keep normal digits, national IDs get Arabic digits
-  }).sort(function (a, b) { var x = a.name.toLowerCase(), y = b.name.toLowerCase(); return x < y ? -1 : x > y ? 1 : 0; });
+    var en = (r.by["Full name"] || "").replace(/\s+/g, " ").trim();
+    return { name: isMsa ? (arName(r) || toArabic(en)) : en, id: isMsa ? id : toArDigits(id) };   // MSA IDs keep normal digits, national IDs get Arabic digits
+  }).sort(function (a, b) {
+    if (isMsa) return a.name.localeCompare(b.name, "ar");
+    var x = a.name.toLowerCase(), y = b.name.toLowerCase(); return x < y ? -1 : x > y ? 1 : 0;
+  });
   if (!list.length) { say("Nothing to export."); return; }
   function x(t) { return psEsc(String(t).replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, "")); }
   var W = [700, 4606, 3000];   // number, name, ID (table width 8306 = A4 text width)
