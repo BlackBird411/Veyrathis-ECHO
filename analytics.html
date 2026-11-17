@@ -950,6 +950,67 @@ function rowsPdf(group) {
   window.addEventListener("afterprint", function f() { window.removeEventListener("afterprint", f); document.body.classList.remove("printing"); sheet.innerHTML = ""; });
   window.print();
 }
+/* ---------- Word (.docx) lists: Arabic, right-to-left, same layout as the speakers template ---------- */
+function toArDigits(s) { return String(s).replace(/[0-9]/g, function (d) { return String.fromCharCode(0x0660 + Number(d)); }); }   // 123 -> ١٢٣
+var crcTable = null;
+function crc32(b) {
+  if (!crcTable) { crcTable = []; for (var n = 0; n < 256; n++) { var c = n; for (var k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; crcTable[n] = c >>> 0; } }
+  var crc = 0xFFFFFFFF; for (var i = 0; i < b.length; i++) crc = crcTable[(crc ^ b[i]) & 255] ^ (crc >>> 8);
+  return (crc ^ 0xFFFFFFFF) >>> 0;
+}
+function zipStore(files) {   // tiny ZIP writer (no compression), so no library is needed. files: [[name, text], ...]
+  var enc = new TextEncoder(), local = [], central = [], off = 0, size = 0;
+  function u16(v) { return [v & 255, (v >> 8) & 255]; }
+  function u32(v) { return [v & 255, (v >>> 8) & 255, (v >>> 16) & 255, (v >>> 24) & 255]; }
+  files.forEach(function (f) {
+    var nm = enc.encode(f[0]), data = enc.encode(f[1]), crc = crc32(data);
+    var mid = [].concat(u16(0x0800), u16(0), u16(0), u16(0x21), u32(crc), u32(data.length), u32(data.length), u16(nm.length), u16(0));
+    local.push(new Uint8Array([0x50, 0x4B, 3, 4].concat(u16(20), mid)), nm, data);
+    central.push(new Uint8Array([0x50, 0x4B, 1, 2].concat(u16(20), u16(20), mid, u16(0), u16(0), u16(0), u32(0), u32(off))), nm);
+    off += 30 + nm.length + data.length; size += 46 + nm.length;
+  });
+  var end = new Uint8Array([0x50, 0x4B, 5, 6, 0, 0, 0, 0].concat(u16(files.length), u16(files.length), u32(size), u32(off), u16(0)));
+  return new Blob(local.concat(central, [end]), { type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" });
+}
+function rowsDoc(group) {
+  var isMsa = group === "msa";
+  var idKey = isMsa ? "MSA ID number" : "National ID number";
+  var list = resRows.filter(function (r) {
+    return !r.dupOld && r.mark !== "red" && (r.by["Who are you?"] || "") === (isMsa ? "MSA student" : "Outcomer");
+  }).map(function (r) {
+    var id = arDigits(r.by[idKey] || "").replace(/[^0-9A-Za-z]/g, "");
+    return { name: (r.by["Full name"] || "").replace(/\s+/g, " ").trim(), id: isMsa ? id : toArDigits(id) };   // MSA IDs keep normal digits, national IDs get Arabic digits
+  }).sort(function (a, b) { var x = a.name.toLowerCase(), y = b.name.toLowerCase(); return x < y ? -1 : x > y ? 1 : 0; });
+  if (!list.length) { say("Nothing to export."); return; }
+  function x(t) { return psEsc(String(t).replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, "")); }
+  var W = [700, 4606, 3000];   // number, name, ID (table width 8306 = A4 text width)
+  function cell(w, text, center, rtl) {
+    var rp = rtl ? "<w:rtl/>" : "";
+    return '<w:tc><w:tcPr><w:tcW w:w="' + w + '" w:type="dxa"/><w:vAlign w:val="center"/></w:tcPr><w:p><w:pPr><w:bidi/>' + (center ? '<w:jc w:val="center"/>' : "") +
+      '</w:pPr>' + (text === "" ? "" : '<w:r>' + (rp ? "<w:rPr>" + rp + "</w:rPr>" : "") + '<w:t xml:space="preserve">' + x(text) + "</w:t></w:r>") + "</w:p></w:tc>";
+  }
+  function row(h, head, cells) { return '<w:tr><w:trPr><w:cantSplit/><w:trHeight w:val="' + h + '"/>' + (head ? "<w:tblHeader/>" : "") + "</w:trPr>" + cells.join("") + "</w:tr>"; }
+  var title = isMsa ? "كشف طلاب MSA" : "كشف الحضور من خارج MSA";
+  var body = '<w:p><w:pPr><w:bidi/><w:spacing w:after="360"/><w:jc w:val="center"/></w:pPr><w:r><w:rPr><w:b/><w:bCs/><w:color w:val="4472C4"/><w:sz w:val="40"/><w:szCs w:val="40"/><w:u w:val="single"/><w:rtl/></w:rPr><w:t>' + x(title) + "</w:t></w:r></w:p>" +
+    '<w:tbl><w:tblPr><w:bidiVisual/><w:tblW w:w="8306" w:type="dxa"/><w:tblBorders>' +
+    ["top", "left", "bottom", "right", "insideH", "insideV"].map(function (e) { return "<w:" + e + ' w:val="single" w:sz="4" w:space="0" w:color="auto"/>'; }).join("") +
+    '</w:tblBorders><w:tblLayout w:type="fixed"/><w:tblLook w:val="0000"/></w:tblPr><w:tblGrid>' + W.map(function (w) { return '<w:gridCol w:w="' + w + '"/>'; }).join("") + "</w:tblGrid>" +
+    row(706, true, [cell(W[0], "", true, true), cell(W[1], "الاسم", true, true), cell(W[2], isMsa ? "الرقم الجامعي" : "الرقم القومي", true, true)]) +
+    list.map(function (p, i) { return row(560, false, [cell(W[0], toArDigits(i + 1), false, true), cell(W[1], p.name, false, true), cell(W[2], p.id, true, !isMsa)]); }).join("") +
+    "</w:tbl>";
+  var NS = 'xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"', H = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
+  var blob = zipStore([
+    ["[Content_Types].xml", H + '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/></Types>'],
+    ["_rels/.rels", H + '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>'],
+    ["word/_rels/document.xml.rels", H + '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>'],
+    ["word/styles.xml", H + "<w:styles " + NS + '><w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii="Calibri" w:hAnsi="Calibri" w:cs="Arial"/><w:sz w:val="24"/><w:szCs w:val="24"/><w:lang w:val="en-US" w:bidi="ar-SA"/></w:rPr></w:rPrDefault><w:pPrDefault/></w:docDefaults><w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/><w:qFormat/><w:pPr><w:bidi/></w:pPr></w:style></w:styles>'],
+    ["word/document.xml", H + "<w:document " + NS + "><w:body>" + body + '<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1440" w:right="1800" w:bottom="1440" w:left="1800" w:header="708" w:footer="708" w:gutter="0"/><w:bidi/><w:rtlGutter/></w:sectPr></w:body></w:document>']
+  ]);
+  var a = el("a", { href: URL.createObjectURL(blob), download: title + " " + cairoToday() + ".docx" });
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(function () { URL.revokeObjectURL(a.href); }, 2000);
+  say("Downloaded " + num(list.length) + " names.");
+}
 function photoPdf(group) {
   var isMsa = group === "msa";
   var list = resRows.filter(function (r) { return !r.dupOld && r.mark !== "red" && (r.by["Who are you?"] || "") === (isMsa ? "MSA student" : "Outcomer"); }).map(function (r) {
