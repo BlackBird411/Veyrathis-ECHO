@@ -119,6 +119,39 @@ table.rt tr.dupold td.flag{opacity:1;font-weight:600}  .ctx{position:fixed;z-ind
   .st-bad{color:var(--red);font-weight:700}
 .empty{padding:34px 12px;color:var(--mut)}
 .more{margin:14px 0 0}
+
+/* mail */
+.aud{border:1px solid var(--line);padding:16px 18px;margin:8px 0 22px}
+.aud h2,.thv h2{font-size:18px;margin:0 0 4px;letter-spacing:-.01em}
+.aud .status{margin-left:8px;font-weight:400}
+.arow{display:flex;flex-wrap:wrap;gap:12px 14px;align-items:flex-end;margin:12px 0 0}
+.pick{position:relative;flex:1 1 280px}
+.sugg{position:absolute;left:0;right:0;top:100%;z-index:5;max-height:260px;overflow:auto;background:#fff;border:1.5px solid var(--ink);border-top:0}
+.sugg button{display:block;width:100%;text-align:left;border:0;border-bottom:1px solid var(--line);background:#fff;padding:9px 11px;font-size:14px;cursor:pointer}
+.sugg button:hover,.sugg button:focus-visible{background:var(--soft)}
+.sugg small{color:var(--mut);margin-left:6px}
+.sugg .none{display:block;padding:9px 11px;font-size:14px;color:var(--mut)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:14px 0 0}
+.chip{display:inline-flex;align-items:center;gap:4px;max-width:100%;border:1.5px solid var(--ink);border-radius:999px;padding:2px 4px 2px 11px;font-size:13px;font-weight:700;background:#fff}
+.chip button{border:0;background:transparent;cursor:pointer;font-size:17px;line-height:1;padding:0 5px;color:var(--mut)}
+.chip button:hover{color:var(--red)}
+.chip.more{border-style:dashed;color:var(--mut);padding-right:11px}
+.fld textarea{padding:9px 11px;border:1.5px solid var(--ink);border-radius:3px;background:#fff;font:inherit;font-size:15px;font-weight:400;color:var(--ink);width:100%;min-height:240px;resize:vertical;line-height:1.5}
+.fld.full{width:100%;margin:0 0 14px}
+.fld.full input{width:100%}
+.mlist{border:1px solid var(--line)}
+.th{display:grid;grid-template-columns:190px 1fr auto;gap:14px;align-items:baseline;width:100%;padding:11px 14px;border:0;border-bottom:1px solid var(--line);background:#fff;text-align:left;cursor:pointer;color:var(--ink)}
+.th:hover,.th:focus-visible{background:var(--soft)}
+.th .from,.th .mid,.th .when{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.th .snip,.th .when{color:var(--mut);font-size:14px}
+.th.unread .from,.th.unread .subj{font-weight:800}
+.th.unread{box-shadow:inset 3px 0 0 var(--red)}
+.msg{border:1px solid var(--line);padding:14px 16px;margin:0 0 12px}
+.msg .mh{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:baseline}
+.msg pre{white-space:pre-wrap;overflow-wrap:anywhere;font:inherit;margin:10px 0 0}
+.thv{padding:8px 0 24px}
+.sendrow{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:4px 0 0}
+@media(max-width:700px){.th{grid-template-columns:1fr auto}.th .mid{grid-column:1/-1;grid-row:2}}
 dialog{border:1.5px solid var(--ink);border-radius:4px;padding:24px;max-width:380px;width:calc(100% - 40px)}
 dialog::backdrop{background:rgba(0,0,0,.45)}
 dialog h2{margin:0 0 6px;font-size:20px}
@@ -167,6 +200,7 @@ dialog .row{display:flex;gap:8px;justify-content:flex-end}
     <nav class="tabs" aria-label="Sections">
       <a href="#overview" id="tabOverview" aria-current="page">Overview</a>
       <a href="#responses" id="tabResponses">Responses</a>
+      <a href="#mail" id="tabMail">Mail</a>
     </nav>
   </div>
 </header>
@@ -285,6 +319,88 @@ dialog .row{display:flex;gap:8px;justify-content:flex-end}
   </div>
 </main>
 
+<!-- ================= MAIL ================= -->
+<main class="wrap wide" id="viewMail" hidden>
+  <section class="login" id="mailLogin">
+    <h1>Mail</h1>
+    <p>Enter the board password. This tab reads the event inbox and sends email from the event account, so it asks for the password again whenever the page locks.</p>
+    <form id="mailForm" autocomplete="off">
+      <label for="mpw">Board password</label>
+      <input id="mpw" type="password" autocomplete="off" required>
+      <button class="btn" id="mgo" type="submit">Open mail</button>
+      <p class="err" id="mailErr" role="alert"></p>
+    </form>
+  </section>
+
+  <div id="mailDash" hidden>
+    <div class="rhead">
+      <h1>Mail</h1>
+      <span class="status" id="mailStatus" aria-live="polite"></span>
+    </div>
+    <div class="bar-row" style="margin-top:14px">
+      <div class="seg" role="group" aria-label="Mail view" id="mseg">
+        <button type="button" data-v="inbox" aria-pressed="true">Inbox</button>
+        <button type="button" data-v="compose" aria-pressed="false">Compose</button>
+      </div>
+      <span class="status" id="qLeft"></span>
+    </div>
+
+    <!-- inbox -->
+    <section id="mInbox">
+      <div id="mListWrap">
+        <div class="tools">
+          <span class="count" id="mCount"></span>
+        </div>
+        <div class="mlist" id="mList"></div>
+        <p class="more" id="mMoreWrap" hidden><button class="btn line sm" id="mMore" type="button">Load older</button></p>
+      </div>
+      <div class="thv" id="mThread" hidden>
+        <p><button class="btn line sm" id="mBack" type="button">&larr; Back to inbox</button></p>
+        <h2 id="mtSubj"></h2>
+        <div id="mtMsgs"></div>
+        <div class="fld full"><label for="mtReply">Reply</label><textarea id="mtReply" maxlength="20000" style="min-height:130px"></textarea></div>
+        <div class="sendrow"><button class="btn" id="mtSend" type="button">Send reply</button></div>
+      </div>
+    </section>
+
+    <!-- compose -->
+    <section id="mCompose" hidden>
+      <div class="aud">
+        <h2>Audience <span class="status" id="aCount" aria-live="polite"></span></h2>
+        <p class="status" style="margin:0">Add a group, search for one person, or type any email address. Each person gets their own email, so nobody sees anyone else's address.</p>
+
+        <form class="arow" id="aUnlock" autocomplete="off">
+          <div class="fld grow"><label for="apw">Responses password (to pick people from your registrations)</label><input id="apw" type="password" autocomplete="off"></div>
+          <button class="btn line sm" type="submit">Unlock registrations</button>
+          <span class="err" id="aErr" role="alert" style="margin:0"></span>
+        </form>
+
+        <div class="arow" id="aTools" hidden>
+          <div class="fld"><label for="aGroup">Group</label><select id="aGroup"></select></div>
+          <button class="btn line sm" id="aAddGroup" type="button">Add group</button>
+          <div class="fld pick"><label for="aSearch">Find a person</label><input id="aSearch" type="search" placeholder="Name, email, phone, ID number" autocomplete="off"><div class="sugg" id="aSugg" hidden></div></div>
+        </div>
+
+        <div class="arow">
+          <div class="fld grow"><label for="aManual">Add an email address</label><input id="aManual" type="email" placeholder="name@example.com" autocomplete="off"></div>
+          <button class="btn line sm" id="aAddEmail" type="button">Add</button>
+          <button class="btn line sm" id="aClear" type="button">Clear all</button>
+        </div>
+        <div class="chips" id="aChips"></div>
+      </div>
+
+      <div class="fld full"><label for="cSubj">Subject</label><input id="cSubj" maxlength="200" autocomplete="off"></div>
+      <div class="fld full"><label for="cBody">Message</label><textarea id="cBody" maxlength="20000"></textarea></div>
+      <p class="note" style="margin:0 0 14px">Plain text. Type <b>{{name}}</b> for the person's full name or <b>{{first_name}}</b> for their first name (it becomes "there" if no name is known). Web links become clickable. The event logo is added at the top.</p>
+      <div class="sendrow">
+        <button class="btn" id="cSend" type="button" disabled>Send</button>
+        <button class="btn line" id="cTest" type="button">Send me a test</button>
+        <span class="status" id="cResult" aria-live="polite"></span>
+      </div>
+    </section>
+  </div>
+</main>
+
 <dialog id="pwDlg">
   <form method="dialog" id="pwForm">
     <h2>Board password</h2>
@@ -342,15 +458,20 @@ function showTab(t) {
   tab = t;
   $("viewOverview").hidden = t !== "overview";
   $("viewResponses").hidden = t !== "responses";
+  $("viewMail").hidden = t !== "mail";
   $("tabOverview").setAttribute("aria-current", t === "overview" ? "page" : "false");
   $("tabResponses").setAttribute("aria-current", t === "responses" ? "page" : "false");
+  $("tabMail").setAttribute("aria-current", t === "mail" ? "page" : "false");
   syncActions();
   if (t === "responses") { if (!rpass) $("rpw").focus(); else touch(); }
+  if (t === "mail") { if (!mailPw) $("mpw").focus(); else touch(); }
 }
-function tabFromHash() { return location.hash === "#responses" ? "responses" : "overview"; }
+function tabFromHash() { return location.hash === "#responses" ? "responses" : location.hash === "#mail" ? "mail" : "overview"; }
 window.addEventListener("hashchange", function () { showTab(tabFromHash()); });
 function syncActions() {
-  var open = tab === "overview" ? (!!pass && !$("dash").hidden) : (!!rpass && !$("resDash").hidden);
+  var open = tab === "overview" ? (!!pass && !$("dash").hidden)
+    : tab === "mail" ? (!!mailPw && !$("mailDash").hidden)
+    : (!!rpass && !$("resDash").hidden);
   $("actions").hidden = !open;
 }
 
@@ -533,7 +654,7 @@ function loadRes(fromLogin) {
     prepare(rows);
     $("resLogin").hidden = true; $("resDash").hidden = false;
     $("refresh").disabled = false;
-    buildFilters(); renderRes(true); syncActions(); touch();
+    buildFilters(); renderRes(true); syncActions(); touch(); mailAudienceRefresh();
     $("resStatus").textContent = "Updated " + new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
   }).catch(function (e) {
     $("refresh").disabled = false;
@@ -886,16 +1007,293 @@ function resend(row, btn) {
   });
 }
 
+/* =====================================================================
+   MAIL
+   ===================================================================== */
+var mailPw = null, mview = "inbox", inbox = { threads: [], more: false }, curThread = null;
+var rcpt = {}, groups = [], sending = false, qInfo = null;
+var EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+
+function mSay(msg) { $("mailStatus").textContent = msg || ""; }
+function senderName(s) {
+  s = String(s || "");
+  var n = s.replace(/<[^>]*>/g, "").replace(/"/g, "").trim();
+  return n || s.replace(/[<>]/g, "");
+}
+
+/* every mail call goes through the "mail" edge function, which checks the board password */
+function mailApi(payload) {
+  payload.password = mailPw;
+  return fetch(SB_URL + "/functions/v1/mail", {
+    method: "POST", headers: { apikey: SB_KEY, "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  }).then(function (r) {
+    return r.text().then(function (t) {
+      var j = null; try { j = t ? JSON.parse(t) : null; } catch (e) {}
+      if (!r.ok || !j || j.ok === false) throw new Error((j && (j.error || j.message)) || "Request failed (" + r.status + ")");
+      return j;
+    });
+  });
+}
+function mailFail(e) {
+  if (/wrong password/i.test(e.message)) lockMail("Wrong password.");
+  else mSay(e.message);
+}
+function showQuota() {
+  $("qLeft").textContent = qInfo ? "Emails left today: " + num(qInfo.quota) + " (" + num(qInfo.reserve) + " are kept free for registration QR codes)" : "";
+}
+
+function lockMail(msg) {
+  mailPw = null; inbox = { threads: [], more: false }; curThread = null; rcpt = {}; qInfo = null;
+  $("mList").textContent = ""; $("mtMsgs").textContent = ""; $("aChips").textContent = ""; $("mtReply").value = "";
+  $("mailDash").hidden = true; $("mailLogin").hidden = false; $("mailErr").textContent = msg || "";
+  showQuota(); syncActions(); touch();
+}
+
+/* ---------- inbox ---------- */
+function loadInbox(reset, fromLogin) {
+  var start = reset ? 0 : inbox.threads.length;
+  mSay("Loading…");
+  return mailApi({ action: "inbox", start: start, max: 25 }).then(function (j) {
+    inbox.threads = reset ? (j.threads || []) : inbox.threads.concat(j.threads || []);
+    inbox.more = !!j.more;
+    if (j.quota !== undefined) qInfo = { quota: j.quota, reserve: j.reserve || 0 };
+    $("mailLogin").hidden = true; $("mailDash").hidden = false;
+    showQuota(); renderInbox(); syncActions(); touch();
+    mSay("Updated " + new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }));
+  }).catch(function (e) {
+    if (fromLogin) { mailPw = null; $("mailErr").textContent = /password/i.test(e.message) ? "Wrong password. Try again." : "Could not load: " + e.message; }
+    else mailFail(e);
+  });
+}
+function renderInbox() {
+  var host = $("mList"); host.textContent = "";
+  inbox.threads.forEach(function (t) {
+    host.appendChild(el("button", { type: "button", class: "th" + (t.unread ? " unread" : ""), on: { click: function () { openThread(t); } } },
+      el("span", { class: "from", text: t.mine ? "You" : senderName(t.from) }),
+      el("span", { class: "mid" }, el("span", { class: "subj", text: t.subject || "(no subject)" }), el("span", { class: "snip", text: t.snippet ? " – " + t.snippet : "" })),
+      el("span", { class: "when", text: t.date ? fmtWhen(new Date(t.date)) : "" })));
+  });
+  if (!inbox.threads.length) host.appendChild(el("p", { class: "empty", text: "The inbox is empty." }));
+  $("mCount").textContent = inbox.threads.length ? "Showing " + num(inbox.threads.length) + " conversation" + (inbox.threads.length === 1 ? "" : "s") : "";
+  $("mMoreWrap").hidden = !inbox.more;
+}
+function openThread(t) {
+  curThread = t.id;
+  $("mListWrap").hidden = true; $("mThread").hidden = false;
+  $("mtSubj").textContent = t.subject || "(no subject)";
+  $("mtMsgs").textContent = "Loading…"; $("mtReply").value = "";
+  return mailApi({ action: "thread", id: t.id }).then(function (j) {
+    t.unread = false;
+    var host = $("mtMsgs"); host.textContent = "";
+    (j.messages || []).forEach(function (m) {
+      /* email text comes from outside: it is only ever shown as text, never as HTML */
+      host.appendChild(el("div", { class: "msg" },
+        el("div", { class: "mh" }, el("b", { text: m.mine ? "You" : senderName(m.from) }), el("span", { class: "status", text: m.date ? fmtWhen(new Date(m.date)) : "" })),
+        el("div", { class: "status", text: "To: " + (m.to || "") }),
+        el("pre", { text: m.body || "" })));
+    });
+    if (!(j.messages || []).length) host.textContent = "This conversation has no messages.";
+  }).catch(function (e) { $("mtMsgs").textContent = ""; mailFail(e); });
+}
+function closeThread() {
+  curThread = null; $("mThread").hidden = true; $("mListWrap").hidden = false; renderInbox();
+}
+function sendReply() {
+  var body = $("mtReply").value.trim();
+  if (!body) { mSay("Write a reply first."); return; }
+  if (!curThread) return;
+  var btn = $("mtSend"), tid = curThread;
+  btn.disabled = true; btn.textContent = "Sending…";
+  mailApi({ action: "reply", id: tid, body: body }).then(function (j) {
+    if (j.quota !== undefined && qInfo) { qInfo.quota = j.quota; showQuota(); }
+    mSay("Reply sent.");
+    var t = inbox.threads.filter(function (x) { return x.id === tid; })[0] || { id: tid, subject: $("mtSubj").textContent };
+    return openThread(t);
+  }).catch(mailFail).then(function () { btn.disabled = false; btn.textContent = "Send reply"; });
+}
+
+/* ---------- audience ---------- */
+function emailOf(r) {
+  for (var i = 0; i < cols.length; i++) {
+    if (cols[i].kind !== "email") continue;
+    var v = (r.by[cols[i].name] || "").trim().toLowerCase();
+    if (EMAIL_RE.test(v)) return v;
+  }
+  return "";
+}
+function nameOf(r) {
+  var best = null, i;
+  for (i = 0; i < cols.length && !best; i++) if (cols[i].kind === "text" && /full\s*name/i.test(cols[i].name) && r.by[cols[i].name]) best = cols[i];
+  for (i = 0; i < cols.length && !best; i++) if (cols[i].kind === "text" && /^name$/i.test(cols[i].name) && r.by[cols[i].name]) best = cols[i];
+  for (i = 0; i < cols.length && !best; i++) if (cols[i].kind === "text" && /name/i.test(cols[i].name) && r.by[cols[i].name]) best = cols[i];
+  return best ? r.by[best.name].replace(/\s+/g, " ").trim() : "";
+}
+function rcptCount() { return Object.keys(rcpt).length; }
+
+function buildGroups() {
+  groups = [];
+  function live(r) { return !r.dupOld && r.mark !== "red"; }
+  function add(label, test, dyn) {
+    var seen = {}, n = 0;
+    if (!dyn) resRows.forEach(function (r) { if (!test(r)) return; var e = emailOf(r); if (e && !seen[e]) { seen[e] = 1; n++; } });
+    if (dyn || n) groups.push({ label: label + (dyn ? "" : " (" + n + ")"), test: test, dyn: !!dyn });
+  }
+  add("Everyone (newest registration of each person, red excluded)", live);
+  groups.push({ label: "Whatever the Responses tab is showing right now", dyn: true });
+  [["yellow", "Yellow"], ["red", "Red"], ["green", "Green"], ["blue", "Blue"]].forEach(function (m) {
+    add("Highlighted " + m[1], function (r) { return !r.dupOld && r.mark === m[0]; });
+  });
+  add("Any highlight except red", function (r) { return !r.dupOld && r.mark && r.mark !== "red"; });
+  filterCols.forEach(function (c) {
+    c.options.forEach(function (o) { add(c.name + ": " + o.v, function (r) { return live(r) && r.by[c.name] === o.v; }); });
+  });
+  var forms = {};
+  resRows.forEach(function (r) { if (r.form) forms[r.form] = 1; });
+  if (Object.keys(forms).length > 1) Object.keys(forms).forEach(function (f) { add("Form: " + f, function (r) { return live(r) && r.form === f; }); });
+  add("Email failed or not sent", function (r) { return live(r) && r.status !== "sent"; });
+}
+function mailAudienceRefresh() {
+  var unlocked = !!rpass;
+  $("aUnlock").hidden = unlocked; $("aTools").hidden = !unlocked;
+  if (!unlocked) { $("aSugg").hidden = true; return; }
+  var sel = $("aGroup"), cur = sel.value;
+  buildGroups();
+  sel.textContent = "";
+  groups.forEach(function (g, i) { sel.appendChild(el("option", { value: String(i), text: g.label })); });
+  if (cur && +cur < groups.length) sel.value = cur;
+}
+function addGroup() {
+  var g = groups[+$("aGroup").value];
+  if (!g) return;
+  var test = g.test;
+  if (g.dyn && !test) {   // red means "not counted", so it is left out unless the Responses tab is filtered to red on purpose
+    var ids = {}, redOk = $("mkSel").value === "red";
+    visibleRows().forEach(function (r) { if (r.mark !== "red" || redOk) ids[r.id] = 1; });
+    test = function (r) { return !!ids[r.id]; };
+  }
+  var added = 0, had = 0, none = 0;
+  resRows.forEach(function (r) {
+    if (r.dupOld || !test(r)) return;
+    var e = emailOf(r);
+    if (!e) { none++; return; }
+    if (rcpt[e]) { had++; return; }
+    rcpt[e] = { email: e, name: nameOf(r) }; added++;
+  });
+  renderChips();
+  $("cResult").textContent = "Added " + num(added) + (had ? ", " + num(had) + " already in the list" : "") + (none ? ", " + num(none) + " without an email" : "") + ".";
+}
+function addPerson(email, name) {
+  email = String(email || "").trim().toLowerCase();
+  if (!EMAIL_RE.test(email)) { $("cResult").textContent = "That does not look like an email address."; return false; }
+  if (!rcpt[email]) rcpt[email] = { email: email, name: name || "" };
+  renderChips();
+  return true;
+}
+function renderChips() {
+  var host = $("aChips"), keys = Object.keys(rcpt), n = keys.length;
+  host.textContent = "";
+  $("aCount").textContent = n ? num(n) + (n === 1 ? " recipient" : " recipients") : "No recipients yet";
+  keys.slice(0, 40).forEach(function (k) {
+    var p = rcpt[k], who = p.name || p.email;
+    host.appendChild(el("span", { class: "chip", title: p.email }, who,
+      el("button", { type: "button", "aria-label": "Remove " + who, text: "×", on: { click: function () { delete rcpt[k]; renderChips(); } } })));
+  });
+  if (n > 40) host.appendChild(el("span", { class: "chip more", text: "+ " + num(n - 40) + " more" }));
+  $("cSend").textContent = n ? "Send to " + num(n) + (n === 1 ? " person" : " people") : "Send";
+  $("cSend").disabled = sending || !n;
+}
+function renderSugg() {
+  var host = $("aSugg"), q = $("aSearch").value.toLowerCase().split(/\s+/).filter(Boolean);
+  host.textContent = "";
+  if (!q.length || !resRows.length) { host.hidden = true; return; }
+  var seen = {}, n = 0;
+  for (var i = 0; i < resRows.length && n < 8; i++) {
+    var r = resRows[i];
+    if (r.dupOld) continue;
+    var ok = true;
+    for (var k = 0; k < q.length; k++) if (r.hay.indexOf(q[k]) < 0) { ok = false; break; }
+    if (!ok) continue;
+    var e = emailOf(r);
+    if (!e || seen[e]) continue;
+    seen[e] = 1; n++;
+    (function (e, nm) {
+      host.appendChild(el("button", { type: "button", on: { click: function () { addPerson(e, nm); $("aSearch").value = ""; host.hidden = true; $("aSearch").focus(); } } },
+        nm || e, el("small", { text: (nm ? e : "") + (rcpt[e] ? "  ✓ added" : "") })));
+    })(e, nameOf(r));
+  }
+  if (!n) host.appendChild(el("span", { class: "none", text: "No registration with an email matches." }));
+  host.hidden = false;
+}
+
+/* ---------- sending ---------- */
+function setSending(on) {
+  sending = on;
+  $("cTest").disabled = on; $("cSubj").disabled = on; $("cBody").disabled = on;
+  renderChips();
+}
+function doSend(test) {
+  var subj = $("cSubj").value.trim(), body = $("cBody").value.trim(), keys = Object.keys(rcpt), out = $("cResult");
+  if (!subj || !body) { out.textContent = "Write a subject and a message first."; return; }
+  if (!test) {
+    if (!keys.length) { out.textContent = "Add at least one recipient."; return; }
+    if (!window.confirm("Send “" + subj + "” to " + num(keys.length) + (keys.length === 1 ? " person" : " people") + " from the event email account?\n\nThis cannot be undone.")) return;
+  }
+  var batches = [], i = 0, sent = 0, failed = [], fatal = null, total = test ? 1 : keys.length;
+  if (test) batches.push(null);
+  else for (var k = 0; k < keys.length; k += 20) batches.push(keys.slice(k, k + 20));
+  setSending(true); out.textContent = test ? "Sending test…" : "Sending 0 / " + num(total) + "…";
+
+  function next() {
+    if (i >= batches.length || fatal) return Promise.resolve();
+    var b = batches[i++];
+    var payload = test
+      ? { action: "send", to_me: true, subject: subj, body: body }
+      : { action: "send", subject: subj, body: body, recipients: b.map(function (key) { return rcpt[key]; }) };
+    return mailApi(payload).then(function (j) {
+      (j.sent || []).forEach(function (e) { sent++; if (!test) delete rcpt[e]; });
+      (j.failed || []).forEach(function (f) { failed.push(f); });
+      if (j.quota !== undefined) { qInfo = { quota: j.quota, reserve: j.reserve || (qInfo ? qInfo.reserve : 0) }; showQuota(); }
+      if (!test) { out.textContent = "Sending " + num(sent) + " / " + num(total) + "…"; renderChips(); }
+      return next();
+    }).catch(function (e) { fatal = e; });
+  }
+  return next().then(function () {
+    setSending(false);
+    if (fatal && /wrong password/i.test(fatal.message)) { lockMail("Wrong password."); return; }
+    var msg;
+    if (test) msg = fatal ? "Test failed: " + fatal.message : failed.length ? "Test failed: " + failed[0].error : "Test email sent to the event account.";
+    else {
+      msg = "Sent " + num(sent) + " of " + num(total) + ".";
+      if (failed.length) msg += " " + num(failed.length) + " failed (" + failed.slice(0, 3).map(function (f) { return f.email + ": " + f.error; }).join("; ") + (failed.length > 3 ? "; …" : "") + ").";
+      if (fatal) msg += " Stopped: " + fatal.message;
+      if (sent && rcptCount()) msg += " The ones already sent were removed, so pressing Send again only retries the rest.";
+    }
+    out.textContent = msg;
+  });
+}
+
+function mailView(v) {
+  mview = v;
+  $("mInbox").hidden = v !== "inbox"; $("mCompose").hidden = v !== "compose";
+  Array.prototype.forEach.call($("mseg").querySelectorAll("button"), function (b) { b.setAttribute("aria-pressed", b.getAttribute("data-v") === v ? "true" : "false"); });
+  if (v === "compose") { mailAudienceRefresh(); renderChips(); }
+}
+
 /* ---------- auto-lock after 10 idle minutes ---------- */
 function touch() {
   clearTimeout(idle);
-  if (rpass) idle = setTimeout(function () { lockRes("Locked after 10 minutes without use."); }, 10 * 60 * 1000);
+  if (rpass || mailPw) idle = setTimeout(function () {
+    var m = "Locked after 10 minutes without use.";
+    if (rpass) lockRes(m);
+    if (mailPw) lockMail(m);
+  }, 10 * 60 * 1000);
 }
 function lockRes(msg) {
   rpass = null; boardPw = null; resRows = []; clearTimeout(idle);
   $("rtab").textContent = ""; $("resKpis").textContent = ""; $("resSplit").textContent = "";
   $("resDash").hidden = true; $("resLogin").hidden = false; $("resErr").textContent = msg || "";
-  syncActions();
+  syncActions(); mailAudienceRefresh(); touch();
 }
 
 /* ---------- events ---------- */
@@ -911,11 +1309,50 @@ $("resForm").addEventListener("submit", function (ev) {
   rpass = v; $("resErr").textContent = "Checking…"; $("rgo").disabled = true;
   loadRes(true).then(function () { $("rgo").disabled = false; if (rpass) { $("rpw").value = ""; $("resErr").textContent = ""; } });
 });
-$("refresh").addEventListener("click", function () { if (tab === "overview") load(false); else loadRes(false); });
+$("refresh").addEventListener("click", function () {
+  if (tab === "overview") load(false);
+  else if (tab === "mail") { if (!$("mThread").hidden) closeThread(); loadInbox(true, false); }
+  else loadRes(false);
+});
 $("out").addEventListener("click", function () {
   if (tab === "overview") { pass = null; byDay = {}; $("dash").hidden = true; $("login").hidden = false; $("loginErr").textContent = ""; syncActions(); }
+  else if (tab === "mail") lockMail("");
   else lockRes("");
 });
+
+/* mail */
+$("mailForm").addEventListener("submit", function (ev) {
+  ev.preventDefault();
+  var v = $("mpw").value; if (!v) return;
+  mailPw = v; $("mailErr").textContent = "Checking…"; $("mgo").disabled = true;
+  loadInbox(true, true).then(function () { $("mgo").disabled = false; if (mailPw) { $("mpw").value = ""; $("mailErr").textContent = ""; } });
+});
+$("mseg").addEventListener("click", function (ev) { var b = ev.target.closest("button"); if (b) mailView(b.getAttribute("data-v")); });
+$("mMore").addEventListener("click", function () { loadInbox(false, false); });
+$("mBack").addEventListener("click", closeThread);
+$("mtSend").addEventListener("click", sendReply);
+$("aUnlock").addEventListener("submit", function (ev) {
+  ev.preventDefault();
+  var v = $("apw").value; if (!v) return;
+  rpass = v; $("aErr").textContent = "Checking…";
+  loadRes(true).then(function () {
+    if (rpass) { $("apw").value = ""; $("aErr").textContent = ""; }
+    else $("aErr").textContent = $("resErr").textContent || "Could not unlock.";
+  });
+});
+$("aAddGroup").addEventListener("click", addGroup);
+$("aClear").addEventListener("click", function () { rcpt = {}; renderChips(); $("cResult").textContent = ""; });
+$("aAddEmail").addEventListener("click", function () { if (addPerson($("aManual").value)) { $("aManual").value = ""; $("cResult").textContent = ""; } });
+$("aManual").addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); $("aAddEmail").click(); } });
+$("aSearch").addEventListener("input", renderSugg);
+$("aSearch").addEventListener("focus", renderSugg);
+$("aSearch").addEventListener("keydown", function (e) {
+  if (e.key === "Enter") { e.preventDefault(); var f = $("aSugg").querySelector("button"); if (f) f.click(); }
+  else if (e.key === "Escape") $("aSugg").hidden = true;
+});
+document.addEventListener("click", function (e) { if (!e.target.closest || !e.target.closest(".pick")) $("aSugg").hidden = true; });
+$("cSend").addEventListener("click", function () { doSend(false); });
+$("cTest").addEventListener("click", function () { doSend(true); });
 $("seg").addEventListener("click", function (ev) {
   var b = ev.target.closest("button"); if (!b) return;
   range = +b.getAttribute("data-r"); render();
@@ -934,7 +1371,7 @@ $("csv").addEventListener("click", downloadCsv);
 $("copyEmails").addEventListener("click", copyEmails);
 $("psMsa").addEventListener("click", function () { photoPdf("msa"); });
 $("psOut").addEventListener("click", function () { photoPdf("out"); });
-  ["click", "keydown", "input"].forEach(function (e) { $("viewResponses").addEventListener(e, touch); });
+  ["click", "keydown", "input"].forEach(function (e) { $("viewResponses").addEventListener(e, touch); $("viewMail").addEventListener(e, touch); });
 
 showTab(tabFromHash());
 })();
