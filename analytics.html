@@ -927,19 +927,33 @@ function psShrink(img, url) {   // shrink the photo so the PDF stays small; fall
   return String(s).replace(/[\u0660-\u0669]/g, function (d) { return d.charCodeAt(0) - 0x0660; })
                   .replace(/[\u06F0-\u06F9]/g, function (d) { return d.charCodeAt(0) - 0x06F0; });
 }
+  function arName(r) {
+  var k, v, fb = "";
+  for (k in r.by) {
+    v = (r.by[k] || "").replace(/\s+/g, " ").trim();
+    if (!v || !/[\u0600-\u06FF]/.test(v) || /^https?:/i.test(v)) continue;
+    if (/arabic|عرب/i.test(k)) return v;
+    if (!fb && /name|اسم/i.test(k)) fb = v;
+  }
+  return fb;
+}
 function rowsPdf(group) {
   var isMsa = group === "msa";
   var idKey = isMsa ? "MSA ID number" : "National ID number";
   var list = resRows.filter(function (r) {
     return !r.dupOld && r.mark !== "red" && (r.by["Who are you?"] || "") === (isMsa ? "MSA student" : "Outcomer");
-  }).map(function (r) {
-    return { name: (r.by["Full name"] || "").replace(/\s+/g, " ").trim(), id: arDigits(r.by[idKey] || "").replace(/[^0-9A-Za-z]/g, "") };
-  }).sort(function (a, b) { var x = a.name.toLowerCase(), y = b.name.toLowerCase(); return x < y ? -1 : x > y ? 1 : 0; });
+ }).map(function (r) {
+var en = (r.by["Full name"] || "").replace(/\s+/g, " ").trim();
+return { name: isMsa ? (arName(r) || en) : en, id: arDigits(r.by[idKey] || "").replace(/[^0-9A-Za-z]/g, "") };
+}).sort(function (a, b) {
+if (isMsa) return a.name.localeCompare(b.name, "ar");
+var x = a.name.toLowerCase(), y = b.name.toLowerCase(); return x < y ? -1 : x > y ? 1 : 0;
+});
   if (!list.length) { say("Nothing to print."); return; }
   var h = "<h1>TEDxMSA: " + (isMsa ? "MSA Students" : "Outcomers") + "</h1><p>" + list.length + " registrations, sorted by name</p>" +
     "<table><thead><tr><th>#</th><th>Name</th><th>" + (isMsa ? "MSA ID" : "National ID") + "</th></tr></thead><tbody>";
   list.forEach(function (p, i) {
-    h += "<tr><td>" + (i + 1) + "</td><td>" + psEsc(p.name) + "</td><td>" + psEsc(p.id) + "</td></tr>";
+h += "<tr><td>" + (i + 1) + "</td><td" + (isMsa ? ' dir="rtl" style="text-align:right"' : "") + ">" + psEsc(p.name) + "</td><td>" + psEsc(p.id) + "</td></tr>";
   });
   h += "</tbody></table>";
   var sheet = $("printSheet");
