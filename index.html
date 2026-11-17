@@ -156,6 +156,12 @@ nav{position:sticky;top:0;z-index:50;background:rgba(10,10,10,.93);backdrop-filt
 .dots button.on{background-color:var(--red)}
 body:has(#annpop[open]){overflow:hidden}
 .ann.off{opacity:.55}
+/* event rules & terms */
+.rules{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px}
+.rule{background:#151515;border:1px solid #2a2a2a;border-top:4px solid var(--red);padding:26px;display:flex;flex-direction:column;align-items:flex-start;gap:12px}
+.rule h3{font-size:24px;letter-spacing:-.01em;color:#fff}
+.rule p{margin:0;color:#cfcfcf;font-size:16px;line-height:1.55}
+.rule .ctl{margin-top:6px}
 .pclose{position:absolute;top:12px;right:12px;z-index:2;width:34px;height:34px;border-radius:50%;border:0;background:rgba(0,0,0,.7);color:#fff;font-size:22px;line-height:1;cursor:pointer}
 .pclose:hover{background:var(--red)}
 @media(prefers-reduced-motion:reduce){#annpop[open],.badge{animation:none}}
@@ -652,6 +658,18 @@ var DEFAULTS = {
     lead: "Reserve your seat, volunteer, or apply to be part of TEDxMSAUniversity."
   },
   registrations: [],
+  rulesHead: {
+    eyebrow: "Before you come",
+    title: "Event rules & terms",
+    lead: "By registering for and attending TEDxMSAUniversity, you agree to follow the rules below. Please read them before you arrive."
+  },
+  rules: [
+    { tag: "Gate 1", title: "MSA students & graduates", text: "Gate 1 is the entrance for MSA University students and graduates." },
+    { tag: "Gate 3", title: "Outcomers", text: "Gate 3 is the entrance for outcomers (guests from outside MSA University)." },
+    { tag: "Required", title: "Bring your IDs and your QR code", text: "Outcomers must have their National ID and their University ID with them, beside their QR code. If any one of these is missing, you will not be allowed to attend the event." },
+    { tag: "Gate 3", title: "One single line only", text: "Outcomers must stand in one single line at Gate 3. No double or triple lines and no crowding. If there is chaos at Gate 3, the gate will be closed." },
+    { tag: "During talks", title: "Everyone stays seated", text: "While the talks are on stage, everyone must be seated." }
+  ],
   speakersHead: {
     eyebrow: "On our stage",
     title: "Speakers",
@@ -1130,6 +1148,7 @@ function nav() {
   if (editing || liveAnn().length) l.push(["announcements", "News"]);
   if (editing || visSpeakers().length || visSponsors().length) l.push(["whatif", "What IF?"]);
   if (editing || state.site.registrations.some(function (f) { return !f.hidden; })) l.push(["registration", "Register"]);
+  if (editing || visRules().length) l.push(["rules", "Rules"]);
   if (editing || visEvents().length) l.push(["events", "Events"]);
   if (editing || visGallery().length) l.push(["gallery", "Gallery"]);
   if (editing || visVideos().length) l.push(["videos", "Reels"]);
@@ -1596,6 +1615,26 @@ function whatifSec() {
   return h("section", { class: "soft", id: "whatif" }, h("div", { class: "wrap" },
     head("site.whatifHead"),
     sp, sp && sn ? h("div", { style: "height:72px" }) : null, sn));
+}
+/* ---------- Event rules & terms (board can add, edit, reorder and remove rules) ---------- */
+function visRules() { return state.site.rules.filter(function (r) { return r.title || r.text; }); }
+function rulesSec() {
+  var s = "site.rules", cards = [];
+  state.site.rules.forEach(function (r, i) {
+    var empty = !r.title && !r.text;
+    if (!editing && empty) return;
+    var p = s + "." + i + ".";
+    cards.push(h("article", { class: "rule" + (editing && empty ? " slot" : "") },
+      T("span", p + "tag", "atag", "Label (e.g. Gate 3)"),
+      T("h3", p + "title", "", "Rule title"),
+      T("p", p + "text", "", "Rule details", true),
+      editing ? ctl(s, i) : null));
+  });
+  if (!editing && !cards.length) return null;
+  return h("section", { class: "dark", id: "rules" }, h("div", { class: "wrap" },
+    head("site.rulesHead"),
+    h("div", { class: "rules" }, cards),
+    editing ? addRow(s, { tag: "", title: "", text: "" }, "Add rule") : null));
 }
 function eventsSec() {
   var s = "site.events", cards = [];
@@ -2300,7 +2339,7 @@ head("site.regHead"), h("div", { class: "regs" + (editing ? "" : " tkr") }, card
 function render() {
   var y = window.scrollY, app = document.getElementById("app");
   app.textContent = "";
-  [announceBar(), nav(), hero(), closingSec(), stats(), about(), nextBand(), announcementsSec(), whatifSec(), regSec(), eventsSec(), gallerySec(), videosSec(), teamSec(), contactSec(), footer()]
+  [announceBar(), nav(), hero(), closingSec(), stats(), about(), nextBand(), announcementsSec(), whatifSec(), regSec(), rulesSec(), eventsSec(), gallerySec(), videosSec(), teamSec(), contactSec(), footer()]
     .forEach(function (n) { if (n) app.append(n); });
 applyFx();
   renderBar();
