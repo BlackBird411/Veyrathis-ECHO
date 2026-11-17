@@ -937,6 +937,40 @@ function psShrink(img, url) {   // shrink the photo so the PDF stays small; fall
   }
   return fb;
 }
+  var AR_D = {}, AR_L = {};
+[["mohamed mohammed muhammad mohammad mohamad","محمد"],["ahmed ahmad","أحمد"],["mahmoud mahmood","محمود"],["mostafa mustafa moustafa","مصطفى"],["ali","علي"],["hassan hasan","حسن"],["hussein hussain hosein","حسين"],["hossam hosam","حسام"],["ibrahim ebrahim","إبراهيم"],["ismail ismael esmail esmael","إسماعيل"],["youssef yousef yusuf yossef youssif","يوسف"],["omar","عمر"],["amr","عمرو"],["khaled khalid","خالد"],["tarek tareq tarik","طارق"],["karim kareem","كريم"],["sherif sharif shereif","شريف"],["walid waleed","وليد"],["hany hani","هاني"],["sayed sayyid","سيد"],["said saeed saied","سعيد"],["abdallah abdullah abdalla abdelah","عبد الله"],["ziad zeyad ziyad","زياد"],["seif saif","سيف"],["adam","آدم"],["mazen mazin","مازن"],["marwan","مروان"],["mourad murad morad","مراد"],["osama usama","أسامة"],["sameh","سامح"],["samy sami","سامي"],["sameer samir","سمير"],["ramy rami","رامي"],["hazem","حازم"],["hisham hesham","هشام"],["ayman","أيمن"],["adel","عادل"],["wael","وائل"],["yehia yahya yehya","يحيى"],["tamer","تامر"],["tawfik tawfiq","توفيق"],["nabil","نبيل"],["magdy magdi","مجدي"],["medhat","مدحت"],["emad imad","عماد"],["essam issam","عصام"],["ehab","إيهاب"],["islam eslam","إسلام"],["anas","أنس"],["bassem basem","باسم"],["belal bilal","بلال"],["fady fadi","فادي"],["george","جورج"],["mina mena","مينا"],["mark","مارك"],["peter","بيتر"],["michael","مايكل"],["alaa ala","علاء"],["gamal","جمال"],["hamdy hamdi","حمدي"],["hamza","حمزة"],["haitham haytham","هيثم"],["farouk","فاروق"],["fathy fathi","فتحي"],["kamal","كمال"],["maher","ماهر"],["moaz muaz","معاذ"],["momen moemen","مؤمن"],["nader","نادر"],["nasser naser","ناصر"],["nasr","نصر"],["reda rida","رضا"],["salah","صلاح"],["saad","سعد"],["samer","سامر"],["shady shadi","شادي"],["yassin yasin","ياسين"],["yasser yaser","ياسر"],["ashraf","أشرف"],["hatem","حاتم"],["ezzat","عزت"],["badr","بدر"],["mansour","منصور"],["soliman sulaiman","سليمان"],["fawzy fawzi","فوزي"],["sabry sabri","صبري"],["salem","سالم"],["saleh","صالح"],["fahmy fahmi","فهمي"],["kamel","كامل"],["ramadan","رمضان"],["hegazy hegazi","حجازي"],["taha","طه"],["khalil","خليل"],["osman othman","عثمان"],["awad","عوض"],["eid","عيد"],["shawky shawki","شوقي"],["attia atteya","عطية"],["mariam maryam miriam","مريم"],["mona","منى"],["salma","سلمى"],["nour noor nor","نور"],["yasmin yasmine jasmine","ياسمين"],["farida fareeda","فريدة"],["fatma fatima fatema","فاطمة"],["aya","آية"],["sara sarah","سارة"],["hana hanna","هنا"],["hanan","حنان"],["nada","ندى"],["menna mennah","منة"],["rana","رنا"],["reem","ريم"],["dina","دينا"],["heba hiba","هبة"],["esraa israa","إسراء"],["asmaa asma","أسماء"],["aisha aesha","عائشة"],["jana","جنى"],["laila layla leila","ليلى"],["malak","ملك"],["rahma","رحمة"],["rawan rowan","روان"],["shahd","شهد"],["shorouk shrouk","شروق"],["sondos","سندس"],["farah","فرح"],["habiba","حبيبة"],["lina","لينا"],["mai may","مي"],["amira","أميرة"],["noha","نهى"],["nermin nirmeen nermeen","نيرمين"],["nourhan","نورهان"],["bassant passant","بسنت"],["yara","يارا"],["zeina","زينة"],["zainab zeinab","زينب"],["doaa dua","دعاء"],["hagar hajar","هاجر"],["hend hind","هند"],["nadine","نادين"],["radwa","رضوى"],["samar","سمر"],["tasneem","تسنيم"],["wafaa","وفاء"],["youmna yomna","يمنى"],["ghada","غادة"],["engy","إنجي"],["eman iman","إيمان"],["alia aliaa","علياء"],["amal","أمل"],["basma","بسمة"],["donia dunia","دنيا"],["ola","علا"],["mirna","ميرنا"],["maram","مرام"],["marwa","مروة"],["sama","سما"]]
+.forEach(function (p) { p[0].split(" ").forEach(function (k) { AR_D[k] = p[1]; }); });
+[["rahman rhman","رحمن"],["aziz","عزيز"],["fattah","فتاح"],["hamid","حميد"],["karim","كريم"],["latif","لطيف"],["mohsen","محسن"],["moneim","منعم"],["nasser naser","ناصر"],["salam","سلام"],["wahab","وهاب"],["kader qader","قادر"],["halim","حليم"],["hakim","حكيم"],["malek","مالك"],["raouf","رؤوف"],["ghani","غني"],["razek","رزاق"],["baset","باسط"],["rahim","رحيم"],["ghaffar","غفار"],["samad","صمد"],["allah","الله"]]
+.forEach(function (p) { p[0].split(" ").forEach(function (k) { AR_L[k] = p[1]; }); });
+
+function arPhon(w) {
+  var M = { sh: "ش", kh: "خ", gh: "غ", th: "ث", ch: "تش", ph: "ف", ou: "و", oo: "و", ee: "ي", aa: "ا", ey: "ي", ay: "ي", ei: "ي", ie: "ي" };
+  var C = { b: "ب", c: "ك", d: "د", f: "ف", g: "ج", h: "ه", j: "ج", k: "ك", l: "ل", m: "م", n: "ن", p: "ب", q: "ق", r: "ر", s: "س", t: "ت", v: "ف", w: "و", x: "كس", y: "ي", z: "ز" };
+  var out = "", i = 0, n = w.length, ch, two;
+  while (i < n) {
+    two = w.substr(i, 2); ch = w[i];
+    if (M[two]) { out += M[two]; i += 2; continue; }
+    if (C[ch]) out += C[ch];
+    else if (i === 0) out += (ch === "a" || ch === "o" || ch === "u") ? "أ" : "إ";
+    else if (i === n - 1 && ch === "a") out += "ا";
+    i++;
+  }
+  return out;
+}
+
+function toArabic(s) {
+  var t = String(s).toLowerCase().replace(/['’`-]/g, "").replace(/[^a-z\s]/g, " ").split(/\s+/).filter(Boolean), out = [], i, w, m;
+  for (i = 0; i < t.length; i++) {
+    w = t[i];
+    if (/^(abd|abde|abdu|abdel|abdul|abdal|el|al)$/.test(w) && t[i + 1]) w += t[++i];
+    if (AR_D[w]) out.push(AR_D[w]);
+    else if ((m = w.match(/^abd(?:el|ul|al|e|u)?(.+)$/)) && AR_L[m[1]]) out.push(m[1] === "allah" ? "عبد الله" : "عبد ال" + AR_L[m[1]]);
+    else if ((m = w.match(/^(?:el|al)(.+)$/)) && AR_D[m[1]]) out.push("ال" + AR_D[m[1]]);
+    else if ((m = w.match(/^el(.{3,})$/))) out.push("ال" + arPhon(m[1]));
+    else out.push(arPhon(w));
+  }
+  return out.join(" ");
+}
 function rowsPdf(group) {
   var isMsa = group === "msa";
   var idKey = isMsa ? "MSA ID number" : "National ID number";
@@ -944,7 +978,7 @@ function rowsPdf(group) {
     return !r.dupOld && r.mark !== "red" && (r.by["Who are you?"] || "") === (isMsa ? "MSA student" : "Outcomer");
  }).map(function (r) {
 var en = (r.by["Full name"] || "").replace(/\s+/g, " ").trim();
-return { name: isMsa ? (arName(r) || en) : en, id: arDigits(r.by[idKey] || "").replace(/[^0-9A-Za-z]/g, "") };
+return { name: isMsa ? (arName(r) || toArabic(en)) : en, id: arDigits(r.by[idKey] || "").replace(/[^0-9A-Za-z]/g, "") };
 }).sort(function (a, b) {
 if (isMsa) return a.name.localeCompare(b.name, "ar");
 var x = a.name.toLowerCase(), y = b.name.toLowerCase(); return x < y ? -1 : x > y ? 1 : 0;
