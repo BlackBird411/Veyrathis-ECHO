@@ -319,6 +319,8 @@ dialog .row{display:flex;gap:8px;justify-content:flex-end}
 <button class="btn line sm" id="psOut" type="button">Outcomers PDF</button>
 <button class="btn line sm" id="psAllMsa" type="button">MSA list PDF</button>
 <button class="btn line sm" id="psAllOut" type="button">Outcomers list PDF</button>
+<button class="btn line sm" id="wdMsa" type="button">MSA list Word</button>
+<button class="btn line sm" id="wdOut" type="button">Outcomers list Word</button>
       </span>
     </div>
 
@@ -1413,6 +1415,8 @@ $("psMsa").addEventListener("click", function () { photoPdf("msa"); });
 $("psOut").addEventListener("click", function () { photoPdf("out"); });
 $("psAllMsa").addEventListener("click", function () { rowsPdf("msa"); });
 $("psAllOut").addEventListener("click", function () { rowsPdf("out"); });
+$("wdMsa").addEventListener("click", function () { rowsDoc("msa"); });
+$("wdOut").addEventListener("click", function () { rowsDoc("out"); });
   ["click", "keydown", "input"].forEach(function (e) { $("viewResponses").addEventListener(e, touch); $("viewMail").addEventListener(e, touch); });
 
 showTab(tabFromHash());
