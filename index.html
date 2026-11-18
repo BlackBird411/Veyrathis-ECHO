@@ -550,6 +550,12 @@ html:has(dialog[open]){scroll-behavior:auto}
 .fcard .fname{font-size:34px}
 .fcard .fpic{max-width:200px;margin:0 0 18px}
 .fextra .addrow{grid-column:1/-1;margin-top:0}
+    .finale .fmq{background:rgba(0,0,0,.25)}
+#closing .cin{max-width:1100px;display:grid;grid-template-columns:1.15fr .85fr;gap:48px;align-items:center;text-align:left}
+#closing .cin.nopic{grid-template-columns:1fr;text-align:center}
+#closing .fname{font-size:clamp(40px,7vw,100px)}
+#closing .fpic{width:min(340px,48vh,60vw);max-width:none;justify-self:end;margin-right:18px;animation:cpop .9s .1s both cubic-bezier(.2,.8,.2,1)}
+@media(max-width:820px){#closing .cin{grid-template-columns:1fr;gap:36px;text-align:center}#closing .fpic{order:-1;justify-self:center;width:min(220px,38vh,60vw);margin-right:0}}
 .finale .fextra .addrow .btn.line{color:#fff;border:2px solid #fff;background:transparent;padding:12px 22px;font-size:14px}
 .finale .fextra .addrow .btn.line:hover{background:var(--red);border-color:var(--red)}  </style>
 <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
@@ -626,7 +632,7 @@ var DEFAULTS = {
     cta2: "Meet the team",
      image: ""
   },
-   finale: { on: false, name: "Yousef Al 3ashry", tag: "The final closing of the event", sub: "Live on stage · 19.11.2026 · MSA University", image: "", acts: [] },
+   finale: { on: false, name: "Yousef Al 3ashry", tag: "The final closing of the event", sub: "Live on stage · 19.11.2026 · MSA University", image: "", acts: [], bg: "#000000" },
   fx: { on: true },
   stats: [
     { num: "2017", label: "Year of our first event" },
@@ -1452,6 +1458,12 @@ function finExtras() {
     }),
     addRow("site.finale.acts", { name: "", tag: "", sub: "", image: "" }, "Add another card"));
 }
+  function finBgPick() {
+  var f = state.site.finale, i = h("input", { type: "color" });
+  i.value = /^#[0-9a-f]{6}$/i.test(f.bg) ? f.bg : "#000000";
+  i.addEventListener("input", function () { f.bg = i.value; dirty = true; markDirty(); $id("finale").style.background = i.value; });
+  return h("label", { class: "ck" }, "Background ", i);
+}
 function closingSec() {
   var f = state.site.finale;
   clearInterval(finRot);
@@ -1464,7 +1476,8 @@ function closingSec() {
     : h("div", { class: "wrap fin" + (f.image || editing ? "" : " nopic") },
       h("div", null,
         editing ? h("div", { class: "fedit" },
-          CK(f, "on", "Show on the website", false),
+          CK(f, "on", "Show on the website", false),         
+                    finBgPick(),
           finOn() ? null : h("span", { class: "fhidden" }, "Hidden from visitors"),
           h("button", { type: "button", class: "btn sm ghost", on: { click: function () { openClosing(true); } } }, "Preview entry screen")) : null,
         T("p", "site.finale.tag", "eyebrow", "Small line above the name"),
@@ -1484,7 +1497,7 @@ function closingSec() {
       }, 350);
     }, 5000);
   }
-  return h("section", { class: "finale" + (finOn() ? "" : " off"), id: "finale" },
+  return h("section", { class: "finale" + (finOn() ? "" : " off"), id: "finale", style: "background:" + (f.bg || "#000") },
     h("div", { class: "fbeam" }),
     body,
     dots,
@@ -1494,23 +1507,28 @@ function closingSec() {
 var closingTimer = null, closingRot = null, closingPreview = false;
 function closingCard(a) {
   return [
-    a.image ? h("div", { class: "cpic" }, h("img", { src: cdn(a.image), alt: "", on: { error: noPic } })) : null,
-    h("p", { class: "eyebrow" }, a.tag),
-    h("div", { class: "fname" }, finWords(a.name)),
-    h("p", { class: "fsub" }, a.sub),
-    h("button", { class: "btn", type: "button" }, "Enter the site")];
+    h("div", null,
+      h("p", { class: "eyebrow" }, a.tag),
+      h("div", { class: "fname" }, finWords(a.name)),
+      h("p", { class: "fsub" }, a.sub),
+      h("button", { class: "btn", type: "button" }, "Enter the site")),
+    finPic(null, a)];
 }
 function openClosing(force) {
   if (!force && !finOn()) return false;
   closingPreview = !!force;
   var acts = finActs(), per = 3500, k = 0;
   var total = acts.length > 1 ? acts.length * per : 8000;
-  var cin = h("div", { class: "cin" }, closingCard(acts[0]));
+  var cin = h("div", { class: "cin" + (acts[0].image ? "" : " nopic") }, closingCard(acts[0]));
   var box = $id("closingbox"); box.textContent = "";
   box.append(h("div", { class: "fbeam" }), cin, h("div", { class: "cbar", style: "animation-duration:" + total + "ms" }));
   clearInterval(closingRot);
-  if (acts.length > 1) closingRot = setInterval(function () { k = (k + 1) % acts.length; swapKids(cin, closingCard(acts[k])); }, per);
-  var d = $id("closing"); if (!d.open) d.showModal();
+  if (acts.length > 1) closingRot = setInterval(function () {
+    k = (k + 1) % acts.length;
+    cin.className = "cin" + (acts[k].image ? "" : " nopic");
+    swapKids(cin, closingCard(acts[k]));
+  }, per);
+  var d = $id("closing"); d.style.background = state.site.finale.bg || "#000"; if (!d.open) d.showModal();
   clearTimeout(closingTimer); closingTimer = setTimeout(closeClosing, total);
   return true;
 }
