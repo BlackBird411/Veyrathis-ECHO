@@ -947,7 +947,7 @@ function exportCrop(cb) {
   if (r >= 1) { W = m; H = Math.round(m / r); } else { H = m; W = Math.round(m * r); }
   var c = document.createElement("canvas"); c.width = W; c.height = H;
   clampPos(W, H); drawTo(c.getContext("2d"), W, H);
-  c.toBlob(function (b) { b ? cb(b) : toast("Could not process image", true); }, cs.png ? "image/png" : "image/jpeg", 0.88);
+  c.toBlob(function (b) { b ? cb(b) : toast("Could not process image", true); }, cs.png ? "image/png" : "image/jpeg", 0.97);
 }
 function wireCropper() {
   var can = $id("ccan"), dlg = $id("crop"), drag = null;
@@ -1434,7 +1434,7 @@ function finPic(path, a) {
   if (src) w.append(h("img", { src: cdn(src), alt: a.name, on: { error: noPic } }));
   else w.append(h("span", { class: "ph" }, "No photo yet"));
   if (editing) {
-    var pc = picControls(path, 1400, "photo", 4 / 5);
+    var pc = picControls(path, 2800, "photo", 4 / 5);
     if (isPng(a)) pngBgBtn(a, w).forEach(function (n) { if (n) pc.append(n); });
     w.append(pc);
   }
@@ -1478,7 +1478,7 @@ function finExtras() {
   i.addEventListener("input", function () { f.bg = i.value; dirty = true; markDirty(); $id("finale").style.background = i.value; });
   return [
     h("label", { class: "ck" }, "Background ", i),
-    h("button", { type: "button", class: "btn sm ghost", on: { click: function () { pick("site.finale.bgImage", 1920, 16 / 9); } } }, (f.bgImage ? "Change" : "Add") + " entry screen photo"),
+    h("button", { type: "button", class: "btn sm ghost", on: { click: function () { pick("site.finale.bgImage", 3840, 16 / 9); } } }, (f.bgImage ? "Change" : "Add") + " entry screen photo"),
     f.bgImage ? h("button", { type: "button", class: "btn sm ghost", on: { click: function () { f.bgImage = ""; touch(); } } }, "Remove entry photo") : null];
 }
 function closingSec() {
