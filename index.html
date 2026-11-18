@@ -883,7 +883,7 @@ function pixelFx(ctx, W, H) {
 function drawTo(ctx, W, H) {
   var d = dimsR(), sc = Math.max(W / d.w, H / d.h) * cs.zoom;
   ctx.save();
-  ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, W, H);
+  if (!cs.png) { ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, W, H); }
   if (FILTER) ctx.filter = "brightness(" + cs.bri + "%) contrast(" + cs.con + "%) grayscale(" + (cs.bw ? 1 : 0) + ")";
   ctx.translate(W / 2 + cs.fx * W, H / 2 + cs.fy * H);
   ctx.scale(cs.flip ? -1 : 1, 1);
@@ -925,7 +925,7 @@ function openCropper(file, opts, done) {
   img.onload = function () {
     cs = { img: img, url: url, rot: 0, flip: false, zoom: 1, fx: 0, fy: 0, bri: 100, con: 100, bw: false,
       aspect: opts.lock ? (opts.aspect || 1) : (opts.aspect || null), lock: !!opts.lock, circle: !!opts.circle,
-      maxDim: opts.maxDim || 1600, opts: opts, done: done };
+      maxDim: opts.maxDim || 1600, opts: opts, done: done, png: /^image\/(png|webp|gif)$/.test(file.type) };
     $id("ccan").className = cs.circle ? "circle" : "";
     $id("chint").textContent = cs.circle
       ? "Drag the photo to place the face in the middle of the circle. Zoom with the slider or mouse wheel."
@@ -941,7 +941,7 @@ function exportCrop(cb) {
   if (r >= 1) { W = m; H = Math.round(m / r); } else { H = m; W = Math.round(m * r); }
   var c = document.createElement("canvas"); c.width = W; c.height = H;
   clampPos(W, H); drawTo(c.getContext("2d"), W, H);
-  c.toBlob(function (b) { b ? cb(b) : toast("Could not process image", true); }, "image/jpeg", 0.88);
+  c.toBlob(function (b) { b ? cb(b) : toast("Could not process image", true); }, cs.png ? "image/png" : "image/jpeg", 0.88);
 }
 function wireCropper() {
   var can = $id("ccan"), dlg = $id("crop"), drag = null;
@@ -984,7 +984,7 @@ function upload(path, blob) {
   toast("Uploading photo…");
   var fd = new FormData();
   fd.append("password", password);
-  fd.append("file", blob, "photo.jpg");
+   fd.append("file", blob, blob.type === "image/png" ? "photo.png" : "photo.jpg");
   fetch(SB_URL + "/functions/v1/upload-media", { method: "POST", headers: { apikey: SB_KEY }, body: fd })
     .then(function (r) { return r.json().then(function (j) { if (!r.ok) throw new Error(j.error || "Upload failed"); return j; }); })
     .then(function (j) { set(path, j.url); render(); toast("Photo ready. Press Save to publish."); })
