@@ -632,7 +632,7 @@ var DEFAULTS = {
     cta2: "Meet the team",
      image: ""
   },
-   finale: { on: false, name: "Yousef Al 3ashry", tag: "The final closing of the event", sub: "Live on stage · 19.11.2026 · MSA University", image: "", acts: [], bg: "#000000" },
+   finale: { on: false, name: "Yousef Al 3ashry", tag: "The final closing of the event", sub: "Live on stage · 19.11.2026 · MSA University", image: "", acts: [], bg: "#000000", bgImage: "" },
   fx: { on: true },
   stats: [
     { num: "2017", label: "Year of our first event" },
@@ -1476,7 +1476,10 @@ function finExtras() {
   var f = state.site.finale, i = h("input", { type: "color" });
   i.value = /^#[0-9a-f]{6}$/i.test(f.bg) ? f.bg : "#000000";
   i.addEventListener("input", function () { f.bg = i.value; dirty = true; markDirty(); $id("finale").style.background = i.value; });
-  return h("label", { class: "ck" }, "Background ", i);
+  return [
+    h("label", { class: "ck" }, "Background ", i),
+    h("button", { type: "button", class: "btn sm ghost", on: { click: function () { pick("site.finale.bgImage", 1920, 16 / 9); } } }, (f.bgImage ? "Change" : "Add") + " entry screen photo"),
+    f.bgImage ? h("button", { type: "button", class: "btn sm ghost", on: { click: function () { f.bgImage = ""; touch(); } } }, "Remove entry photo") : null];
 }
 function closingSec() {
   var f = state.site.finale;
@@ -1542,7 +1545,11 @@ function openClosing(force) {
     cin.className = "cin" + (acts[k].image ? "" : " nopic");
     swapKids(cin, closingCard(acts[k]));
   }, per);
-  var d = $id("closing"); d.style.background = state.site.finale.bg || "#000"; if (!d.open) d.showModal();
+  var d = $id("closing"), fb = state.site.finale;
+  d.style.background = fb.bg || "#000";
+  d.style.backgroundImage = fb.bgImage ? "url(\"" + cdn(fb.bgImage) + "\")" : "";
+  d.style.backgroundSize = "cover"; d.style.backgroundPosition = "center";
+  if (!d.open) d.showModal();
   clearTimeout(closingTimer); closingTimer = setTimeout(closeClosing, total);
   return true;
 }
