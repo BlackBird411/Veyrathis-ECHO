@@ -993,7 +993,7 @@ function upload(path, blob) {
    fd.append("file", blob, blob.type === "image/png" ? "photo.png" : "photo.jpg");
   fetch(SB_URL + "/functions/v1/upload-media", { method: "POST", headers: { apikey: SB_KEY }, body: fd })
     .then(function (r) { return r.json().then(function (j) { if (!r.ok) throw new Error(j.error || "Upload failed"); return j; }); })
-    .then(function (j) { set(path, j.url); render(); toast("Photo ready. Press Save to publish."); })
+    .then(function (j) { set(path, j.url); set(path + "Png", blob.type === "image/png"); render(); toast("Photo ready. Press Save to publish."); })
     .catch(function (e) { toast("Upload failed: " + e.message, true); });
 }
 
@@ -1416,14 +1416,28 @@ function finWords(name) {
 }
 function noPic(ev) { if (editing) ev.target.remove(); else ev.target.parentNode.remove(); }
 function finOn() { var f = state.site.finale; return !!(f && f.on !== false && f.name); }
+function isPng(a) { return !!a.image && (!!a.imagePng || /\.png(\?|$)/i.test(a.image)); }
+function pngBgBtn(a, w) {
+  var i = h("input", { type: "color", style: "position:absolute;width:0;height:0;opacity:0;pointer-events:none" });
+  i.value = /^#[0-9a-f]{6}$/i.test(a.imageBg) ? a.imageBg : "#000000";
+  i.addEventListener("input", function () { a.imageBg = i.value; dirty = true; markDirty(); w.style.background = i.value; });
+  return [i,
+    h("button", { type: "button", class: "sm", on: { click: function () { i.click(); } } }, "PNG background"),
+    a.imageBg ? h("button", { type: "button", class: "sm", on: { click: function () { a.imageBg = ""; touch(); } } }, "Clear bg") : null];
+}
 function finPic(path, a) {
   path = path || "site.finale.image"; a = a || state.site.finale;
   var src = a.image;
   if (!src && !editing) return null;
-  var w = h("div", { class: "pic fpic" + (src ? "" : " empty") });
+  var bg = isPng(a) && /^#[0-9a-f]{6}$/i.test(a.imageBg) ? a.imageBg : "";
+  var w = h("div", { class: "pic fpic" + (src ? "" : " empty"), style: bg ? "background:" + bg : null });
   if (src) w.append(h("img", { src: cdn(src), alt: a.name, on: { error: noPic } }));
   else w.append(h("span", { class: "ph" }, "No photo yet"));
-  if (editing) w.append(picControls(path, 1400, "photo", 4 / 5));
+  if (editing) {
+    var pc = picControls(path, 1400, "photo", 4 / 5);
+    if (isPng(a)) pngBgBtn(a, w).forEach(function (n) { if (n) pc.append(n); });
+    w.append(pc);
+  }
   return w;
 }
 var finRot = null;
