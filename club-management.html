@@ -138,7 +138,19 @@ dialog .meta{color:var(--mut);font-size:13px;margin:0 0 4px}
 .gpick .gc{flex:none;color:var(--mut);font-size:12px}
 .gtools{display:flex;gap:8px;align-items:center;margin-top:8px}
 .gtools .meta{margin:0 0 0 auto}
-#posDlg .prow input{flex:2 1 120px;width:auto;padding:6px 8px;font-size:14px}
+.card .bd{display:flex;gap:3px;flex-wrap:wrap;margin-top:4px}
+.card .mb{width:20px;height:20px;border-radius:50%;display:grid;place-items:center;font-size:11px;line-height:1}
+.card .mbm{align-self:center;font-size:11px;color:var(--mut)}
+.mawrow{display:flex;align-items:center;gap:10px;padding:6px 8px;background:var(--bg0);border-radius:6px;margin-bottom:5px}
+.mawrow .ab{width:30px;height:30px;font-size:15px}
+.mawrow .at{flex:1;min-width:0}
+.mawrow .at b{display:block;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mawrow .at small{display:block;color:var(--mut);font-size:12px}
+.mawrow .btn{padding:3px 8px;font-size:12px}
+.mgive{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+.mgive select{flex:1 1 130px;width:auto}
+.mgive input{flex:2 1 130px;width:auto}
+  #posDlg .prow input{flex:2 1 120px;width:auto;padding:6px 8px;font-size:14px}
 #posDlg .prow select{flex:1 1 110px;width:auto;padding:6px 8px;font-size:14px}
 
 #toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:#111214;color:#fff;border:1px solid var(--line);padding:10px 16px;border-radius:6px;font-weight:700;font-size:14px;opacity:0;pointer-events:none;transition:opacity .2s;max-width:90vw;z-index:50}
@@ -223,6 +235,14 @@ dialog .meta{color:var(--mut);font-size:13px;margin:0 0 4px}
     <select id="memCom"></select>
     <label for="memPos">Position</label>
     <select id="memPos"></select>
+    <label id="memAwLbl">Awards</label>
+    <div id="memAwards"></div>
+    <div class="mgive">
+      <select id="memGiveSel" aria-label="Award to give"></select>
+      <input id="memGiveNote" maxlength="300" placeholder="Note (optional)" aria-label="Note">
+      <button class="btn sm" id="memGiveBtn" type="button">Give</button>
+    </div>
+    <p class="err" id="memErr" role="alert"></p>
     <div class="row">
       <button class="btn warn" id="memDel" type="button">Delete</button>
       <button class="btn sec" id="memTerm" type="button">Terminate</button>
@@ -458,6 +478,7 @@ function card(m, showCom) {
     el("div", { class: "tx" },
       el("div", { class: "nm", text: m.name }),
       el("div", { class: "rl", text: roleLabel(m) }),
+      awardStrip(m.id),
       showCom ? el("span", { class: "cm", text: "# " + comName(m.committee_id) }) : null),
     isActive(m) ? null : el("span", { class: "tag", text: "Terminated" }));
   return c;
@@ -572,6 +593,7 @@ function openMember(id) {
   fillPos(m.committee_id || null, m.position_id || "");
   $("memMeta").textContent = isActive(m) ? "Active member" : "Terminated";
   $("memTerm").textContent = isActive(m) ? "Terminate" : "Reinstate";
+  $("memErr").textContent = ""; $("memGiveNote").value = ""; renderMemAwards();
   $("memDlg").showModal();
 }
 function fillPos(cid, cur) {   // position dropdown in the member window, for the chosen committee
@@ -736,6 +758,66 @@ $("awForm").addEventListener("submit", function (ev) {
 $("awCancelEdit").addEventListener("click", function () { resetAwForm(); $("awErr").textContent = ""; });
 $("awClose").addEventListener("click", function () { $("awDlg").close(); });
 $("awBtn").addEventListener("click", openAwards);
+
+/* awards on a member: badges on the card, list + give + revoke in the member window */
+function myAwards(mid) { return memberAwards.filter(function (g) { return g.member_id === mid; }); }
+function fmtDate(iso) {
+  var d = new Date(iso);
+  return isNaN(d) ? "" : d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+}
+function awardStrip(mid) {   // small badges on a card, one per award (x2 when given twice)
+  var seen = {}, list = [];
+  myAwards(mid).forEach(function (g) {
+    var a = awardById(g.award_id); if (!a) return;
+    if (!seen[a.id]) { seen[a.id] = { a: a, n: 0 }; list.push(seen[a.id]); }
+    seen[a.id].n++;
+  });
+  if (!list.length) return null;
+  return el("div", { class: "bd" }, list.slice(0, 4).map(function (x) {
+    var c = safeColor(x.a.color);
+    return el("span", { class: "mb", style: "background:" + c + "33;border:1px solid " + c, title: x.a.name + (x.n > 1 ? " \u00D7" + x.n : ""), text: x.a.icon });
+  }), list.length > 4 ? el("span", { class: "mbm", text: "+" + (list.length - 4) }) : null);
+}
+function merr(e) {   // errors inside the member window show here, a dialog covers the toast
+  if (/password/i.test(e.message)) return fail(e);
+  $("memErr").textContent = e.message;
+}
+function renderMemAwards() {
+  var host = $("memAwards"), s = $("memGiveSel"); host.textContent = ""; s.textContent = "";
+  var mine = myAwards(editId).sort(function (a, b) { return new Date(b.awarded_at) - new Date(a.awarded_at); });
+  if (!mine.length) host.appendChild(el("p", { class: "meta", text: "No awards yet." }));
+  mine.forEach(function (g) {
+    var a = awardById(g.award_id); if (!a) return;
+    host.appendChild(el("div", { class: "mawrow" }, badge(a),
+      el("div", { class: "at" },
+        el("b", { text: a.name }),
+        el("small", { text: fmtDate(g.awarded_at) + (g.note ? " \u00B7 " + g.note : "") })),
+      el("button", { class: "btn warn sm", type: "button", text: "Revoke", on: { click: function () { revokeAward(g, a, this); } } })));
+  });
+  awards.slice().sort(byName).forEach(function (a) { s.appendChild(el("option", { value: a.id, text: a.icon + " " + a.name })); });
+  if (!awards.length) s.appendChild(el("option", { value: "", text: "No awards created yet" }));
+  $("memGiveBtn").disabled = !awards.length;
+}
+function revokeAward(g, a, btn) {
+  var m = memById(g.member_id);
+  if (!confirm("Take \u201C" + a.name + "\u201D away from " + (m ? m.name : "this member") + "?")) return;
+  btn.disabled = true; $("memErr").textContent = "";
+  op("award_revoke", { id: g.id }).then(function () {
+    memberAwards = memberAwards.filter(function (x) { return x.id !== g.id; });
+    renderMemAwards(); render();
+  }).catch(merr).then(function () { btn.disabled = false; });
+}
+$("memGiveBtn").addEventListener("click", function () {
+  var a = awardById($("memGiveSel").value), m = memById(editId), btn = this;
+  if (!a || !m || btn.disabled) return;
+  var note = $("memGiveNote").value.trim(), k = "mgive|" + m.id + "|" + a.id + "|" + note;
+  btn.disabled = true; $("memErr").textContent = "";
+  op("award_give", { rid: rid(k), award_id: a.id, member_ids: [m.id], note: note }).then(function (rows) {
+    ridDone(k);
+    (rows || []).forEach(function (g) { if (!memberAwards.some(function (x) { return x.id === g.id; })) memberAwards.push(g); });
+    $("memGiveNote").value = ""; renderMemAwards(); render();
+  }).catch(merr).then(function () { btn.disabled = !awards.length; });
+});
 
 /* give an award to one or many members */
 function openGive(a) {
