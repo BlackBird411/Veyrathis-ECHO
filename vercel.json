@@ -1,7 +1,8 @@
 {
   "rewrites": [
 { "source": "/m/:file", "destination": "/api/m?file=:file" },
-    { "source": "/analytics", "destination": "/analytics.html" }
+    { "source": "/analytics", "destination": "/analytics.html" },
+    { "source": "/club-management", "destination": "/club-management.html" }
   ],
   "headers": [
     { "source": "/m/:file", "headers": [
