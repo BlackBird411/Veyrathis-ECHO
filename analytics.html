@@ -212,6 +212,7 @@ dialog .row{display:flex;gap:8px;justify-content:flex-end}
       <a href="#responses" id="tabResponses">Responses</a>
       <a href="#mail" id="tabMail">Mail</a>
       <a href="#logs" id="tabLogs">Logs</a>
+      <a href="/club-management">Club</a>
     </nav>
   </div>
 </header>
@@ -437,7 +438,7 @@ dialog .row{display:flex;gap:8px;justify-content:flex-end}
     <div class="toolbar" role="search">
       <div class="fld grow"><label for="lq">Search</label><input id="lq" type="search" placeholder="Section, old text or new text" autocomplete="off"></div>
       <div class="fld"><label for="lkind">Type</label>
-        <select id="lkind"><option value="">All</option><option value="site">Website</option><option value="roles">Team</option><option value="mark">Highlights</option></select></div>
+        <select id="lkind"><option value="">All</option><option value="site">Website</option><option value="roles">Team</option><option value="mark">Highlights</option><option value="club">Club</option></select></div>
     </div>
     <div class="tools"><span class="count" id="logShown" aria-live="polite"></span></div>
     <div class="tw res"><table class="rt" id="ltab"></table></div>
@@ -1512,7 +1513,7 @@ function renderLogs() {
     var long = "max-width:300px;white-space:pre-wrap;word-break:break-word";
     tb.appendChild(el("tr", null,
       el("td", { class: "nw", text: new Date(r.at).toLocaleString("en-GB", { timeZone: "Africa/Cairo", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) }),
-      el("td", { text: r.kind === "site" ? "Website" : r.kind === "roles" ? "Team" : "Highlight" }),
+    el("td", { text: r.kind === "site" ? "Website" : r.kind === "roles" ? "Team" : r.kind === "club" ? "Club" : "Highlight" }),
       el("td", { style: long, text: String(r.area).replace(/^\./, "") }),
       el("td", { text: r.action }),
       el("td", { style: long, text: r.old_val === null ? "" : r.old_val }),
