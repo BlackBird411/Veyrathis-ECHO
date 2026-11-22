@@ -513,7 +513,7 @@ function showTab(t) {
   if (t === "mail") { if (!mailPw) $("mpw").focus(); else touch(); }
   if (t === "logs") { if (!logPw) $("lpw").focus(); else touch(); }
 }
-function tabFromHash() { return location.hash === "#responses" ? "responses" : location.hash === "#mail" ? "mail" : "overview"; }
+function tabFromHash() { return location.hash === "#responses" ? "responses" : location.hash === "#mail" ? "mail" : location.hash === "#logs" ? "logs" : "overview"; }
 window.addEventListener("hashchange", function () { showTab(tabFromHash()); });
 function syncActions() {
   var open = tab === "overview" ? (!!pass && !$("dash").hidden)
