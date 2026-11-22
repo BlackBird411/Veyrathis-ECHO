@@ -150,6 +150,19 @@ dialog .meta{color:var(--mut);font-size:13px;margin:0 0 4px}
 .mgive{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
 .mgive select{flex:1 1 130px;width:auto}
 .mgive input{flex:2 1 130px;width:auto}
+.card .why{color:#ff8a80;font-size:12px;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.card .wn{display:inline-block;margin:3px 4px 0 0;font-size:11px;font-weight:800;color:#ffcf6b;border:1px solid #6b5420;border-radius:4px;padding:0 6px}
+.reasonbox{margin:12px 0 0;padding:10px 12px;background:#3a1f1d;border:1px solid #7d1f19;border-radius:6px;font-size:14px;word-break:break-word}
+.reasonbox b{display:block;font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:#ff8a80;margin-bottom:3px}
+.wrow{padding:7px 10px;background:var(--bg0);border-left:3px solid #d4a017;border-radius:6px;margin-bottom:5px}
+.wrow.rv{border-left-color:var(--line);opacity:.65}
+.wrow .wt{font-size:12px;color:var(--mut)}
+.wrow .wr{font-size:14px;word-break:break-word}
+.wrow.rv .wr{text-decoration:line-through}
+.wrow .wa{display:flex;justify-content:flex-end;margin-top:4px}
+.wrow .btn{padding:3px 8px;font-size:12px}
+body.view .card{cursor:pointer}
+body.view .brand span::after{content:" \00B7  view only"}
   #posDlg .prow input{flex:2 1 120px;width:auto;padding:6px 8px;font-size:14px}
 #posDlg .prow select{flex:1 1 110px;width:auto;padding:6px 8px;font-size:14px}
 
@@ -173,7 +186,6 @@ dialog .meta{color:var(--mut);font-size:13px;margin:0 0 4px}
   <div class="bar">
     <div class="brand"><b>TEDx</b>MSAUniversity<span>Club management</span></div>
     <nav class="links" aria-label="Board pages">
-      <a href="/analytics">Analytics</a>
       <a href="/club-management" aria-current="page">Club</a>
     </nav>
     <div class="actions" id="actions" hidden>
@@ -186,9 +198,9 @@ dialog .meta{color:var(--mut);font-size:13px;margin:0 0 4px}
 
 <section class="login" id="login">
   <h1>Club management</h1>
-  <p>Enter the board password to manage committees and members.</p>
+  <p>Enter the board password to manage the club, or the member password to view it.</p>
   <form id="loginForm" autocomplete="off">
-    <label for="pw">Board password</label>
+    <label for="pw">Password</label>
     <input id="pw" type="password" autocomplete="off" required>
     <button class="btn" id="go" type="submit">Open</button>
     <p class="err" id="loginErr" role="alert"></p>
@@ -228,6 +240,7 @@ dialog .meta{color:var(--mut);font-size:13px;margin:0 0 4px}
   <form id="memForm" autocomplete="off">
     <h3>Member</h3>
     <p class="meta" id="memMeta"></p>
+    <div class="reasonbox" id="memReason" hidden></div>
     <label for="memName">Name</label>
     <input id="memName" maxlength="80" required>
        <label for="memCom">Committee</label>
@@ -236,10 +249,25 @@ dialog .meta{color:var(--mut);font-size:13px;margin:0 0 4px}
     <select id="memPos"></select>
     <label id="memAwLbl">Awards</label>
     <div id="memAwards"></div>
-    <div class="mgive">
+    <div class="mgive" id="memGive">
       <select id="memGiveSel" aria-label="Award to give"></select>
       <input id="memGiveNote" maxlength="300" placeholder="Note (optional)" aria-label="Note">
       <button class="btn sm" id="memGiveBtn" type="button">Give</button>
+    </div>
+    <label id="memWarnLbl">Warnings</label>
+    <div id="memWarns"></div>
+    <div class="mgive" id="memWarnAdd">
+      <input id="memWarnReason" maxlength="500" placeholder="Reason for the warning (required)" aria-label="Warning reason">
+      <button class="btn sm" id="memWarnBtn" type="button">Warn</button>
+    </div>
+    <div id="termBox" hidden>
+      <label for="termReason">Reason for termination (required, everyone who opens this page will see it)</label>
+      <input id="termReason" maxlength="500" placeholder="Why is this member being terminated?">
+      <div class="row">
+        <span class="gap"></span>
+        <button class="btn sec sm" id="termNo" type="button">Cancel</button>
+        <button class="btn warn sm" id="termYes" type="button">Confirm termination</button>
+      </div>
     </div>
     <p class="err" id="memErr" role="alert"></p>
     <div class="row">
@@ -247,7 +275,7 @@ dialog .meta{color:var(--mut);font-size:13px;margin:0 0 4px}
       <button class="btn sec" id="memTerm" type="button">Terminate</button>
       <span class="gap"></span>
       <button class="btn sec" id="memCancel" type="button">Cancel</button>
-      <button class="btn" type="submit">Save</button>
+      <button class="btn" id="memSave" type="submit">Save</button>
     </div>
   </form>
 </dialog>
@@ -317,7 +345,7 @@ dialog .meta{color:var(--mut);font-size:13px;margin:0 0 4px}
 var SB_URL = "https://fdiounclxvaescxfkcnt.supabase.co";
 var SB_KEY = "sb_publishable_pTmK9ZuSQHh915Ke4IAhIA_ib2ip80H";   // public key, same one the website uses
 
-var pw = null, committees = [], members = [], positions = [], awards = [], memberAwards = [], sel = null, q = "", idle = null, dragId = null, editId = null, comEditId = null;
+var pw = null, role = null, committees = [], members = [], positions = [], awards = [], memberAwards = [], warnings = [], sel = null, q = "", idle = null, dragId = null, editId = null, comEditId = null;
 
 function $(id) { return document.getElementById(id); }
 function num(n) { return Number(n).toLocaleString("en-US"); }
@@ -385,6 +413,9 @@ function fail(e) {
 
 /* ---------- data helpers ---------- */
 function isActive(m) { return m.status !== "terminated"; }
+function canEdit() { return role === "board"; }   // the server enforces this too, this only hides the buttons
+function warnsOf(mid) { return warnings.filter(function (w) { return w.member_id === mid; }); }
+function liveWarns(mid) { return warnsOf(mid).filter(function (w) { return !w.revoked_at; }); }
 function key(m) { return m.committee_id || "none"; }
 function comById(id) { for (var i = 0; i < committees.length; i++) if (committees[i].id === id) return committees[i]; return null; }
 function comName(id) { var c = id ? comById(id) : null; return c ? c.name : "Unassigned"; }
@@ -459,12 +490,13 @@ function renderSide() {
   committees.forEach(function (c) { s.appendChild(chan(c.id, c.name, activeCount(c.id))); });
   s.appendChild(el("div", { class: "sep" }));
   s.appendChild(chan("none", "Unassigned", activeCount("none")));
-  s.appendChild(el("button", { class: "chan add", type: "button", on: { click: function () { openCommittee(null); } } },
+  if (canEdit()) s.appendChild(el("button", { class: "chan add", type: "button", on: { click: function () { openCommittee(null); } } },
     el("span", { class: "hash", text: "+" }), el("span", { class: "nm", text: "New committee" })));
 }
 
 function card(m, showCom) {
-  var c = el("div", { class: "card" + (isActive(m) ? "" : " off"), draggable: "true", tabindex: "0", "data-id": m.id, on: {
+  var wn = liveWarns(m.id).length;
+  var c = el("div", { class: "card" + (isActive(m) ? "" : " off"), draggable: canEdit() ? "true" : null, tabindex: "0", "data-id": m.id, on: {
     click: function () { openMember(m.id); },
     keydown: function (e) { if (e.key === "Enter") openMember(m.id); },
     dragstart: function (e) {
@@ -477,7 +509,9 @@ function card(m, showCom) {
     el("div", { class: "tx" },
       el("div", { class: "nm", text: m.name }),
       el("div", { class: "rl", text: roleLabel(m) }),
+      isActive(m) || !m.termination_reason ? null : el("div", { class: "why", title: m.termination_reason, text: "Reason: " + m.termination_reason }),
       awardStrip(m.id),
+      wn ? el("span", { class: "wn", text: "⚠ " + wn + (wn === 1 ? " warning" : " warnings") }) : null,
       showCom ? el("span", { class: "cm", text: "# " + comName(m.committee_id) }) : null),
     isActive(m) ? null : el("span", { class: "tag", text: "Terminated" }));
   return c;
@@ -497,17 +531,17 @@ function renderMain() {
 
   var head = el("div", { class: "head" },
     el("h1", { text: c ? c.name : "Unassigned" }),
-    el("div", { class: "tools" },
+    canEdit() ? el("div", { class: "tools" },
       el("button", { class: "btn sec sm", type: "button", text: "Positions", on: { click: openPositions } }),
       c ? [
         el("button", { class: "btn sec sm", type: "button", text: "Rename", on: { click: function () { openCommittee(c.id); } } }),
         el("button", { class: "btn warn sm", type: "button", text: "Delete", on: { click: function () { deleteCommittee(c.id); } } })
-      ] : null),
+      ] : null) : null,
     el("p", { class: "sub", text: num(act.length) + " active member" + (act.length === 1 ? "" : "s") + (off.length ? " · " + num(off.length) + " terminated" : "") }));
   host.appendChild(head);
 
   if (!committees.length && !members.length) {
-    host.appendChild(el("p", { class: "empty", text: "No committees yet. Use “New committee” on the left to create the first one." }));
+    host.appendChild(el("p", { class: "empty", text: canEdit() ? "No committees yet. Use “New committee” on the left to create the first one." : "No committees yet." }));
   }
 
   var nm = el("input", { class: "nm", placeholder: "Member name", maxlength: "80", "aria-label": "Member name" });
@@ -528,13 +562,13 @@ function renderMain() {
            var r2 = $("main").querySelector(".addrow .rl"); if (r2) r2.value = pid;
     }).catch(fail).then(function () { addBtn.disabled = false; });
   } } }, nm, rl, addBtn);
-  host.appendChild(form);
+  if (canEdit()) host.appendChild(form);
 
   groupByRole(act.sort(byName)).forEach(function (g) {
     host.appendChild(el("div", { class: "grp", text: g.role + " — " + g.items.length }));
     host.appendChild(el("div", { class: "cards" }, g.items.map(function (m) { return card(m, false); })));
   });
-  if (!act.length && !off.length) host.appendChild(el("p", { class: "empty", text: "No members here yet. Add the first one above, or drag a card onto this committee." }));
+  if (!act.length && !off.length) host.appendChild(el("p", { class: "empty", text: canEdit() ? "No members here yet. Add the first one above, or drag a card onto this committee." : "No members here yet." }));
   if (off.length) {
     host.appendChild(el("div", { class: "grp off", text: "Terminated — " + off.length }));
     host.appendChild(el("div", { class: "cards" }, off.map(function (m) { return card(m, false); })));
@@ -556,7 +590,7 @@ function renderSearch(host) {
 
 /* ---------- actions ---------- */
 function moveMember(id, cid) {
-  var m = memById(id); if (!m || (m.committee_id || null) === cid) return;
+  var m = memById(id); if (!canEdit() || !m || (m.committee_id || null) === cid) return;
   op("member_edit", { id: id, committee_id: cid }).then(function (u) {
     Object.assign(m, u); render(); toast(m.name + " moved to " + comName(cid) + ".");
   }).catch(fail);
@@ -589,10 +623,21 @@ function openMember(id) {
   s.appendChild(el("option", { value: "", text: "Unassigned" }));
   s.value = m.committee_id || "";
   fillPos(m.committee_id || null, m.position_id || "");
-  $("memMeta").textContent = isActive(m) ? "Active member" : "Terminated";
+  $("memMeta").textContent = isActive(m) ? "Active member" : "Terminated" + (m.terminated_at ? " on " + fmtDate(m.terminated_at) : "");
+  var rb = $("memReason"); rb.textContent = ""; rb.hidden = isActive(m) || !m.termination_reason;
+  if (!rb.hidden) { rb.appendChild(el("b", { text: "Reason for termination" })); rb.appendChild(document.createTextNode(m.termination_reason)); }
   $("memTerm").textContent = isActive(m) ? "Terminate" : "Reinstate";
-  $("memErr").textContent = ""; $("memGiveNote").value = ""; renderMemAwards();
+  $("termBox").hidden = true; $("termReason").value = ""; $("memWarnReason").value = "";
+  $("memErr").textContent = ""; $("memGiveNote").value = ""; renderMemAwards(); renderMemWarns();
+  applyViewMode();
   $("memDlg").showModal();
+}
+function applyViewMode() {   // members get a read-only window: nothing to type, nothing to press
+  var m = memById(editId), ro = !canEdit();
+  ["memName", "memCom", "memPos"].forEach(function (id) { $(id).disabled = ro; });
+  ["memGive", "memDel", "memTerm", "memSave"].forEach(function (id) { $(id).hidden = ro; });
+  $("memWarnAdd").hidden = ro || !m || !isActive(m);
+  $("memCancel").textContent = ro ? "Close" : "Cancel";
 }
 function fillPos(cid, cur) {   // position dropdown in the member window, for the chosen committee
   var s = $("memPos"), m = memById(editId); s.textContent = "";
@@ -790,7 +835,7 @@ function renderMemAwards() {
       el("div", { class: "at" },
         el("b", { text: a.name }),
         el("small", { text: fmtDate(g.awarded_at) + (g.note ? " \u00B7 " + g.note : "") })),
-      el("button", { class: "btn warn sm", type: "button", text: "Revoke", on: { click: function () { revokeAward(g, a, this); } } })));
+      !canEdit() ? null : el("button", { class: "btn warn sm", type: "button", text: "Revoke", on: { click: function () { revokeAward(g, a, this); } } })));
   });
   awards.slice().sort(byName).forEach(function (a) { s.appendChild(el("option", { value: a.id, text: a.icon + " " + a.name })); });
   if (!awards.length) s.appendChild(el("option", { value: "", text: "No awards created yet" }));
@@ -805,6 +850,42 @@ function revokeAward(g, a, btn) {
     renderMemAwards(); render();
   }).catch(merr).then(function () { btn.disabled = false; });
 }
+/* warnings: every one carries the reason it was given for */
+function renderMemWarns() {
+  var host = $("memWarns"); host.textContent = "";
+  var list = warnsOf(editId).sort(function (a, b) { return new Date(b.issued_at) - new Date(a.issued_at); });
+  if (!list.length) { host.appendChild(el("p", { class: "meta", text: "No warnings." })); return; }
+  list.forEach(function (w) {
+    var rv = !!w.revoked_at;
+    host.appendChild(el("div", { class: "wrow" + (rv ? " rv" : "") },
+      el("div", { class: "wt", text: fmtDate(w.issued_at) + (rv ? " · withdrawn " + fmtDate(w.revoked_at) + (w.revoke_note ? " (" + w.revoke_note + ")" : "") : "") }),
+      el("div", { class: "wr", text: w.reason }),
+      canEdit() ? el("div", { class: "wa" }, el("button", { class: "btn sec sm", type: "button", text: rv ? "Restore" : "Withdraw", on: { click: function () { toggleWarn(w, this); } } })) : null));
+  });
+}
+function toggleWarn(w, btn) {
+  var rv = !!w.revoked_at, note = "";
+  if (!rv) { note = prompt("Why is this warning being withdrawn? (optional)"); if (note === null) return; }
+  btn.disabled = true; $("memErr").textContent = "";
+  op(rv ? "warning_restore" : "warning_revoke", { id: w.id, note: note.trim() }).then(function (u) {
+    Object.assign(w, u); renderMemWarns(); render();
+  }).catch(merr).then(function () { btn.disabled = false; });
+}
+$("memWarnBtn").addEventListener("click", function () {
+  var m = memById(editId), btn = this, reason = $("memWarnReason").value.trim();
+  if (!m || btn.disabled) return;
+  if (!reason) { $("memErr").textContent = "Write the reason for the warning first."; $("memWarnReason").focus(); return; }
+  var k = "warn|" + m.id + "|" + reason;
+  btn.disabled = true; $("memErr").textContent = "";
+  op("warning_add", { rid: rid(k), member_id: m.id, reason: reason }).then(function (w) {
+    ridDone(k);
+    if (!warnings.some(function (x) { return x.id === w.id; })) warnings.push(w);
+    $("memWarnReason").value = ""; renderMemWarns(); render();
+    toast("Warning given to " + m.name + ".");
+  }).catch(merr).then(function () { btn.disabled = false; });
+});
+$("memWarnReason").addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); $("memWarnBtn").click(); } });
+$("termReason").addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); $("termYes").click(); } });
 $("memGiveBtn").addEventListener("click", function () {
   var a = awardById($("memGiveSel").value), m = memById(editId), btn = this;
   if (!a || !m || btn.disabled) return;
@@ -872,8 +953,10 @@ $("giveForm").addEventListener("submit", function (ev) {
   return rpc("club_load", { p: pw }).then(function (d) {
     committees = d.committees || []; members = d.members || []; positions = d.positions || [];
     awards = d.awards || []; memberAwards = d.member_awards || [];
+    warnings = d.warnings || []; role = d.role === "member" ? "member" : "board";
     if (!sel || (sel !== "none" && !comById(sel))) sel = committees.length ? committees[0].id : "none";
     $("login").hidden = true; $("app").hidden = false; $("actions").hidden = false;
+    $("awBtn").hidden = !canEdit(); document.body.classList.toggle("view", !canEdit());
     render(); touch();
   }).catch(function (e) {
     if (/password/i.test(e.message)) lock("Wrong password. Try again.");
@@ -882,7 +965,8 @@ $("giveForm").addEventListener("submit", function (ev) {
   });
 }
 function lock(msg) {
-  pw = null; committees = []; members = []; positions = []; awards = []; memberAwards = []; sel = null; q = ""; clearTimeout(idle);
+  pw = null; role = null; committees = []; members = []; positions = []; awards = []; memberAwards = []; warnings = []; sel = null; q = ""; clearTimeout(idle);
+  document.body.classList.remove("view");
   $("q").value = ""; $("side").textContent = ""; $("main").textContent = "";
   $("app").hidden = true; $("actions").hidden = true; $("login").hidden = false; $("loginErr").textContent = msg || "";
   ["comDlg", "memDlg", "posDlg", "awDlg", "giveDlg"].forEach(function (d) { if ($(d).open) $(d).close(); });
@@ -927,6 +1011,7 @@ $("memCom").addEventListener("change", function () {
 $("memCancel").addEventListener("click", function () { $("memDlg").close(); });
 $("memForm").addEventListener("submit", function (ev) {
   ev.preventDefault();
+  if (!canEdit()) return;
   var m = memById(editId), name = $("memName").value.trim(); if (!m || !name) return;
   var pv = $("memPos").value, body = { id: editId, name: name, committee_id: $("memCom").value || null };
   if (pv !== "__keep") body.position_id = pv || null;
@@ -936,12 +1021,20 @@ $("memForm").addEventListener("submit", function (ev) {
 });
 $("memTerm").addEventListener("click", function () {
   var m = memById(editId); if (!m) return;
-  var goOff = isActive(m);
-  if (goOff && !confirm("Mark " + m.name + " as terminated? They stop counting toward the totals.")) return;
-  op("member_edit", { id: editId, status: goOff ? "terminated" : "active" }).then(function (u) {
-    Object.assign(m, u); $("memDlg").close(); render();
-    toast(goOff ? m.name + " terminated." : m.name + " reinstated.");
-  }).catch(fail);
+  if (isActive(m)) { $("termBox").hidden = false; $("termReason").focus(); return; }   // ask for the reason first, nothing is sent until it is written
+  if (!confirm("Reinstate " + m.name + "? The reason is cleared from their profile (the board log keeps it).")) return;
+  op("member_edit", { id: editId, status: "active" }).then(function (u) {
+    Object.assign(m, u); $("memDlg").close(); render(); toast(m.name + " reinstated.");
+  }).catch(merr);
+});
+$("termNo").addEventListener("click", function () { $("termBox").hidden = true; $("termReason").value = ""; $("memErr").textContent = ""; });
+$("termYes").addEventListener("click", function () {
+  var m = memById(editId), btn = this, reason = $("termReason").value.trim(); if (!m || btn.disabled) return;
+  if (!reason) { $("memErr").textContent = "A reason is required to terminate a member."; $("termReason").focus(); return; }
+  btn.disabled = true; $("memErr").textContent = "";
+  op("member_edit", { id: editId, status: "terminated", termination_reason: reason }).then(function (u) {
+    Object.assign(m, u); $("memDlg").close(); render(); toast(m.name + " terminated.");
+  }).catch(merr).then(function () { btn.disabled = false; });
 });
 $("memDel").addEventListener("click", function () {
   var m = memById(editId); if (!m) return;
