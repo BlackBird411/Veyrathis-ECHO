@@ -1502,9 +1502,9 @@ function loadLogs(fromLogin) {
 function renderLogs() {
   var host = $("ltab"), q = $("lq").value.trim().toLowerCase(), kind = $("lkind").value, shown = 0, tb = el("tbody");
   host.textContent = "";
-  host.appendChild(el("thead", null, el("tr", null,
-    ["When", "Type", "Area", "Change", "Before", "After", "IP"].map(function (h) { return el("th", { style: "padding:10px 12px", text: h }); })
-  )));
+    var hr = el("tr");
+  ["When", "Type", "Area", "Change", "Before", "After", "IP"].forEach(function (h) { hr.appendChild(el("th", { style: "padding:10px 12px", text: h })); });
+  host.appendChild(el("thead", null, hr));
   logRows.forEach(function (r) {
     if (kind && r.kind !== kind) return;
     if (q && (r.area + " " + (r.old_val || "") + " " + (r.new_val || "")).toLowerCase().indexOf(q) < 0) return;
