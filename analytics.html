@@ -211,6 +211,7 @@ dialog .row{display:flex;gap:8px;justify-content:flex-end}
       <a href="#overview" id="tabOverview" aria-current="page">Overview</a>
       <a href="#responses" id="tabResponses">Responses</a>
       <a href="#mail" id="tabMail">Mail</a>
+      <a href="#logs" id="tabLogs">Logs</a>
     </nav>
   </div>
 </header>
@@ -415,6 +416,35 @@ dialog .row{display:flex;gap:8px;justify-content:flex-end}
   </div>
 </main>
 
+<!-- ================= LOGS ================= -->
+<main class="wrap wide" id="viewLogs" hidden>
+  <section class="login" id="logLogin">
+    <h1>Logs</h1>
+    <p>Enter the board password to see what the board changed on the website and in Responses.</p>
+    <form id="logForm" autocomplete="off">
+      <label for="lpw">Board password</label>
+      <input id="lpw" type="password" autocomplete="off" required>
+      <button class="btn" id="lgo" type="submit">Open logs</button>
+      <p class="err" id="logErr" role="alert"></p>
+    </form>
+  </section>
+
+  <div id="logDash" hidden>
+    <div class="rhead">
+      <h1>Logs</h1>
+      <span class="status" id="logStatus" aria-live="polite"></span>
+    </div>
+    <div class="toolbar" role="search">
+      <div class="fld grow"><label for="lq">Search</label><input id="lq" type="search" placeholder="Section, old text or new text" autocomplete="off"></div>
+      <div class="fld"><label for="lkind">Type</label>
+        <select id="lkind"><option value="">All</option><option value="site">Website</option><option value="roles">Team</option><option value="mark">Highlights</option></select></div>
+    </div>
+    <div class="tools"><span class="count" id="logShown" aria-live="polite"></span></div>
+    <div class="tw res"><table class="rt" id="ltab"></table></div>
+    <p class="note">Shows the last 500 changes, newest first. Every time the board presses Save on the website, each changed field is logged with its old and new value (long text is cut at 400 characters). Everyone shares one password, so entries show the IP address, not a name. The page locks after 10 minutes without use.</p>
+  </div>
+</main>
+
 <dialog id="pwDlg">
   <form method="dialog" id="pwForm">
     <h2>Board password</h2>
@@ -473,18 +503,22 @@ function showTab(t) {
   $("viewOverview").hidden = t !== "overview";
   $("viewResponses").hidden = t !== "responses";
   $("viewMail").hidden = t !== "mail";
+  $("viewLogs").hidden = t !== "logs";
   $("tabOverview").setAttribute("aria-current", t === "overview" ? "page" : "false");
   $("tabResponses").setAttribute("aria-current", t === "responses" ? "page" : "false");
   $("tabMail").setAttribute("aria-current", t === "mail" ? "page" : "false");
+  $("tabLogs").setAttribute("aria-current", t === "logs" ? "page" : "false");
   syncActions();
   if (t === "responses") { if (!rpass) $("rpw").focus(); else touch(); }
   if (t === "mail") { if (!mailPw) $("mpw").focus(); else touch(); }
+  if (t === "logs") { if (!logPw) $("lpw").focus(); else touch(); }
 }
 function tabFromHash() { return location.hash === "#responses" ? "responses" : location.hash === "#mail" ? "mail" : "overview"; }
 window.addEventListener("hashchange", function () { showTab(tabFromHash()); });
 function syncActions() {
   var open = tab === "overview" ? (!!pass && !$("dash").hidden)
     : tab === "mail" ? (!!mailPw && !$("mailDash").hidden)
+    : tab === "logs" ? (!!logPw && !$("logDash").hidden)
     : (!!rpass && !$("resDash").hidden);
   $("actions").hidden = !open;
 }
@@ -1438,14 +1472,70 @@ function mailView(v) {
   Array.prototype.forEach.call($("mseg").querySelectorAll("button"), function (b) { b.setAttribute("aria-pressed", b.getAttribute("data-v") === v ? "true" : "false"); });
   if (v === "compose") { mailAudienceRefresh(); renderChips(); }
 }
-
+/* =====================================================================
+   LOGS
+   ===================================================================== */
+var logPw = null, logRows = [];
+function lSay(m) { $("logStatus").textContent = m || ""; }
+function loadLogs(fromLogin) {
+  lSay("Loading…");
+  return fetch(SB_URL + "/rest/v1/rpc/board_logs_list", {
+    method: "POST", headers: { apikey: SB_KEY, "Content-Type": "application/json" },
+    body: JSON.stringify({ p: logPw, lim: 500 })
+  }).then(function (r) {
+    return r.text().then(function (t) {
+      var j = null; try { j = t ? JSON.parse(t) : null; } catch (e) {}
+      if (!r.ok) throw new Error((j && (j.message || j.hint)) || "Request failed");
+      return j;
+    });
+  }).then(function (rows) {
+    logRows = rows || [];
+    $("logLogin").hidden = true; $("logDash").hidden = false;
+    renderLogs(); syncActions(); touch();
+    lSay("Updated " + new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }));
+  }).catch(function (e) {
+    if (/password/i.test(e.message)) lockLogs("Wrong password. Try again.");
+    else if (fromLogin) { logPw = null; $("logErr").textContent = "Could not load: " + e.message; }
+    else lSay(e.message);
+  });
+}
+function renderLogs() {
+  var host = $("ltab"), q = $("lq").value.trim().toLowerCase(), kind = $("lkind").value, shown = 0, tb = el("tbody");
+  host.textContent = "";
+  host.appendChild(el("thead", null, el("tr", null,
+    ["When", "Type", "Area", "Change", "Before", "After", "IP"].map(function (h) { return el("th", { style: "padding:10px 12px", text: h }); })
+  )));
+  logRows.forEach(function (r) {
+    if (kind && r.kind !== kind) return;
+    if (q && (r.area + " " + (r.old_val || "") + " " + (r.new_val || "")).toLowerCase().indexOf(q) < 0) return;
+    shown++;
+    var long = "max-width:300px;white-space:pre-wrap;word-break:break-word";
+    tb.appendChild(el("tr", null,
+      el("td", { class: "nw", text: new Date(r.at).toLocaleString("en-GB", { timeZone: "Africa/Cairo", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) }),
+      el("td", { text: r.kind === "site" ? "Website" : r.kind === "roles" ? "Team" : "Highlight" }),
+      el("td", { style: long, text: String(r.area).replace(/^\./, "") }),
+      el("td", { text: r.action }),
+      el("td", { style: long, text: r.old_val === null ? "" : r.old_val }),
+      el("td", { style: long, text: r.new_val === null ? "" : r.new_val }),
+      el("td", { class: "nw", text: r.ip || "" })));
+  });
+  host.appendChild(tb);
+  $("logShown").textContent = num(shown) + " of " + num(logRows.length) + " changes";
+}
+function lockLogs(msg) {
+  logPw = null; logRows = [];
+  $("ltab").textContent = "";
+  $("logDash").hidden = true; $("logLogin").hidden = false; $("logErr").textContent = msg || "";
+  syncActions(); touch();
+}
 /* ---------- auto-lock after 10 idle minutes ---------- */
 function touch() {
   clearTimeout(idle);
-  if (rpass || mailPw) idle = setTimeout(function () {
+   if (rpass || mailPw || logPw) idle = setTimeout(function () {
     var m = "Locked after 10 minutes without use.";
     if (rpass) lockRes(m);
     if (mailPw) lockMail(m);
+    if (logPw) lockLogs(m);
   }, 10 * 60 * 1000);
 }
 function lockRes(msg) {
@@ -1471,13 +1561,25 @@ $("resForm").addEventListener("submit", function (ev) {
 $("refresh").addEventListener("click", function () {
   if (tab === "overview") load(false);
   else if (tab === "mail") { if (!$("mThread").hidden) closeThread(); loadInbox(true, false); }
+  else if (tab === "logs") loadLogs(false);
   else loadRes(false);
 });
 $("out").addEventListener("click", function () {
   if (tab === "overview") { pass = null; byDay = {}; $("dash").hidden = true; $("login").hidden = false; $("loginErr").textContent = ""; syncActions(); }
   else if (tab === "mail") lockMail("");
+  else if (tab === "logs") lockLogs("");
   else lockRes("");
 });
+
+/* logs */
+$("logForm").addEventListener("submit", function (ev) {
+  ev.preventDefault();
+  var v = $("lpw").value; if (!v) return;
+  logPw = v; $("logErr").textContent = "Checking…"; $("lgo").disabled = true;
+  loadLogs(true).then(function () { $("lgo").disabled = false; if (logPw) { $("lpw").value = ""; $("logErr").textContent = ""; } });
+});
+$("lq").addEventListener("input", renderLogs);
+$("lkind").addEventListener("change", renderLogs);
 
 /* mail */
 $("mailForm").addEventListener("submit", function (ev) {
@@ -1534,7 +1636,7 @@ $("psAllMsa").addEventListener("click", function () { rowsPdf("msa"); });
 $("psAllOut").addEventListener("click", function () { rowsPdf("out"); });
 $("wdMsa").addEventListener("click", function () { rowsDoc("msa"); });
 $("wdOut").addEventListener("click", function () { rowsDoc("out"); });
-  ["click", "keydown", "input"].forEach(function (e) { $("viewResponses").addEventListener(e, touch); $("viewMail").addEventListener(e, touch); });
+  ["click", "keydown", "input"].forEach(function (e) { $("viewResponses").addEventListener(e, touch); $("viewMail").addEventListener(e, touch); $("viewLogs").addEventListener(e, touch); });
 
 showTab(tabFromHash());
 })();
