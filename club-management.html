@@ -178,7 +178,6 @@ dialog .meta{color:var(--mut);font-size:13px;margin:0 0 4px}
     </nav>
     <div class="actions" id="actions" hidden>
       <button class="btn sec sm" id="awBtn" type="button">Awards</button>
-      <button class="btn sec sm" id="awBtn" type="button">Awards</button>
       <button class="btn sec sm" id="refresh" type="button">Refresh</button>
       <button class="btn sec sm" id="out" type="button">Sign out</button>
     </div>
@@ -220,7 +219,7 @@ dialog .meta{color:var(--mut);font-size:13px;margin:0 0 4px}
     <div class="row">
       <span class="gap"></span>
       <button class="btn sec" id="comCancel" type="button">Cancel</button>
-      <button class="btn" id="comSave" type="submit">Save</button>
+      <button class="btn" type="submit">Save</button>
     </div>
   </form>
 </dialog>
@@ -248,7 +247,7 @@ dialog .meta{color:var(--mut);font-size:13px;margin:0 0 4px}
       <button class="btn sec" id="memTerm" type="button">Terminate</button>
       <span class="gap"></span>
       <button class="btn sec" id="memCancel" type="button">Cancel</button>
-      <button class="btn" id="comSave" type="submit">Save</button>
+      <button class="btn" type="submit">Save</button>
     </div>
   </form>
 </dialog>
@@ -540,7 +539,6 @@ function renderMain() {
     host.appendChild(el("div", { class: "grp off", text: "Terminated — " + off.length }));
     host.appendChild(el("div", { class: "cards" }, off.map(function (m) { return card(m, false); })));
   }
-  updateRoleList();
 }
 
 function renderSearch(host) {
@@ -920,6 +918,7 @@ $("comForm").addEventListener("submit", function (ev) {
     else { if (!comById(c.id)) committees.push(c); sel = c.id; }
     $("comDlg").close(); render();
   }).catch(fail).then(function () { $("comSave").disabled = false; });
+});
 
 $("memCom").addEventListener("change", function () {
   var cid = this.value || null, cur = $("memPos").value;
