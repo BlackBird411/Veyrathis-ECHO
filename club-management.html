@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<title>Club management · TEDxMSAUniversity</title>
+<link rel="icon" href="/favicon.ico" sizes="48x48">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml" sizes="any">
+<style>
+:root{--red:#e62b1e;--bg0:#1e1f22;--bg1:#2b2d31;--bg2:#313338;--bg3:#3a3c43;--txt:#f2f3f5;--mut:#a3a6ad;--line:#3f4147;--ok:#3ba55d}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;color:var(--txt);background:var(--bg2);line-height:1.45;-webkit-font-smoothing:antialiased;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);min-height:100vh}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--red);outline-offset:2px}
+[hidden]{display:none!important}
+
+/* top bar */
+header{background:var(--bg0);border-bottom:1px solid #111214}
+.bar{display:flex;flex-wrap:wrap;align-items:center;gap:10px 22px;padding:12px 18px}
+.brand{font-weight:800;font-size:18px;letter-spacing:-.01em}
+.brand b{color:var(--red)}
+.brand span{color:var(--mut);font-weight:600;font-size:14px;margin-left:8px}
+.links{display:flex;gap:18px;margin-right:auto}
+.links a{color:var(--mut);text-decoration:none;font-weight:700;font-size:14px;padding:4px 0;border-bottom:2px solid transparent}
+.links a[aria-current="page"]{color:var(--txt);border-bottom-color:var(--red)}
+.actions{display:flex;gap:8px}
+.btn{border:0;background:var(--red);color:#fff;padding:8px 14px;border-radius:4px;font-weight:700;font-size:14px;cursor:pointer}
+.btn:hover{filter:brightness(1.1)}
+.btn.sec{background:var(--bg3);color:var(--txt)}
+.btn.sec:hover{background:#464952;filter:none}
+.btn.warn{background:#7d1f19}
+.btn.sm{padding:5px 10px;font-size:13px}
+.btn:disabled{opacity:.5;cursor:default}
+
+/* login */
+.login{max-width:400px;margin:0 auto;padding:72px 20px 96px}
+.login h1{font-size:32px;line-height:1.1;letter-spacing:-.02em;margin:0 0 10px}
+.login p{color:var(--mut);margin:0 0 22px}
+.login label{display:block;font-weight:700;font-size:14px;margin-bottom:6px}
+.login input{width:100%;padding:11px 13px;border:1px solid var(--line);background:var(--bg0);border-radius:4px;margin-bottom:14px;font-size:16px}
+.err{color:#ff8a80;font-weight:700;min-height:1.5em;margin:12px 0 0}
+
+/* stats strip */
+.stats{display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:14px 18px;background:var(--bg1);border-bottom:1px solid var(--line)}
+.pill{display:flex;flex-direction:column;background:var(--bg0);border-radius:6px;padding:7px 14px;min-width:110px}
+.pill b{font-size:22px;line-height:1.1;font-variant-numeric:tabular-nums}
+.pill small{color:var(--mut);font-size:12px;font-weight:700;letter-spacing:.03em;text-transform:uppercase}
+.pill.red b{color:#ff6b60}
+.search{margin-left:auto;flex:1 1 260px;max-width:420px;position:relative}
+.search input{width:100%;padding:10px 34px 10px 12px;background:var(--bg0);border:1px solid var(--line);border-radius:6px;font-size:15px}
+.search button{position:absolute;right:4px;top:50%;transform:translateY(-50%);border:0;background:transparent;color:var(--mut);font-size:20px;line-height:1;cursor:pointer;padding:4px 8px}
+
+/* layout */
+.layout{display:grid;grid-template-columns:260px minmax(0,1fr);min-height:calc(100vh - 150px)}
+aside{background:var(--bg1);padding:14px 10px;border-right:1px solid var(--line)}
+aside h2{margin:2px 8px 8px;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--mut)}
+.chan{display:flex;align-items:center;gap:8px;width:100%;text-align:left;border:0;background:transparent;color:var(--mut);padding:8px 10px;border-radius:5px;cursor:pointer;font-weight:700;font-size:15px;margin-bottom:2px}
+.chan .hash{color:#6d6f78;font-weight:400}
+.chan .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chan .ct{background:var(--bg0);color:var(--mut);border-radius:10px;padding:1px 8px;font-size:12px;font-variant-numeric:tabular-nums}
+.chan:hover{background:var(--bg3);color:var(--txt)}
+.chan.on{background:#43454d;color:#fff}
+.chan.on .ct{background:var(--red);color:#fff}
+.chan.drop{outline:2px dashed var(--red);outline-offset:-2px;background:#4a2b29;color:#fff}
+.chan.add{color:var(--ok);margin-top:10px}
+.sep{height:1px;background:var(--line);margin:10px 6px}
+
+main{padding:20px 22px 80px;min-width:0}
+.head{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;margin-bottom:6px}
+.head h1{font-size:28px;line-height:1.15;letter-spacing:-.02em;margin:0}
+.head .sub{color:var(--mut);font-size:15px;flex-basis:100%;margin:-4px 0 0}
+.head .tools{display:flex;gap:8px;margin-left:auto}
+
+.addrow{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0 8px;padding:12px;background:var(--bg1);border-radius:8px}
+.addrow input{padding:9px 11px;background:var(--bg0);border:1px solid var(--line);border-radius:5px;font-size:15px;min-width:0}
+.addrow input.nm{flex:2 1 200px}
+.addrow input.rl{flex:1 1 150px}
+
+.grp{margin:26px 0 10px;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--mut);font-weight:800}
+.grp.off{color:#ff8a80}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px}
+.card{display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--bg1);border:1px solid transparent;border-radius:8px;cursor:grab;user-select:none;-webkit-user-select:none}
+.card:hover{background:var(--bg0);border-color:var(--line)}
+.card.drag{opacity:.4}
+.card .av{flex:none;width:42px;height:42px;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:15px;color:#fff}
+.card .tx{min-width:0}
+.card .nm{font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.card .rl{color:var(--mut);font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.card .cm{display:inline-block;margin-top:3px;font-size:11px;font-weight:700;background:var(--bg3);border-radius:4px;padding:1px 7px;color:#d6d8dc}
+.card.off{opacity:.6}
+.card.off .nm{text-decoration:line-through;text-decoration-color:var(--red)}
+.card.off .av{filter:grayscale(1)}
+.card .tag{margin-left:auto;flex:none;font-size:11px;font-weight:800;color:#ff8a80;border:1px solid #7d1f19;border-radius:4px;padding:1px 6px}
+.empty{color:var(--mut);padding:30px 0}
+
+/* dialogs */
+dialog{border:1px solid var(--line);background:var(--bg1);color:var(--txt);border-radius:10px;padding:0;width:min(440px,92vw)}
+dialog::backdrop{background:rgba(0,0,0,.6)}
+dialog form{padding:22px}
+dialog h3{margin:0 0 14px;font-size:20px}
+dialog label{display:block;font-weight:700;font-size:13px;margin:12px 0 5px;color:var(--mut)}
+dialog input,dialog select{width:100%;padding:10px 12px;background:var(--bg0);border:1px solid var(--line);border-radius:5px;font-size:15px}
+dialog .row{display:flex;flex-wrap:wrap;gap:8px;margin-top:20px}
+dialog .row .gap{flex:1}
+dialog .meta{color:var(--mut);font-size:13px;margin:0 0 4px}
+
+#toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:#111214;color:#fff;border:1px solid var(--line);padding:10px 16px;border-radius:6px;font-weight:700;font-size:14px;opacity:0;pointer-events:none;transition:opacity .2s;max-width:90vw;z-index:50}
+#toast.show{opacity:1}
+#toast.err{border-color:var(--red);color:#ff8a80}
+
+@media (max-width:780px){
+  .layout{grid-template-columns:1fr}
+  aside{display:flex;gap:6px;overflow-x:auto;border-right:0;border-bottom:1px solid var(--line);padding:10px}
+  aside h2,.sep{display:none}
+  .chan{width:auto;flex:none;margin:0;background:var(--bg0)}
+  .chan.add{margin:0}
+  main{padding:16px 14px 80px}
+  .search{max-width:none;flex-basis:100%;margin-left:0}
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="bar">
+    <div class="brand"><b>TEDx</b>MSAUniversity<span>Club management</span></div>
+    <nav class="links" aria-label="Board pages">
+      <a href="/analytics">Analytics</a>
+      <a href="/club-management" aria-current="page">Club</a>
+    </nav>
+    <div class="actions" id="actions" hidden>
+      <button class="btn sec sm" id="refresh" type="button">Refresh</button>
+      <button class="btn sec sm" id="out" type="button">Sign out</button>
+    </div>
+  </div>
+</header>
+
+<section class="login" id="login">
+  <h1>Club management</h1>
+  <p>Enter the board password to manage committees and members.</p>
+  <form id="loginForm" autocomplete="off">
+    <label for="pw">Board password</label>
+    <input id="pw" type="password" autocomplete="off" required>
+    <button class="btn" id="go" type="submit">Open</button>
+    <p class="err" id="loginErr" role="alert"></p>
+  </form>
+</section>
+
+<div id="app" hidden>
+  <section class="stats" aria-label="Totals">
+    <div class="pill"><b id="stClub">0</b><small>Club members</small></div>
+    <div class="pill"><b id="stCom">0</b><small>Committees</small></div>
+    <div class="pill red"><b id="stOff">0</b><small>Terminated</small></div>
+    <div class="search">
+      <input id="q" type="search" placeholder="Search members, roles or committees" autocomplete="off" aria-label="Search members">
+      <button id="qx" type="button" aria-label="Clear search" hidden>&times;</button>
+    </div>
+  </section>
+  <div class="layout">
+    <aside id="side" aria-label="Committees"></aside>
+    <main id="main"></main>
+  </div>
+</div>
+
+<dialog id="comDlg">
+  <form id="comForm" autocomplete="off">
+    <h3 id="comTitle">New committee</h3>
+    <label for="comName">Committee name</label>
+    <input id="comName" maxlength="60" required>
+    <div class="row">
+      <span class="gap"></span>
+      <button class="btn sec" id="comCancel" type="button">Cancel</button>
+      <button class="btn" type="submit">Save</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="memDlg">
+  <form id="memForm" autocomplete="off">
+    <h3>Member</h3>
+    <p class="meta" id="memMeta"></p>
+    <label for="memName">Name</label>
+    <input id="memName" maxlength="80" required>
+    <label for="memRole">Role in committee</label>
+    <input id="memRole" maxlength="60" list="roleList" placeholder="Head, Vice head, Member…">
+    <datalist id="roleList"></datalist>
+    <label for="memCom">Committee</label>
+    <select id="memCom"></select>
+    <div class="row">
+      <button class="btn warn" id="memDel" type="button">Delete</button>
+      <button class="btn sec" id="memTerm" type="button">Terminate</button>
+      <span class="gap"></span>
+      <button class="btn sec" id="memCancel" type="button">Cancel</button>
+      <button class="btn" type="submit">Save</button>
+    </div>
+  </form>
+</dialog>
+
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function () {
+"use strict";
+
+var SB_URL = "https://fdiounclxvaescxfkcnt.supabase.co";
+var SB_KEY = "sb_publishable_pTmK9ZuSQHh915Ke4IAhIA_ib2ip80H";   // public key, same one the website uses
+
+var pw = null, committees = [], members = [], sel = null, q = "", idle = null, dragId = null, editId = null, comEditId = null;
+
+function $(id) { return document.getElementById(id); }
+function num(n) { return Number(n).toLocaleString("en-US"); }
+
+/* small DOM builder: text always goes in as text, never as HTML */
+function add(e, c) {
+  if (c === null || c === undefined || c === false) return;
+  if (Array.isArray(c)) { c.forEach(function (x) { add(e, x); }); return; }
+  e.appendChild(typeof c === "object" ? c : document.createTextNode(String(c)));
+}
+function el(tag, attrs) {
+  var e = document.createElement(tag), i, k;
+  for (k in (attrs || {})) {
+    if (k === "class") e.className = attrs[k];
+    else if (k === "text") e.textContent = attrs[k];
+    else if (k === "on") { for (var ev in attrs.on) e.addEventListener(ev, attrs.on[ev]); }
+    else if (attrs[k] !== null && attrs[k] !== undefined && attrs[k] !== false) e.setAttribute(k, attrs[k]);
+  }
+  for (i = 2; i < arguments.length; i++) add(e, arguments[i]);
+  return e;
+}
+
+var tt;
+function toast(m, err) {
+  var t = $("toast");
+  t.textContent = m; t.className = "show" + (err ? " err" : "");
+  clearTimeout(tt); tt = setTimeout(function () { t.className = ""; }, 3800);
+}
+
+/* ---------- api ---------- */
+function rpc(name, body) {
+  return fetch(SB_URL + "/rest/v1/rpc/" + name, {
+    method: "POST", headers: { apikey: SB_KEY, "Content-Type": "application/json" },
+    body: JSON.stringify(body)
+  }).then(function (r) {
+    return r.text().then(function (t) {
+      var j = null; try { j = t ? JSON.parse(t) : null; } catch (e) {}
+      if (!r.ok) throw new Error((j && (j.message || j.hint)) || "Request failed");
+      return j;
+    });
+  });
+}
+function op(name, d) { return rpc("club_op", { p: pw, op: name, d: d }); }
+function fail(e) {
+  if (/password/i.test(e.message)) lock("Wrong password. Try again.");
+  else toast(e.message, true);
+}
+
+/* ---------- data helpers ---------- */
+function isActive(m) { return m.status !== "terminated"; }
+function key(m) { return m.committee_id || "none"; }
+function comById(id) { for (var i = 0; i < committees.length; i++) if (committees[i].id === id) return committees[i]; return null; }
+function comName(id) { var c = id ? comById(id) : null; return c ? c.name : "Unassigned"; }
+function memById(id) { for (var i = 0; i < members.length; i++) if (members[i].id === id) return members[i]; return null; }
+function activeCount(k) { return members.filter(function (m) { return isActive(m) && key(m) === k; }).length; }
+function roleLabel(m) { return (m.role || "").trim() || "Member"; }
+function roleRank(r) {
+  r = r.toLowerCase();
+  if (r === "member") return 3;
+  if (/vice|co-|assistant|deputy/.test(r)) return 1;
+  if (/president|chair|head|lead|director|manager|organi[sz]er|captain/.test(r)) return 0;
+  return 2;
+}
+function groupByRole(list) {
+  var map = {}, order = [];
+  list.forEach(function (m) {
+    var l = roleLabel(m), k = l.toLowerCase();
+    if (!map[k]) { map[k] = { role: l, items: [] }; order.push(k); }
+    map[k].items.push(m);
+  });
+  return order.map(function (k) { return map[k]; }).sort(function (a, b) {
+    return roleRank(a.role) - roleRank(b.role) || a.role.localeCompare(b.role);
+  });
+}
+function byName(a, b) { return a.name.localeCompare(b.name); }
+function initials(n) {
+  var p = n.trim().split(/\s+/);
+  return ((p[0] || "?").charAt(0) + (p.length > 1 ? p[p.length - 1].charAt(0) : "")).toUpperCase();
+}
+function hue(n) { var h = 0, i; for (i = 0; i < n.length; i++) h = (h * 31 + n.charCodeAt(i)) % 360; return h; }
+
+/* ---------- render ---------- */
+function render() { renderStats(); renderSide(); renderMain(); }
+
+function renderStats() {
+  var act = members.filter(isActive).length;
+  $("stClub").textContent = num(act);
+  $("stCom").textContent = num(committees.length);
+  $("stOff").textContent = num(members.length - act);
+}
+
+function chan(k, name, count) {
+  var b = el("button", { class: "chan" + (!q && sel === k ? " on" : ""), type: "button", "data-k": k, on: {
+    click: function () { q = ""; $("q").value = ""; sel = k; render(); },
+    dragover: function (e) { if (dragId) { e.preventDefault(); b.classList.add("drop"); } },
+    dragleave: function () { b.classList.remove("drop"); },
+    drop: function (e) {
+      e.preventDefault(); b.classList.remove("drop");
+      if (dragId) moveMember(dragId, k === "none" ? null : k);
+    }
+  } }, el("span", { class: "hash", text: "#" }), el("span", { class: "nm", text: name }), el("span", { class: "ct", text: num(count) }));
+  return b;
+}
+function renderSide() {
+  var s = $("side"); s.textContent = "";
+  s.appendChild(el("h2", { text: "Committees" }));
+  committees.forEach(function (c) { s.appendChild(chan(c.id, c.name, activeCount(c.id))); });
+  s.appendChild(el("div", { class: "sep" }));
+  s.appendChild(chan("none", "Unassigned", activeCount("none")));
+  s.appendChild(el("button", { class: "chan add", type: "button", on: { click: function () { openCommittee(null); } } },
+    el("span", { class: "hash", text: "+" }), el("span", { class: "nm", text: "New committee" })));
+}
+
+function card(m, showCom) {
+  var c = el("div", { class: "card" + (isActive(m) ? "" : " off"), draggable: "true", tabindex: "0", "data-id": m.id, on: {
+    click: function () { openMember(m.id); },
+    keydown: function (e) { if (e.key === "Enter") openMember(m.id); },
+    dragstart: function (e) {
+      dragId = m.id; c.classList.add("drag");
+      if (e.dataTransfer) { try { e.dataTransfer.setData("text/plain", m.id); e.dataTransfer.effectAllowed = "move"; } catch (x) {} }
+    },
+    dragend: function () { dragId = null; c.classList.remove("drag"); }
+  } },
+    el("div", { class: "av", style: "background:hsl(" + hue(m.name) + " 45% 40%)", text: initials(m.name) }),
+    el("div", { class: "tx" },
+      el("div", { class: "nm", text: m.name }),
+      el("div", { class: "rl", text: roleLabel(m) }),
+      showCom ? el("span", { class: "cm", text: "# " + comName(m.committee_id) }) : null),
+    isActive(m) ? null : el("span", { class: "tag", text: "Terminated" }));
+  return c;
+}
+
+function renderMain() {
+  var host = $("main"); host.textContent = "";
+  $("qx").hidden = !q;
+  if (q) return renderSearch(host);
+
+  if (!committees.length && sel !== "none") sel = "none";
+  if (sel !== "none" && !comById(sel)) sel = committees.length ? committees[0].id : "none";
+
+  var c = sel === "none" ? null : comById(sel);
+  var list = members.filter(function (m) { return key(m) === sel; });
+  var act = list.filter(isActive), off = list.filter(function (m) { return !isActive(m); }).sort(byName);
+
+  var head = el("div", { class: "head" },
+    el("h1", { text: c ? c.name : "Unassigned" }),
+    el("div", { class: "tools" }, c ? [
+      el("button", { class: "btn sec sm", type: "button", text: "Rename", on: { click: function () { openCommittee(c.id); } } }),
+      el("button", { class: "btn warn sm", type: "button", text: "Delete", on: { click: function () { deleteCommittee(c.id); } } })
+    ] : null),
+    el("p", { class: "sub", text: num(act.length) + " active member" + (act.length === 1 ? "" : "s") + (off.length ? " · " + num(off.length) + " terminated" : "") }));
+  host.appendChild(head);
+
+  if (!committees.length && !members.length) {
+    host.appendChild(el("p", { class: "empty", text: "No committees yet. Use “New committee” on the left to create the first one." }));
+  }
+
+  var nm = el("input", { class: "nm", placeholder: "Member name", maxlength: "80", "aria-label": "Member name" });
+  var rl = el("input", { class: "rl", placeholder: "Role (optional)", maxlength: "60", list: "roleList", "aria-label": "Role" });
+  var form = el("form", { class: "addrow", autocomplete: "off", on: { submit: function (e) {
+    e.preventDefault();
+    var name = nm.value.trim(); if (!name) { nm.focus(); return; }
+    var role = rl.value.trim();
+    op("member_add", { name: name, role: role, committee_id: sel === "none" ? null : sel }).then(function (m) {
+      members.push(m); render();
+      var again = $("main").querySelector(".addrow .nm"); if (again) again.focus();
+      var r2 = $("main").querySelector(".addrow .rl"); if (r2) r2.value = role;
+    }).catch(fail);
+  } } }, nm, rl, el("button", { class: "btn", type: "submit", text: "Add member" }));
+  host.appendChild(form);
+
+  groupByRole(act.sort(byName)).forEach(function (g) {
+    host.appendChild(el("div", { class: "grp", text: g.role + " — " + g.items.length }));
+    host.appendChild(el("div", { class: "cards" }, g.items.map(function (m) { return card(m, false); })));
+  });
+  if (!act.length && !off.length) host.appendChild(el("p", { class: "empty", text: "No members here yet. Add the first one above, or drag a card onto this committee." }));
+  if (off.length) {
+    host.appendChild(el("div", { class: "grp off", text: "Terminated — " + off.length }));
+    host.appendChild(el("div", { class: "cards" }, off.map(function (m) { return card(m, false); })));
+  }
+  updateRoleList();
+}
+
+function renderSearch(host) {
+  var t = q.toLowerCase();
+  var res = members.filter(function (m) {
+    return (m.name + " " + roleLabel(m) + " " + comName(m.committee_id)).toLowerCase().indexOf(t) >= 0;
+  }).sort(function (a, b) { return (isActive(b) - isActive(a)) || byName(a, b); });
+  host.appendChild(el("div", { class: "head" },
+    el("h1", { text: "Search" }),
+    el("p", { class: "sub", text: num(res.length) + " result" + (res.length === 1 ? "" : "s") + " for “" + q + "”, across all committees" })));
+  if (!res.length) { host.appendChild(el("p", { class: "empty", text: "Nobody matches that." })); return; }
+  host.appendChild(el("div", { class: "cards", style: "margin-top:16px" }, res.map(function (m) { return card(m, true); })));
+}
+
+function updateRoleList() {
+  var seen = {}, dl = $("roleList"); dl.textContent = "";
+  ["Head", "Vice head", "Member"].concat(members.map(function (m) { return (m.role || "").trim(); })).forEach(function (r) {
+    if (r && !seen[r.toLowerCase()]) { seen[r.toLowerCase()] = 1; dl.appendChild(el("option", { value: r })); }
+  });
+}
+
+/* ---------- actions ---------- */
+function moveMember(id, cid) {
+  var m = memById(id); if (!m || (m.committee_id || null) === cid) return;
+  op("member_edit", { id: id, committee_id: cid }).then(function (u) {
+    Object.assign(m, u); render(); toast(m.name + " moved to " + comName(cid) + ".");
+  }).catch(fail);
+}
+
+function openCommittee(id) {
+  comEditId = id;
+  $("comTitle").textContent = id ? "Rename committee" : "New committee";
+  $("comName").value = id ? comById(id).name : "";
+  $("comDlg").showModal(); $("comName").focus();
+}
+function deleteCommittee(id) {
+  var c = comById(id), n = members.filter(function (m) { return m.committee_id === id; }).length;
+  if (!confirm("Delete “" + c.name + "”?" + (n ? " Its " + n + " member" + (n === 1 ? "" : "s") + " will move to Unassigned." : ""))) return;
+  op("committee_delete", { id: id }).then(function () {
+    committees = committees.filter(function (x) { return x.id !== id; });
+    members.forEach(function (m) { if (m.committee_id === id) m.committee_id = null; });
+    sel = committees.length ? committees[0].id : "none"; render(); toast("Committee deleted.");
+  }).catch(fail);
+}
+
+function openMember(id) {
+  var m = memById(id); if (!m) return;
+  editId = id;
+  $("memName").value = m.name; $("memRole").value = m.role || "";
+  var s = $("memCom"); s.textContent = "";
+  committees.forEach(function (c) { s.appendChild(el("option", { value: c.id, text: c.name })); });
+  s.appendChild(el("option", { value: "", text: "Unassigned" }));
+  s.value = m.committee_id || "";
+  $("memMeta").textContent = isActive(m) ? "Active member" : "Terminated";
+  $("memTerm").textContent = isActive(m) ? "Terminate" : "Reinstate";
+  updateRoleList();
+  $("memDlg").showModal();
+}
+
+/* ---------- session ---------- */
+function load(fromLogin) {
+  return rpc("club_load", { p: pw }).then(function (d) {
+    committees = d.committees || []; members = d.members || [];
+    if (!sel || (sel !== "none" && !comById(sel))) sel = committees.length ? committees[0].id : "none";
+    $("login").hidden = true; $("app").hidden = false; $("actions").hidden = false;
+    render(); touch();
+  }).catch(function (e) {
+    if (/password/i.test(e.message)) lock("Wrong password. Try again.");
+    else if (fromLogin) { pw = null; $("loginErr").textContent = "Could not load: " + e.message; }
+    else toast(e.message, true);
+  });
+}
+function lock(msg) {
+  pw = null; committees = []; members = []; sel = null; q = ""; clearTimeout(idle);
+  $("q").value = ""; $("side").textContent = ""; $("main").textContent = "";
+  $("app").hidden = true; $("actions").hidden = true; $("login").hidden = false; $("loginErr").textContent = msg || "";
+  ["comDlg", "memDlg"].forEach(function (d) { if ($(d).open) $(d).close(); });
+}
+function touch() {
+  clearTimeout(idle);
+  if (pw) idle = setTimeout(function () { lock("Locked after 10 minutes without use."); }, 10 * 60 * 1000);
+}
+
+/* ---------- events ---------- */
+$("loginForm").addEventListener("submit", function (ev) {
+  ev.preventDefault();
+  var v = $("pw").value; if (!v) return;
+  pw = v; $("loginErr").textContent = "Checking…"; $("go").disabled = true;
+  load(true).then(function () { $("go").disabled = false; if (pw) { $("pw").value = ""; $("loginErr").textContent = ""; } });
+});
+$("refresh").addEventListener("click", function () { load(false); });
+$("out").addEventListener("click", function () { lock(""); });
+$("q").addEventListener("input", function () { q = this.value.trim(); renderMain(); renderSide(); });
+$("qx").addEventListener("click", function () { q = ""; $("q").value = ""; render(); });
+
+$("comCancel").addEventListener("click", function () { $("comDlg").close(); });
+$("comForm").addEventListener("submit", function (ev) {
+  ev.preventDefault();
+  var name = $("comName").value.trim(); if (!name) return;
+  var p = comEditId ? op("committee_rename", { id: comEditId, name: name }) : op("committee_add", { name: name });
+  p.then(function (c) {
+    if (comEditId) { var x = comById(comEditId); if (x) x.name = c.name; }
+    else { committees.push(c); sel = c.id; }
+    $("comDlg").close(); render();
+  }).catch(fail);
+});
+
+$("memCancel").addEventListener("click", function () { $("memDlg").close(); });
+$("memForm").addEventListener("submit", function (ev) {
+  ev.preventDefault();
+  var m = memById(editId), name = $("memName").value.trim(); if (!m || !name) return;
+  op("member_edit", { id: editId, name: name, role: $("memRole").value.trim(), committee_id: $("memCom").value || null }).then(function (u) {
+    Object.assign(m, u); $("memDlg").close(); render();
+  }).catch(fail);
+});
+$("memTerm").addEventListener("click", function () {
+  var m = memById(editId); if (!m) return;
+  var goOff = isActive(m);
+  if (goOff && !confirm("Mark " + m.name + " as terminated? They stop counting toward the totals.")) return;
+  op("member_edit", { id: editId, status: goOff ? "terminated" : "active" }).then(function (u) {
+    Object.assign(m, u); $("memDlg").close(); render();
+    toast(goOff ? m.name + " terminated." : m.name + " reinstated.");
+  }).catch(fail);
+});
+$("memDel").addEventListener("click", function () {
+  var m = memById(editId); if (!m) return;
+  if (!confirm("Delete " + m.name + " permanently? To keep a record, use Terminate instead.")) return;
+  op("member_delete", { id: editId }).then(function () {
+    members = members.filter(function (x) { return x.id !== m.id; });
+    $("memDlg").close(); render(); toast("Member deleted.");
+  }).catch(fail);
+});
+
+["click", "keydown", "input"].forEach(function (e) { document.addEventListener(e, touch); });
+})();
+</script>
+</body>
+</html>
