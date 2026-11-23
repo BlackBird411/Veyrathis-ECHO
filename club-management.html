@@ -117,6 +117,29 @@ main{padding:0 0 80px;min-width:0}
 body.view .card{cursor:pointer}
 body.view .brand span::after{content:"  \00B7  view only";color:var(--red);font-weight:800;white-space:pre}
 
+/* multi-select + right-click menu */
+.card{position:relative}
+.card.sel{border-color:var(--red);background:var(--redbg);box-shadow:0 0 0 1px var(--red)}
+.card.sel::after{content:"\2713";position:absolute;top:8px;right:8px;width:20px;height:20px;border-radius:50%;background:var(--red);color:#fff;font-size:12px;font-weight:800;display:grid;place-items:center}
+body.picking .card{cursor:pointer}
+#pickbar{position:fixed;top:calc(10px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);z-index:45;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:6px 8px;max-width:94vw;background:var(--ink);color:#fff;border-radius:8px;border-bottom:3px solid var(--red);padding:8px 10px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
+#pickbar b{font-size:14px;padding:0 6px;font-variant-numeric:tabular-nums}
+#pickbar .btn.sec{background:transparent;color:#eee;border-color:#555}
+#pickbar .btn.sec:hover{background:#222;border-color:#999}
+.ctx{position:fixed;z-index:60;min-width:190px;background:#fff;border:1px solid var(--line2);border-radius:6px;box-shadow:0 12px 36px rgba(10,10,10,.28);padding:5px;font-size:14px}
+.ctx .ch{padding:6px 10px 7px;margin-bottom:4px;max-width:260px;border-bottom:1px solid var(--line);font-size:12px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--mut);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ctx .ci{position:relative;display:flex;align-items:center;gap:14px;padding:7px 10px;border-radius:4px;font-weight:600;white-space:nowrap;cursor:pointer;user-select:none}
+.ctx .ci:hover,.ctx .ci.open{background:var(--soft)}
+.ctx .ci.dg{color:var(--red-d)}
+.ctx .ci.dg:hover{background:var(--redbg)}
+.ctx .ci.off{opacity:.45;pointer-events:none}
+.ctx .ci .t{flex:1;overflow:hidden;text-overflow:ellipsis}
+.ctx .ci .ar{color:var(--mut)}
+.ctx .sp{height:1px;background:var(--line);margin:4px 2px}
+.ctx .sub{display:none;position:absolute;left:100%;top:-6px;margin-left:2px;min-width:180px;max-height:70vh;overflow:auto;background:#fff;border:1px solid var(--line2);border-radius:6px;box-shadow:0 12px 36px rgba(10,10,10,.28);padding:5px;z-index:1}
+.ctx .ci:hover>.sub,.ctx .ci.open>.sub{display:block}
+.ctx.flip .sub{left:auto;right:100%;margin:0 2px 0 0}
+
 /* dialogs */
 dialog{border:0;background:#fff;color:var(--ink);border-radius:8px;padding:0;width:min(460px,92vw);box-shadow:0 24px 70px rgba(10,10,10,.3)}
 dialog::backdrop{background:rgba(10,10,10,.5);backdrop-filter:blur(2px)}
@@ -390,6 +413,23 @@ body.cmdopen main{padding-bottom:330px}
   </form>
 </dialog>
 
+<div id="pickbar" role="toolbar" aria-label="Selected members" hidden></div>
+
+<dialog id="bulkDlg">
+  <form id="bulkForm" autocomplete="off">
+    <h3 id="bulkTitle"></h3>
+    <p class="meta" id="bulkMeta"></p>
+    <label id="bulkLbl" for="bulkText"></label>
+    <input id="bulkText" maxlength="500">
+    <p class="err" id="bulkErr" role="alert"></p>
+    <div class="row">
+      <span class="gap"></span>
+      <button class="btn sec" id="bulkCancel" type="button">Cancel</button>
+      <button class="btn" id="bulkGo" type="submit">Go</button>
+    </div>
+  </form>
+</dialog>
+
 <div id="cmdbar" hidden>
   <div id="cmdout" aria-live="polite"></div>
   <div class="cmdrow">
@@ -527,7 +567,7 @@ function initials(n) {
 function hue(n) { var h = 0, i; for (i = 0; i < n.length; i++) h = (h * 31 + n.charCodeAt(i)) % 360; return h; }
 
 /* ---------- render ---------- */
-function render() { renderStats(); renderSide(); renderMain(); }
+function render() { renderStats(); renderSide(); renderMain(); renderPickBar(); }
 
 function renderStats() {
   var act = members.filter(isActive).length;
@@ -543,7 +583,7 @@ function chan(k, name, count) {
     dragleave: function () { b.classList.remove("drop"); },
     drop: function (e) {
       e.preventDefault(); b.classList.remove("drop");
-      if (dragId) moveMember(dragId, k === "none" ? null : k);
+      if (dragId) moveMembers(picked[dragId] ? pickedIds() : [dragId], k === "none" ? null : k);
     }
   } }, el("span", { class: "hash", text: "#" }), el("span", { class: "nm", text: name }), el("span", { class: "ct", text: num(count) }));
   return b;
@@ -560,9 +600,13 @@ function renderSide() {
 
 function card(m, showCom) {
   var wn = liveWarns(m.id).length;
-  var c = el("div", { class: "card" + (isActive(m) ? "" : " off"), draggable: canEdit() ? "true" : null, tabindex: "0", "data-id": m.id, on: {
-    click: function () { openMember(m.id); },
-    keydown: function (e) { if (e.key === "Enter") openMember(m.id); },
+  var c = el("div", { class: "card" + (isActive(m) ? "" : " off") + (picked[m.id] ? " sel" : ""), draggable: canEdit() ? "true" : null, tabindex: "0", "data-id": m.id, on: {
+    click: function (e) { if (canEdit() && (e.shiftKey || e.ctrlKey || e.metaKey || pickedIds().length)) pickToggle(m.id); else openMember(m.id); },
+    keydown: function (e) {
+      if (e.key === " " && canEdit()) { e.preventDefault(); pickToggle(m.id); }
+      else if (e.key === "Enter") { if (canEdit() && pickedIds().length) pickToggle(m.id); else openMember(m.id); }
+    },
+    contextmenu: function (e) { cardMenu(e, m, c); },
     dragstart: function (e) {
       dragId = m.id; c.classList.add("drag");
       if (e.dataTransfer) { try { e.dataTransfer.setData("text/plain", m.id); e.dataTransfer.effectAllowed = "move"; } catch (x) {} }
@@ -1587,16 +1631,216 @@ $("cmdin").addEventListener("keydown", function (e) {
   });
 }
 function lock(msg) {
-  pw = null; role = null; committees = []; members = []; positions = []; awards = []; memberAwards = []; warnings = []; sel = null; q = ""; clearTimeout(idle);
+  pw = null; role = null; committees = []; members = []; positions = []; awards = []; memberAwards = []; warnings = []; sel = null; q = ""; picked = {}; ctxClose(); $("pickbar").hidden = true; clearTimeout(idle);
   document.body.classList.remove("view"); cmdReset();
   $("q").value = ""; $("side").textContent = ""; $("main").textContent = "";
   $("app").hidden = true; $("actions").hidden = true; $("login").hidden = false; $("loginErr").textContent = msg || "";
-  ["comDlg", "memDlg", "posDlg", "awDlg", "giveDlg"].forEach(function (d) { if ($(d).open) $(d).close(); });
+  ["comDlg", "memDlg", "posDlg", "awDlg", "giveDlg", "bulkDlg"].forEach(function (d) { if ($(d).open) $(d).close(); });
 }
 function touch() {
   clearTimeout(idle);
   if (pw) idle = setTimeout(function () { lock("Locked after 10 minutes without use."); }, 10 * 60 * 1000);
 }
+
+/* ---------- multi-select + right-click menu (board only) ---------- */
+/* shift/ctrl-click a card to pick it; once something is picked, a plain click picks too. Right-click opens the menu. */
+var picked = {}, selBusy = false, ctxEl = null, tempPick = false, askGo = null, askReq = false;
+
+function pickedIds() { return Object.keys(picked); }
+function pickedMembers() { return members.filter(function (m) { return picked[m.id]; }); }
+function idsOf(ms) { return ms.map(function (m) { return m.id; }); }
+function syncPicks() {
+  Array.prototype.forEach.call(document.querySelectorAll(".card[data-id]"), function (c) { c.classList.toggle("sel", !!picked[c.getAttribute("data-id")]); });
+  renderPickBar();
+}
+function pickToggle(id) { if (picked[id]) delete picked[id]; else picked[id] = true; tempPick = false; syncPicks(); }
+function pickClear() { picked = {}; tempPick = false; syncPicks(); }
+function pickShown() {
+  Array.prototype.forEach.call(document.querySelectorAll("#main .card[data-id]"), function (c) { picked[c.getAttribute("data-id")] = true; });
+  tempPick = false; syncPicks();
+}
+function skipNote(ms, act) { return ms.length > act.length ? " (" + (ms.length - act.length) + " terminated, skipped)" : ""; }
+
+/* running a bulk change: same steps and undo as the command bar, so "undo" there reverses it too */
+function bulk(steps, label, msg, clear) {
+  if (!steps.length || selBusy || cmdBusy) return;
+  selBusy = true; if (clear) picked = {}; renderPickBar();
+  pool(steps, 4).then(function (r) {
+    if (r.inv.length) cmdUndo = { inv: r.inv, label: label, par: 4 };
+    toast(r.errs.length ? r.ok + " of " + steps.length + " done, " + r.errs.length + " failed: " + uniq(r.errs).slice(0, 2).join(" | ") : msg, r.errs.length > 0);
+  }).catch(fail).then(function () { selBusy = false; render(); });
+}
+function selUndo() {
+  var u = cmdUndo; if (!u || selBusy || cmdBusy) return;
+  cmdUndo = null; selBusy = true; renderPickBar();
+  pool(u.inv, u.par).then(function (r) {
+    toast(r.errs.length ? r.ok + " reversed, " + r.errs.length + " failed: " + uniq(r.errs).slice(0, 2).join(" | ") : "Undone: " + u.label + ".", r.errs.length > 0);
+  }).catch(fail).then(function () { selBusy = false; render(); });
+}
+
+function moveMembers(ids, cid) {
+  var ms = ids.map(memById).filter(function (m) { return m && (m.committee_id || null) !== cid; });
+  if (!canEdit() || !ms.length) return;
+  bulk(ms.map(function (m) { return editStep(m, { committee_id: cid }, restore(m, true)); }), "move " + ms.length,
+    ms.length === 1 ? ms[0].name + " moved to " + comName(cid) + "." : "Moved " + ms.length + " to " + comName(cid) + ".", true);
+}
+function setRoles(ms, pid, name) {
+  var t = ms.filter(function (m) { return (m.position_id || null) !== pid; });
+  if (!t.length) { toast("Already set."); return; }
+  bulk(t.map(function (m) { return editStep(m, { position_id: pid }, restore(m, false)); }), "role " + t.length,
+    "Set " + (t.length === 1 ? t[0].name : t.length + " members") + " to " + name + ".");
+}
+function awardSel(a, ms) {
+  var act = ms.filter(isActive), todo = act.filter(function (m) { return !myAwards(m.id).some(function (g) { return g.award_id === a.id; }); });
+  if (!todo.length) { toast("Nobody selected needs " + a.name + " (already have it, or terminated)."); return; }
+  var go = function (note) { bulk(giveSteps(a, todo, note || ""), "give " + a.name, "Gave " + a.name + " to " + todo.length + "."); };
+  if (todo.length === 1) return go("");
+  bulkAsk({ title: "Give " + a.icon + " " + a.name, meta: todo.length + " members: " + nameList(todo) + (act.length > todo.length ? " (" + (act.length - todo.length) + " already have it)" : "") + skipNote(ms, act),
+    label: "Note (optional)", ph: "Why, or for which event", btn: "Give to " + todo.length, go: go });
+}
+function warnSel(ms) {
+  var act = ms.filter(isActive);
+  if (!act.length) { toast("Only active members can be warned.", true); return; }
+  bulkAsk({ title: "Warn " + (act.length === 1 ? act[0].name : act.length + " members"), meta: nameList(act) + skipNote(ms, act),
+    label: "Reason (everyone who opens this page will see it)", ph: "Why are they being warned?", req: true, btn: "Warn",
+    go: function (t) { bulk(act.map(function (m) { return warnStep(m, t); }), "warn " + act.length, "Warned " + act.length + (act.length === 1 ? " member." : " members.")); } });
+}
+function termSel(ms) {
+  var act = ms.filter(isActive);
+  if (!act.length) return;
+  bulkAsk({ title: "Terminate " + (act.length === 1 ? act[0].name : act.length + " members"), meta: nameList(act) + skipNote(ms, act),
+    label: "Reason (required, everyone who opens this page will see it)", ph: "Why?", req: true, danger: true, btn: "Terminate",
+    go: function (t) { bulk(act.map(function (m) { return editStep(m, { status: "terminated", termination_reason: t }, { status: "active" }); }), "terminate " + act.length, "Terminated " + act.length + "."); } });
+}
+function reinstateSel(ms) {
+  var off = ms.filter(function (m) { return !isActive(m); });
+  if (!off.length || !confirm("Reinstate " + (off.length === 1 ? off[0].name : off.length + " members") + "? The reason is cleared from their profile (the board log keeps it).")) return;
+  bulk(off.map(function (m) { return editStep(m, { status: "active" }, { status: "terminated", termination_reason: m.termination_reason || "Reinstatement undone" }); }), "reinstate " + off.length, "Reinstated " + off.length + ".");
+}
+
+/* one small dialog for anything that needs a reason or note */
+function bulkAsk(o) {
+  askGo = o.go; askReq = !!o.req;
+  $("bulkTitle").textContent = o.title; $("bulkMeta").textContent = o.meta || "";
+  $("bulkLbl").textContent = o.label; $("bulkText").placeholder = o.ph || ""; $("bulkText").value = ""; $("bulkErr").textContent = "";
+  $("bulkGo").textContent = o.btn; $("bulkGo").className = "btn" + (o.danger ? " warn" : "");
+  $("bulkDlg").showModal(); $("bulkText").focus();
+}
+$("bulkForm").addEventListener("submit", function (ev) {
+  ev.preventDefault();
+  var t = $("bulkText").value.trim(), f = askGo;
+  if (askReq && !t) { $("bulkErr").textContent = "A reason is required."; $("bulkText").focus(); return; }
+  $("bulkDlg").close(); if (f) f(t);
+});
+$("bulkCancel").addEventListener("click", function () { $("bulkDlg").close(); });
+
+/* menu contents */
+function moveItems(ms) {
+  var l = committees.map(function (c) { return { label: c.name, off: ms.every(function (m) { return m.committee_id === c.id; }), run: function () { moveMembers(idsOf(ms), c.id); } }; });
+  l.push({ label: "Unassigned", off: ms.every(function (m) { return !m.committee_id; }), run: function () { moveMembers(idsOf(ms), null); } });
+  return l;
+}
+function roleItems(ms) {
+  var act = ms.filter(isActive), cids = uniq(act.map(function (m) { return m.committee_id || null; }));
+  var l = sortedPos().filter(function (p) { return !p.committee_id || cids.every(function (c) { return c === p.committee_id; }); }).map(function (p) {
+    return { label: p.name, off: act.every(function (m) { return m.position_id === p.id; }), run: function () { setRoles(act, p.id, p.name); } };
+  });
+  l.push({ label: "No position", off: act.every(function (m) { return !m.position_id; }), run: function () { setRoles(act, null, "no position"); } });
+  return l;
+}
+function awardItems(ms) {
+  if (!awards.length) return [{ label: "No awards yet", off: true }];
+  return awards.slice().sort(byName).map(function (a) { return { label: a.icon + "  " + a.name, run: function () { awardSel(a, ms); } }; });
+}
+function menuItems(ms) {
+  var act = ms.filter(isActive), off = ms.length - act.length, l = [];
+  if (ms.length === 1) l.push({ label: "Open profile", run: function () { openMember(ms[0].id); } });
+  l.push({ label: "Move to", sub: moveItems(ms) });
+  if (act.length) l.push({ label: "Change role", sub: roleItems(ms) }, { label: "Give award", sub: awardItems(ms) }, { label: "Warn…", run: function () { warnSel(ms); } });
+  if (act.length || off) l.push({ sep: true });
+  if (act.length) l.push({ label: "Terminate…", danger: true, run: function () { termSel(ms); } });
+  if (off) l.push({ label: "Reinstate", run: function () { reinstateSel(ms); } });
+  if (ms.length > 1) l.push({ sep: true }, { label: "Clear selection", run: pickClear });
+  return l;
+}
+
+/* the menu itself: submenus open on hover (or on tap) */
+function ctxClose() {
+  if (!ctxEl) return;
+  ctxEl.remove(); ctxEl = null;
+  if (tempPick) { tempPick = false; picked = {}; syncPicks(); }   // a right-click that only picked this one card lets go of it again
+}
+function subPlace(sub) {
+  sub.style.top = ""; var r = sub.getBoundingClientRect();
+  if (r.bottom > innerHeight - 6) sub.style.top = Math.min(-6, -6 - (r.bottom - innerHeight + 6)) + "px";
+}
+function ctxItem(it) {
+  if (it.sep) return el("div", { class: "sp" });
+  var row = el("div", { class: "ci" + (it.danger ? " dg" : "") + (it.off ? " off" : ""), role: "menuitem" }, el("span", { class: "t", text: it.label }), it.sub ? el("span", { class: "ar", text: "\u25B8" }) : null), box;
+  if (it.sub) {
+    box = el("div", { class: "sub", role: "menu" }, it.sub.map(ctxItem)); row.appendChild(box);
+    row.addEventListener("mouseenter", function () { subPlace(box); });
+    row.addEventListener("click", function (e) { e.stopPropagation(); row.classList.toggle("open"); subPlace(box); });
+  } else if (it.run) row.addEventListener("click", function (e) { e.stopPropagation(); ctxClose(); it.run(); });
+  return row;
+}
+function openMenu(items, x, y, title) {
+  ctxClose();
+  var box = el("div", { class: "ctx", role: "menu", on: { contextmenu: function (e) { e.preventDefault(); }, click: function (e) { e.stopPropagation(); } } },
+    title ? el("div", { class: "ch", text: title }) : null, items.map(ctxItem));
+  document.body.appendChild(box); ctxEl = box;
+  var w = box.offsetWidth, h = box.offsetHeight, left = Math.max(6, Math.min(x, innerWidth - w - 6));
+  box.style.left = left + "px"; box.style.top = Math.max(6, Math.min(y, innerHeight - h - 6)) + "px";
+  if (left + w + 230 > innerWidth) box.classList.add("flip");
+}
+function cardMenu(e, m, c) {
+  if (!canEdit()) return;
+  e.preventDefault(); e.stopPropagation(); ctxClose();
+  if (!picked[m.id]) { picked = {}; picked[m.id] = true; tempPick = true; syncPicks(); }
+  var x = e.clientX, y = e.clientY, r, ms = pickedMembers();
+  if (!x && !y) { r = c.getBoundingClientRect(); x = r.left + 24; y = r.top + 24; }   // opened from the keyboard
+  openMenu(menuItems(ms), x, y, ms.length === 1 ? ms[0].name : ms.length + " members selected");
+}
+
+/* the floating bar: the same actions for people who prefer clicking buttons */
+function renderPickBar() {
+  var bar = $("pickbar"), ms, n;
+  Object.keys(picked).forEach(function (id) { if (!memById(id)) delete picked[id]; });
+  ms = pickedMembers(); n = ms.length;
+  document.body.classList.toggle("picking", n > 0);
+  bar.textContent = "";
+  bar.hidden = !canEdit() || $("app").hidden || (!n && !cmdUndo);
+  if (bar.hidden) return;
+  function pb(text, fn, cls) {
+    return el("button", { class: "btn sm" + (cls === undefined ? " sec" : cls), type: "button", text: text, disabled: selBusy ? "disabled" : null,
+      on: { click: function (e) { e.stopPropagation(); fn(e.currentTarget); } } });
+  }
+  function at(items) { return function (b) { var r = b.getBoundingClientRect(); openMenu(items, r.left, r.bottom + 4); }; }
+  if (n) {
+    bar.appendChild(el("b", { text: n + " selected" }));
+    bar.appendChild(pb("Move to \u25BE", function (b) { at(moveItems(pickedMembers()))(b); }));
+    if (ms.some(isActive)) {
+      bar.appendChild(pb("Role \u25BE", function (b) { at(roleItems(pickedMembers()))(b); }));
+      bar.appendChild(pb("Award \u25BE", function (b) { at(awardItems(pickedMembers()))(b); }));
+      bar.appendChild(pb("Warn", function () { warnSel(pickedMembers()); }, " warn"));
+    }
+    bar.appendChild(pb("All shown", pickShown));
+    bar.appendChild(pb("Clear", pickClear));
+  }
+  if (cmdUndo) bar.appendChild(pb("Undo: " + cmdUndo.label, selUndo));
+}
+
+document.addEventListener("click", function () { ctxClose(); });
+document.addEventListener("contextmenu", function () { ctxClose(); });
+window.addEventListener("resize", function () { ctxClose(); });
+window.addEventListener("scroll", function (e) { if (ctxEl && !ctxEl.contains(e.target)) ctxClose(); }, true);
+document.addEventListener("keydown", function (e) {
+  var t = e.target, tag = t && t.tagName;
+  if (e.key !== "Escape") return;
+  if (ctxEl) { ctxClose(); return; }
+  if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || document.querySelector("dialog[open]")) return;
+  if (pickedIds().length) pickClear();
+});
 
 /* ---------- events ---------- */
 $("loginForm").addEventListener("submit", function (ev) {
