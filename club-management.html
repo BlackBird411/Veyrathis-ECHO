@@ -163,6 +163,18 @@ dialog .meta{color:var(--mut);font-size:13px;margin:0 0 4px}
 .wrow .btn{padding:3px 8px;font-size:12px}
 body.view .card{cursor:pointer}
 body.view .brand span::after{content:" \00B7  view only"}
+#cmdbar{position:fixed;left:0;right:0;bottom:0;z-index:40;background:#111214;border-top:2px solid var(--red);box-shadow:0 -8px 30px rgba(0,0,0,.5);padding:8px 14px calc(8px + env(safe-area-inset-bottom,0px))}
+#cmdout{max-height:38vh;overflow:auto;font:13px/1.5 ui-monospace,Menlo,Consolas,monospace;margin-bottom:8px;white-space:pre-wrap;word-break:break-word}
+#cmdout .l{color:#d6d8dc}
+#cmdout .in{color:#fff;font-weight:700}
+#cmdout .ok{color:#3ba55d}
+#cmdout .er{color:#ff8a80}
+#cmdout .mu{color:var(--mut)}
+.cmdrow{display:flex;align-items:flex-start;gap:8px}
+.cmdp{color:var(--red);font:700 16px/34px ui-monospace,Menlo,Consolas,monospace}
+#cmdin{flex:1;min-width:0;resize:none;background:var(--bg0);border:1px solid var(--line);border-radius:5px;padding:7px 10px;font:14px/1.4 ui-monospace,Menlo,Consolas,monospace;color:var(--txt)}
+.cmdhint{color:var(--mut);font-size:12px;min-height:1.2em;margin-top:5px}
+body.cmdopen main{padding-bottom:330px}
   #posDlg .prow input{flex:2 1 120px;width:auto;padding:6px 8px;font-size:14px}
 #posDlg .prow select{flex:1 1 110px;width:auto;padding:6px 8px;font-size:14px}
 
@@ -189,6 +201,7 @@ body.view .brand span::after{content:" \00B7  view only"}
       <a href="/club-management" aria-current="page">Club</a>
     </nav>
     <div class="actions" id="actions" hidden>
+      <button class="btn sec sm" id="cmdBtn" type="button" title="Command bar (or press the ` key)" hidden>Commands</button>
       <button class="btn sec sm" id="awBtn" type="button">Awards</button>
       <button class="btn sec sm" id="refresh" type="button">Refresh</button>
       <button class="btn sec sm" id="out" type="button">Sign out</button>
@@ -335,6 +348,16 @@ body.view .brand span::after{content:" \00B7  view only"}
     </div>
   </form>
 </dialog>
+
+<div id="cmdbar" hidden>
+  <div id="cmdout" aria-live="polite"></div>
+  <div class="cmdrow">
+    <span class="cmdp">&gt;</span>
+    <textarea id="cmdin" rows="1" spellcheck="false" autocomplete="off" autocapitalize="off" placeholder="Type a command. help lists them all. Esc closes." aria-label="Command"></textarea>
+    <button class="btn sec sm" id="cmdx" type="button">Close</button>
+  </div>
+  <div class="cmdhint" id="cmdhint"></div>
+</div>
 
 <div id="toast" role="status" aria-live="polite"></div>
 
@@ -949,6 +972,564 @@ $("giveForm").addEventListener("submit", function (ev) {
 });
 
 /* ---------- session ---------- */
+  /* ---------- command bar (board only): press ` or the Commands button ---------- */
+var cmdHist = [], cmdHi = 0, cmdPending = null, cmdUndo = null, cmdBusy = false;
+
+function norm(s) { return String(s === null || s === undefined ? "" : s).toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ""); }
+function uniq(a) { return a.filter(function (x, i) { return a.indexOf(x) === i; }); }
+function nameList(list, n) {
+  n = n || 12;
+  return list.slice(0, n).map(function (m) { return m.name; }).join(", ") + (list.length > n ? " … and " + (list.length - n) + " more" : "");
+}
+function S(k, n, label, of, x) { return Object.assign({ k: k, n: n, label: label, of: of }, x || {}); }
+
+/* reading what was typed: "quoted names", {braced names} or plain words */
+function tokenize(s) {
+  var out = [], re = /"([^"]*)"|“([^”]*)”|\{([^}]*)\}|(\S+)/g, m;
+  while ((m = re.exec(s))) out.push({ t: m[1] !== undefined ? m[1] : m[2] !== undefined ? m[2] : m[3] !== undefined ? m[3] : m[4] });
+  return out;
+}
+function joinToks(t, a, b) { return t.slice(a, b).map(function (x) { return x.t; }).join(" "); }
+
+/* finding a name: exact first, then starts-with, then contains (ignores case, spaces and punctuation) */
+function look(items, nameFn, text) {
+  var t = norm(text);
+  if (!t) return null;
+  for (var tier = 0; tier < 3; tier++) {
+    var hits = items.filter(function (it) {
+      return [].concat(nameFn(it)).some(function (n) {
+        n = norm(n);
+        return n && (tier === 0 ? n === t : tier === 1 ? n.indexOf(t) === 0 : n.indexOf(t) >= 0);
+      });
+    });
+    if (hits.length) return { tier: tier, hits: hits };
+  }
+  return null;
+}
+function one(r, t, what, show) {   // exactly one match, or a clear message
+  if (!r) return { ok: false, msg: "No " + what + " matches “" + t + "”." };
+  if (r.hits.length > 1) return { ok: false, msg: "“" + t + "” matches several " + what + "s: " + r.hits.slice(0, 6).map(show).join(", ") + (r.hits.length > 6 ? " …" : "") + ". Be more specific." };
+  return { ok: true, v: r.hits[0], tier: r.tier };
+}
+function comPick(t, allowAll) {
+  var n = norm(t), r;
+  if (allowAll && (n === "all" || n === "everyone")) return { ok: true, v: { all: true, name: "everyone" }, tier: 0 };
+  if (n === "none" || n === "unassigned") return { ok: true, v: { cid: null, name: "Unassigned" }, tier: 0 };
+  r = one(look(committees, function (c) { return c.name; }, t), t, "committee", function (c) { return c.name; });
+  return r.ok ? { ok: true, v: { cid: r.v.id, name: r.v.name }, tier: r.tier } : r;
+}
+var KIND = {
+  sel: function (t) { return comPick(t, true); },
+  dest: function (t) { return comPick(t, false); },
+  award: function (t) { return one(look(awards, function (a) { return [a.icon, a.name]; }, t), t, "award", function (a) { return a.name; }); },
+  member: function (t, ctx, spec) {
+    var list = members.filter(spec.filter || function () { return true; });
+    return one(look(list, function (m) { return m.name; }, t), t, spec.what || "member", function (m) { return m.name + " (" + comName(m.committee_id) + ")"; });
+  },
+  role: function (t, ctx, spec) {   // a position name, or Member for people with none, among the active people in the chosen committee
+    var n = norm(t), sc = ctx[spec.of], seen = {}, list, r;
+    if (n === "all" || n === "everyone") return { ok: true, v: { all: true, label: "" }, tier: 0 };
+    members.forEach(function (m) { if (isActive(m) && (sc.all || (m.committee_id || null) === sc.cid)) seen[roleLabel(m)] = 1; });
+    list = Object.keys(seen);
+    r = look(list, function (x) { return x; }, t);
+    if (!r) return { ok: false, msg: "Nobody active in " + sc.name + " has the role “" + t + "”. Roles there: " + (list.join(", ") || "none") + "." };
+    if (r.hits.length > 1) return { ok: false, msg: "“" + t + "” matches several roles: " + r.hits.join(", ") + ". Be more specific." };
+    return { ok: true, v: { all: false, label: r.hits[0] }, tier: r.tier };
+  },
+  pos: function (t, ctx, spec) {   // a position that can be held in that committee, or none
+    var n = norm(t), o = ctx[spec.of], cid = o.cid !== undefined ? o.cid : (o.committee_id || null), r;
+    var hit = look(posFor(cid), function (p) { return p.name; }, t);
+    if (n === "none" || n === "no" || (n === "member" && !hit)) return { ok: true, v: { id: null, name: "no position" }, tier: 0 };
+    r = one(hit, t, "position", function (p) { return p.name; });
+    return r.ok ? { ok: true, v: { id: r.v.id, name: r.v.name }, tier: r.tier } : r;
+  }
+};
+function sig(ctx, specs) {
+  return specs.map(function (s) { var v = ctx[s.n]; return v && typeof v === "object" ? (v.id || JSON.stringify(v)) : String(v); }).join("|");
+}
+function explain(toks, specs) {   // why nothing fit: resolve one word per slot and report the first slot that fails
+  var ctx = {}, ti = 0, si, spec, r, j;
+  for (si = 0; si < specs.length; si++) {
+    spec = specs[si];
+    if (ti >= toks.length) return "Missing the " + spec.label + ".";
+    if (spec.k === "text") break;
+    j = si === specs.length - 1 ? toks.length : ti + 1;
+    r = KIND[spec.k](joinToks(toks, ti, j), ctx, spec);
+    if (!r.ok) return r.msg;
+    ctx[spec.n] = r.v; ti = j;
+  }
+  return "Something does not fit. Put names that contain spaces in quotes.";
+}
+function bind(toks, specs) {   // try every way of cutting the words into the slots, keep the best fit
+  var found = [], fails = [];
+  function rec(si, ti, ctx, score) {
+    var spec, after, j, r, c2;
+    if (si === specs.length) { if (ti === toks.length) found.push({ ctx: ctx, score: score }); return; }
+    spec = specs[si]; after = specs.length - 1 - si;
+    if (spec.k === "text") {
+      if (toks.length > ti) { c2 = Object.assign({}, ctx); c2[spec.n] = joinToks(toks, ti, toks.length); found.push({ ctx: c2, score: score }); }
+      return;
+    }
+    for (j = (after === 0 ? toks.length : ti + 1); j <= toks.length - after; j++) {
+      if (j <= ti) continue;
+      r = KIND[spec.k](joinToks(toks, ti, j), ctx, spec);
+      if (!r.ok) { fails.push({ d: si, score: score, msg: r.msg }); continue; }
+      c2 = Object.assign({}, ctx); c2[spec.n] = r.v;
+      rec(si + 1, j, c2, score + r.tier);
+    }
+  }
+  rec(0, 0, {}, 0);
+  if (!found.length) {   // report the failure that got furthest, from the most exact reading of the words before it
+    fails.sort(function (a, b) { return b.d - a.d || a.score - b.score; });
+    return { error: fails.length ? fails[0].msg : explain(toks, specs) };
+  }
+  found.sort(function (a, b) { return a.score - b.score; });
+  if (found.length > 1 && found[1].score === found[0].score && sig(found[1].ctx, specs) !== sig(found[0].ctx, specs))
+    return { error: "That can be read more than one way. Put names that contain spaces in quotes, e.g. setaward Logistics Member \"YEAR MEMBER\"" };
+  return { ctx: found[0].ctx, score: found[0].score };
+}
+
+/* who a command applies to */
+function targets(a) {   // active members in "<committee|all> <role|all>"
+  return members.filter(function (m) {
+    return isActive(m) && (a.sel.all || (m.committee_id || null) === a.sel.cid) && (a.role.all || norm(roleLabel(m)) === norm(a.role.label));
+  }).sort(byName);
+}
+function desc(a) { return a.sel.name + (a.role.all ? "" : " / " + a.role.label); }
+
+/* one step = one change on the server, plus how to reverse it */
+function revokeStep(gid) {
+  return { run: function () { return op("award_revoke", { id: gid }).then(function () { memberAwards = memberAwards.filter(function (x) { return x.id !== gid; }); }); } };
+}
+function giveSteps(award, ms, note) {   // one request per 200 people
+  var out = [], i;
+  for (i = 0; i < ms.length; i += 200) {
+    out.push((function (ids) {
+      return {
+        run: function () {
+          var k = "cmdgive|" + award.id + "|" + note + "|" + ids.join(",");
+          return op("award_give", { rid: rid(k), award_id: award.id, member_ids: ids, note: note }).then(function (rows) {
+            ridDone(k);
+            (rows || []).forEach(function (g) { if (!memberAwards.some(function (x) { return x.id === g.id; })) memberAwards.push(g); });
+            return rows || [];
+          });
+        },
+        undo: function (rows) { return rows.map(function (g) { return revokeStep(g.id); }); }
+      };
+    })(ms.slice(i, i + 200).map(function (m) { return m.id; })));
+  }
+  return out;
+}
+function warnStep(m, reason) {
+  return {
+    run: function () {
+      var k = "cmdwarn|" + m.id + "|" + reason;
+      return op("warning_add", { rid: rid(k), member_id: m.id, reason: reason }).then(function (w) {
+        ridDone(k);
+        if (!warnings.some(function (x) { return x.id === w.id; })) warnings.push(w);
+        return w;
+      });
+    },
+    undo: function (w) {
+      return [{ run: function () {
+        return op("warning_revoke", { id: w.id, note: "undone from the command bar" }).then(function (u) {
+          warnings.forEach(function (x) { if (x.id === u.id) Object.assign(x, u); });
+        });
+      } }];
+    }
+  };
+}
+function editStep(m, body, inv) {
+  return {
+    run: function () { return op("member_edit", Object.assign({ id: m.id }, body)).then(function (u) { Object.assign(m, u); return u; }); },
+    undo: inv ? function () { return [editStep(m, inv, null)]; } : null
+  };
+}
+function restore(m, withCommittee) {   // what to send to put this member's committee and position back as they are right now
+  var b = withCommittee ? { committee_id: m.committee_id || null } : {};
+  if (m.position_id) b.position_id = m.position_id; else b.role = m.role || "";
+  return b;
+}
+function addStep(name, cid, pid) {
+  return {
+    run: function () {
+      var k = "cmdadd|" + (cid || "") + "|" + (pid || "") + "|" + norm(name);
+      return op("member_add", { rid: rid(k), name: name, position_id: pid || null, committee_id: cid }).then(function (m) {
+        ridDone(k); if (!memById(m.id)) members.push(m); return m;
+      });
+    },
+    undo: function (m) {
+      return [{ run: function () {
+        return op("member_delete", { id: m.id }).then(function () {
+          members = members.filter(function (x) { return x.id !== m.id; });
+          memberAwards = memberAwards.filter(function (g) { return g.member_id !== m.id; });
+          warnings = warnings.filter(function (w) { return w.member_id !== m.id; });
+        });
+      } }];
+    }
+  };
+}
+
+/* the commands. specs say what each word means; plan() turns them into a preview and steps */
+var ACTIVE = { filter: isActive, what: "active member" };
+var CMD = {
+  setaward: {
+    usage: "setaward <committee|all> <role|all> <award> [-n note]",
+    what: "Give an award to everyone in that committee and role who doesn't have it yet",
+    ex: "setaward Logistics Member 1yr   |   setaward all all \"YEAR MEMBER\" -n Joined 2025",
+    note: true,
+    specs: [S("sel", "sel", "committee"), S("role", "role", "role", "sel"), S("award", "award", "award")],
+    plan: function (a, note) {
+      var t = targets(a), todo, skip;
+      if (!t.length) return { error: "Nobody active matches " + desc(a) + "." };
+      todo = t.filter(function (m) { return !myAwards(m.id).some(function (g) { return g.award_id === a.award.id; }); });
+      if (!todo.length) return { out: ["All " + t.length + " in " + desc(a) + " already have " + a.award.icon + " " + a.award.name + ". Nothing to do."] };
+      skip = t.length - todo.length;
+      return { count: todo.length, label: "setaward " + a.award.name,
+        lines: ["Give " + a.award.icon + " " + a.award.name + " to " + todo.length + " in " + desc(a) + (skip ? " (" + skip + " already have it, skipped)" : "") + (note ? ", note: " + note : "") + ":", "  " + nameList(todo)],
+        steps: giveSteps(a.award, todo, note || "") };
+    }
+  },
+  unaward: {
+    usage: "unaward <committee|all> <role|all> <award>",
+    what: "Take an award away from everyone in that committee and role",
+    ex: "unaward Media all 1yr",
+    specs: [S("sel", "sel", "committee"), S("role", "role", "role", "sel"), S("award", "award", "award")],
+    plan: function (a) {
+      var ids = {}, gs, who;
+      targets(a).forEach(function (m) { ids[m.id] = m; });
+      gs = memberAwards.filter(function (g) { return g.award_id === a.award.id && ids[g.member_id]; });
+      if (!gs.length) return { out: ["Nobody in " + desc(a) + " has " + a.award.name + "."] };
+      who = uniq(gs.map(function (g) { return g.member_id; })).map(function (id) { return ids[id]; });
+      return { count: who.length, noUndo: true, label: "unaward " + a.award.name,
+        lines: ["Take " + a.award.icon + " " + a.award.name + " away from " + who.length + " in " + desc(a) + " (" + gs.length + " record" + (gs.length === 1 ? "" : "s") + "):", "  " + nameList(who)],
+        steps: gs.map(function (g) { return revokeStep(g.id); }) };
+    }
+  },
+  awards: {
+    usage: "awards", what: "List the awards, what you can type for each, and how many times each was given", raw: true,
+    plan: function () {
+      if (!awards.length) return { out: ["No awards yet."] };
+      return { out: awards.slice().sort(byName).map(function (a) {
+        var n = memberAwards.filter(function (g) { return g.award_id === a.id; }).length;
+        return a.icon + "   " + a.name + "   (type " + a.icon + " or the name)   given " + n + "x";
+      }) };
+    }
+  },
+  warn: {
+    usage: "warn <member> <reason>",
+    what: "Warn one member, with the reason everyone will see",
+    ex: "warn Ahmed Ali skipped the rehearsal",
+    specs: [S("member", "member", "member", null, ACTIVE), S("text", "reason", "reason")],
+    plan: function (a) {
+      var reason = a.reason.trim().slice(0, 500);
+      return { count: 1, label: "warn " + a.member.name, lines: ["Warn " + a.member.name + " (" + comName(a.member.committee_id) + "): " + reason], steps: [warnStep(a.member, reason)] };
+    }
+  },
+  warnall: {
+    usage: "warnall <committee|all> <role|all> <reason>",
+    what: "Warn everyone in that committee and role, same reason",
+    ex: "warnall Logistics Member missed the setup day",
+    specs: [S("sel", "sel", "committee"), S("role", "role", "role", "sel"), S("text", "reason", "reason")],
+    plan: function (a) {
+      var t = targets(a), reason = a.reason.trim().slice(0, 500);
+      if (!t.length) return { error: "Nobody active matches " + desc(a) + "." };
+      return { count: t.length, label: "warnall " + desc(a), lines: ["Warn " + t.length + " in " + desc(a) + ": " + reason, "  " + nameList(t)],
+        steps: t.map(function (m) { return warnStep(m, reason); }) };
+    }
+  },
+  terminate: {
+    usage: "terminate <member> <reason>",
+    what: "Terminate one member, with the reason everyone will see",
+    ex: "terminate Ahmed Ali repeated no-shows",
+    specs: [S("member", "member", "member", null, ACTIVE), S("text", "reason", "reason")],
+    plan: function (a) {
+      var m = a.member, reason = a.reason.trim().slice(0, 500);
+      return { count: 1, danger: true, label: "terminate " + m.name,
+        lines: ["Terminate " + m.name + " (" + comName(m.committee_id) + ", " + roleLabel(m) + "). Reason: " + reason],
+        steps: [editStep(m, { status: "terminated", termination_reason: reason }, { status: "active" })] };
+    }
+  },
+  terminateall: {
+    usage: "terminateall <committee|all> <role|all> <reason>",
+    what: "Terminate everyone in that committee and role, same reason",
+    ex: "terminateall Logistics Member left the club",
+    specs: [S("sel", "sel", "committee"), S("role", "role", "role", "sel"), S("text", "reason", "reason")],
+    plan: function (a) {
+      var t = targets(a), reason = a.reason.trim().slice(0, 500);
+      if (!t.length) return { error: "Nobody active matches " + desc(a) + "." };
+      return { count: t.length, danger: true, label: "terminateall " + desc(a), lines: ["TERMINATE " + t.length + " in " + desc(a) + ". Reason: " + reason, "  " + nameList(t)],
+        steps: t.map(function (m) { return editStep(m, { status: "terminated", termination_reason: reason }, { status: "active" }); }) };
+    }
+  },
+  reinstate: {
+    usage: "reinstate <member>",
+    what: "Bring a terminated member back (the reason is cleared, the board log keeps it)",
+    ex: "reinstate Tom",
+    specs: [S("member", "member", "member", null, { filter: function (m) { return !isActive(m); }, what: "terminated member" })],
+    plan: function (a) {
+      var m = a.member;
+      return { count: 1, label: "reinstate " + m.name, lines: ["Reinstate " + m.name],
+        steps: [editStep(m, { status: "active" }, { status: "terminated", termination_reason: m.termination_reason || "Reinstatement undone" })] };
+    }
+  },
+  move: {
+    usage: "move <member> <committee|none>",
+    what: "Move one member to another committee",
+    ex: "move Sara Omar Media",
+    specs: [S("member", "member", "member"), S("dest", "dest", "committee")],
+    plan: function (a) {
+      var m = a.member;
+      if ((m.committee_id || null) === a.dest.cid) return { out: [m.name + " is already in " + a.dest.name + "."] };
+      return { count: 1, label: "move " + m.name, lines: ["Move " + m.name + " from " + comName(m.committee_id) + " to " + a.dest.name],
+        steps: [editStep(m, { committee_id: a.dest.cid }, restore(m, true))] };
+    }
+  },
+  moveall: {
+    usage: "moveall <from committee|all> <role|all> <to committee|none>",
+    what: "Move everyone in that committee and role to another committee",
+    ex: "moveall Unassigned all Logistics",
+    specs: [S("sel", "sel", "committee"), S("role", "role", "role", "sel"), S("dest", "dest", "destination")],
+    plan: function (a) {
+      var t = targets(a).filter(function (m) { return (m.committee_id || null) !== a.dest.cid; });
+      if (!t.length) return { out: ["Nobody to move, everyone matching is already in " + a.dest.name + "."] };
+      return { count: t.length, label: "moveall " + desc(a), lines: ["Move " + t.length + " from " + desc(a) + " to " + a.dest.name + ":", "  " + nameList(t)],
+        steps: t.map(function (m) { return editStep(m, { committee_id: a.dest.cid }, restore(m, true)); }) };
+    }
+  },
+  role: {
+    usage: "role <member> <position|none>",
+    what: "Set one member's position (it must exist in their committee, see the Positions button)",
+    ex: "role Ahmed Ali Head",
+    specs: [S("member", "member", "member", null, ACTIVE), S("pos", "pos", "position", "member")],
+    plan: function (a) {
+      var m = a.member;
+      if ((m.position_id || null) === a.pos.id) return { out: [m.name + " already has that position."] };
+      return { count: 1, label: "role " + m.name, lines: ["Make " + m.name + " " + a.pos.name + " (was " + roleLabel(m) + ")"],
+        steps: [editStep(m, { position_id: a.pos.id }, restore(m, false))] };
+    }
+  },
+  add: {
+    usage: "add <committee|none> <position|none> <name, name, ...>",
+    what: "Add one or many members (separate names with commas, or paste one name per line)",
+    ex: "add Logistics Member Ahmed Ali, Sara Omar, Youssef K",
+    specs: [S("dest", "dest", "committee"), S("pos", "pos", "position", "dest"), S("text", "names", "names")],
+    plan: function (a) {
+      var seen = {}, names = a.names.split(/[,;\n]+/).map(function (s) { return s.trim().replace(/\s+/g, " "); }).filter(function (s) {
+        var k = norm(s); if (!k || seen[k]) return false; seen[k] = 1; return true;
+      }), dup = [], fresh = [];
+      names.forEach(function (n) { (members.some(function (m) { return norm(m.name) === norm(n); }) ? dup : fresh).push(n); });
+      if (!fresh.length) return { error: dup.length ? "Already members, nothing added: " + dup.join(", ") : "No names given." };
+      return { count: fresh.length, label: "add " + fresh.length + " to " + a.dest.name,
+        lines: ["Add " + fresh.length + " to " + a.dest.name + (a.pos.id ? " as " + a.pos.name : "") + ":", "  " + fresh.slice(0, 12).join(", ") + (fresh.length > 12 ? " … and " + (fresh.length - 12) + " more" : "")]
+          .concat(dup.length ? ["  (skipped, already members: " + dup.join(", ") + ")"] : []),
+        steps: fresh.map(function (n) { return addStep(n, a.dest.cid, a.pos.id); }) };
+    }
+  },
+  who: {
+    usage: "who <member>", what: "Show a member's committee, role, awards and warnings", ex: "who Ahmed",
+    specs: [S("member", "member", "member")],
+    plan: function (a) {
+      var m = a.member, aw = myAwards(m.id), ws = warnsOf(m.id), live = liveWarns(m.id),
+        out = [m.name + " | " + comName(m.committee_id) + " | " + roleLabel(m) + " | " + (isActive(m) ? "active" : "terminated")];
+      if (!isActive(m) && m.termination_reason) out.push("  terminated" + (m.terminated_at ? " " + fmtDate(m.terminated_at) : "") + ": " + m.termination_reason);
+      out.push("  awards: " + (aw.length ? aw.map(function (g) { var x = awardById(g.award_id); return x ? x.icon + " " + x.name : "?"; }).join(", ") : "none"));
+      out.push("  warnings: " + (live.length ? live.length + " active" : "none") + (ws.length > live.length ? " (" + (ws.length - live.length) + " withdrawn)" : ""));
+      live.forEach(function (w) { out.push("    " + fmtDate(w.issued_at) + ": " + w.reason); });
+      return { out: out };
+    }
+  },
+  find: {
+    usage: "find <text>", what: "Search members (fills the search box; empty clears it)", ex: "find sara", raw: true,
+    plan: function (t) {
+      t = t.trim(); q = t; $("q").value = t; render();
+      return { out: [t ? $("main").querySelectorAll(".card").length + " result(s) for “" + t + "”." : "Search cleared."] };
+    }
+  },
+  go: {
+    usage: "go <committee|none>", what: "Jump to a committee", ex: "go media",
+    specs: [S("dest", "dest", "committee")],
+    plan: function (a) { q = ""; $("q").value = ""; sel = a.dest.cid === null ? "none" : a.dest.cid; render(); return { out: ["Showing " + a.dest.name + "."] }; }
+  },
+  undo: { usage: "undo", what: "Reverse the last command that changed something", raw: true, plan: function () { return { out: [] }; } },
+  help: {
+    usage: "help [command]", what: "List the commands, or explain one", raw: true,
+    plan: function (t) {
+      var w = t.trim().toLowerCase(), pad = function (k) { return (k + "              ").slice(0, 14); };
+      if (w && CMD[w]) return { out: [CMD[w].usage, "  " + CMD[w].what].concat(CMD[w].ex ? ["  e.g. " + CMD[w].ex] : []) };
+      return { out: Object.keys(CMD).map(function (k) { return pad(k) + CMD[k].what; }).concat([
+        "",
+        "committee = a committee name or abbreviation of it, all = everyone, none = Unassigned.",
+        "role = a position name, or Member for people with no position. Partial names work.",
+        "award = its name or the icon text you gave it, e.g. 1yr or YEAR MEMBER.",
+        "Names with spaces are fine unquoted when it is clear; otherwise use quotes: \"YEAR MEMBER\".",
+        "Anything that changes more than one person, or terminates, shows a preview and waits for y.",
+        "Shift+Enter starts a new line: paste many commands at once and they run together after one y."
+      ]) };
+    }
+  }
+};
+
+function lev(a, b) {   // how many single-letter edits apart two words are, for typo suggestions
+  var d = [], i, j;
+  for (i = 0; i <= a.length; i++) d[i] = [i];
+  for (j = 1; j <= b.length; j++) d[0][j] = j;
+  for (i = 1; i <= a.length; i++) for (j = 1; j <= b.length; j++)
+    d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (a.charAt(i - 1) === b.charAt(j - 1) ? 0 : 1));
+  return d[a.length][b.length];
+}
+function splitLines(text) {   // one command per line; lines after an add that are not commands are more names
+  var out = [];
+  text.split(/\r?\n/).forEach(function (ln) {
+    ln = ln.trim();
+    if (!ln) return;
+    if (CMD[ln.split(/\s+/)[0].toLowerCase()] || !out.length || !/^add\s/i.test(out[out.length - 1])) out.push(ln);
+    else out[out.length - 1] += ", " + ln;
+  });
+  return out;
+}
+function planLine(line) {
+  var m = /^(\S+)\s*([\s\S]*)$/.exec(line.trim()), name = m[1].toLowerCase(), rest = m[2], c = CMD[name], note = "", nm, near, r, p;
+  if (!c) {
+    near = Object.keys(CMD).filter(function (k) { return k.indexOf(name) === 0 || lev(k, name) <= 2; });
+    return { error: "Unknown command “" + m[1] + "”." + (near.length ? " Did you mean " + near.slice(0, 3).join(", ") + "?" : " Type help.") };
+  }
+  if (c.note) {
+    nm = /(?:^|\s)(?:-n|--note)\s+([\s\S]+)$/.exec(rest);
+    if (nm) { note = nm[1].trim().replace(/^["“{]|["”}]$/g, ""); rest = rest.slice(0, nm.index); }
+  }
+  if (c.raw) return c.plan(rest);
+  var toks = tokenize(rest);
+  if (!toks.length) return { error: "Usage: " + c.usage };
+  r = bind(toks, c.specs);
+  if (r.error) return { error: r.error + "\nUsage: " + c.usage };
+  p = c.plan(r.ctx, note);
+  if (!p.error && !p.out) p.exact = r.score === 0;
+  return p;
+}
+
+/* running steps, four at a time (one at a time for pasted batches, so the order holds) */
+function pool(steps, par) {
+  var i = 0, ok = 0, errs = [], inv = [], stop = false, w = [], n;
+  function worker() {
+    var s;
+    if (stop || i >= steps.length) return Promise.resolve();
+    s = steps[i++];
+    return Promise.resolve().then(function () { return s.run(); }).then(function (res) {
+      ok++;
+      if (s.undo) inv = (s.undo(res) || []).concat(inv);
+      if (steps.length > 10 && ok % 10 === 0) cmdPrint(ok + " / " + steps.length + " done…", "mu");
+    }, function (e) {
+      errs.push(e && e.message ? e.message : "failed");
+      if (e && /password/i.test(e.message)) { stop = true; fail(e); }
+    }).then(worker);
+  }
+  for (n = 0; n < Math.min(par || 4, steps.length); n++) w.push(worker());
+  return Promise.all(w).then(function () { return { ok: ok, errs: errs, inv: inv }; });
+}
+
+function cmdPrint(text, cls) {
+  var o = $("cmdout");
+  String(text).split("\n").forEach(function (ln) { o.appendChild(el("div", { class: cls || "l", text: ln || " " })); });
+  while (o.childNodes.length > 300) o.removeChild(o.firstChild);
+  o.scrollTop = o.scrollHeight;
+}
+function cmdRun(p) {
+  cmdBusy = true; cmdPrint("Running " + p.steps.length + " step" + (p.steps.length === 1 ? "" : "s") + "…", "mu");
+  pool(p.steps, p.par).then(function (r) {
+    render();
+    cmdPrint(r.ok + " done" + (r.errs.length ? ", " + r.errs.length + " failed: " + uniq(r.errs).slice(0, 3).join(" | ") : "") + ".", r.errs.length ? "er" : "ok");
+    if (r.inv.length) { cmdUndo = { inv: r.inv, label: p.label, par: p.par }; cmdPrint("Type undo to reverse this.", "mu"); }
+    else if (p.noUndo && r.ok) cmdPrint("(this one can't be reversed with undo)", "mu");
+  }).catch(function (e) { cmdPrint(e.message, "er"); }).then(function () { cmdBusy = false; $("cmdin").focus(); });
+}
+function cmdDoUndo() {
+  var u = cmdUndo;
+  if (!u) { cmdPrint("Nothing to undo.", "mu"); return; }
+  cmdUndo = null; cmdBusy = true; cmdPrint("Undoing “" + u.label + "” (" + u.inv.length + " change" + (u.inv.length === 1 ? "" : "s") + ")…", "mu");
+  pool(u.inv, u.par).then(function (r) {
+    render();
+    cmdPrint(r.ok + " reversed" + (r.errs.length ? ", " + r.errs.length + " failed: " + uniq(r.errs).slice(0, 3).join(" | ") : "") + ".", r.errs.length ? "er" : "ok");
+  }).catch(function (e) { cmdPrint(e.message, "er"); }).then(function () { cmdBusy = false; $("cmdin").focus(); });
+}
+function cmdSubmit() {
+  var inp = $("cmdin"), text = inp.value.trim(), lines, plans = [], bad = 0, steps = [], lns = [], count = 0, danger = false, exact = true, noUndo = false, label = [], ans, pend, pl;
+  if (!text || cmdBusy) return;
+  inp.value = ""; cmdGrow(); cmdHint();
+  cmdPrint("> " + text.replace(/\n/g, "\n  "), "in");
+  ans = text.toLowerCase(); pend = cmdPending; cmdPending = null;
+  if (/^(y|yes|n|no)$/.test(ans)) {   // answers to "Run it?" stay out of the up-arrow history
+    if (!pend) { cmdPrint("Nothing is waiting for a yes or no.", "mu"); return; }
+    if (ans.charAt(0) === "y") return cmdRun(pend);
+    cmdPrint("Cancelled.", "mu"); return;
+  }
+  if (cmdHist[cmdHist.length - 1] !== text) cmdHist.push(text);
+  cmdHi = cmdHist.length;
+  lines = splitLines(text);
+  if (lines.length === 1 && /^undo$/i.test(lines[0])) return cmdDoUndo();
+  lines.forEach(function (ln, i) {
+    var r = planLine(ln);
+    if (r.error) { bad++; cmdPrint((lines.length > 1 ? "Line " + (i + 1) + ": " : "") + r.error, "er"); } else plans.push(r);
+  });
+  if (bad) { if (lines.length > 1) cmdPrint("Nothing was run. Fix the line(s) above and paste again.", "er"); return; }
+  plans.forEach(function (p) {
+    if (p.out && p.out.length) cmdPrint(p.out.join("\n"));
+    if (!p.steps) return;
+    steps = steps.concat(p.steps); lns = lns.concat(p.lines); count += p.count || 1;
+    danger = danger || !!p.danger; exact = exact && p.exact !== false; noUndo = noUndo || !!p.noUndo; label.push(p.label);
+  });
+  if (!steps.length) return;
+  pl = { steps: steps, label: label.join(" + ").slice(0, 70), noUndo: noUndo, par: lines.length > 1 ? 1 : 4 };
+  if (lines.length > 1 || count > 1 || danger || !exact) {
+    cmdPrint(lns.join("\n"));
+    if (!exact) cmdPrint("Names were matched loosely, please check them above.", "mu");
+    cmdPrint("Run it? Type y to confirm, n to cancel." + (noUndo ? " (cannot be reversed with undo)" : ""), "mu");
+    cmdPending = pl; cmdHint();
+  } else cmdRun(pl);
+}
+
+/* the bar itself */
+function cmdGrow() { $("cmdin").rows = Math.min(6, $("cmdin").value.split("\n").length); }
+function cmdHint() {
+  var w = $("cmdin").value.split("\n")[0].trim().split(/\s+/)[0].toLowerCase(), h = $("cmdhint"), ks;
+  if (!w) { h.textContent = cmdPending ? "Waiting for you: y runs it, n cancels." : "help lists the commands · Enter runs · Shift+Enter adds a line (many commands at once) · Tab completes · Up arrow repeats"; return; }
+  ks = Object.keys(CMD).filter(function (k) { return k.indexOf(w) === 0; });
+  h.textContent = CMD[w] ? CMD[w].usage : ks.length ? ks.join("   ") : "No command starts with “" + w + "”";
+}
+function cmdOpen() {
+  if (!canEdit() || $("app").hidden) return;
+  $("cmdbar").hidden = false; document.body.classList.add("cmdopen");
+  if (!$("cmdout").childNodes.length) cmdPrint("Type help to see the commands. Esc or the ` key closes this bar.", "mu");
+  cmdHint(); $("cmdin").focus();
+}
+function cmdClose() { $("cmdbar").hidden = true; document.body.classList.remove("cmdopen"); cmdPending = null; }
+function cmdReset() { cmdClose(); $("cmdout").textContent = ""; $("cmdin").value = ""; cmdHist = []; cmdHi = 0; cmdUndo = null; cmdBusy = false; }
+document.addEventListener("keydown", function (e) {
+  var t = e.target, tag = t && t.tagName;
+  if (e.code !== "Backquote" || e.ctrlKey || e.metaKey || e.altKey) return;
+  if (t && t.id === "cmdin") { e.preventDefault(); cmdClose(); return; }
+  if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || (t && t.isContentEditable)) return;
+  if (!canEdit() || $("app").hidden || document.querySelector("dialog[open]")) return;
+  e.preventDefault();
+  if ($("cmdbar").hidden) cmdOpen(); else $("cmdin").focus();
+});
+$("cmdBtn").addEventListener("click", cmdOpen);
+$("cmdx").addEventListener("click", cmdClose);
+$("cmdin").addEventListener("input", function () { cmdGrow(); cmdHint(); });
+$("cmdin").addEventListener("keydown", function (e) {
+  var v = this.value, h;
+  if (e.isComposing) return;
+  if (e.key === "Escape") { e.preventDefault(); cmdClose(); return; }
+  if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); cmdSubmit(); return; }
+  if (e.key === "ArrowUp" && v.indexOf("\n") < 0 && cmdHist.length) { e.preventDefault(); cmdHi = Math.max(0, cmdHi - 1); this.value = cmdHist[cmdHi]; cmdGrow(); return; }
+  if (e.key === "ArrowDown" && v.indexOf("\n") < 0 && cmdHist.length) { e.preventDefault(); cmdHi = Math.min(cmdHist.length, cmdHi + 1); this.value = cmdHist[cmdHi] || ""; cmdGrow(); return; }
+  if (e.key === "Tab" && /^\S*$/.test(v)) {
+    h = Object.keys(CMD).filter(function (k) { return k.indexOf(v.toLowerCase()) === 0; });
+    if (h.length === 1) { e.preventDefault(); this.value = h[0] + " "; cmdHint(); }
+    else if (h.length > 1) { e.preventDefault(); cmdPrint(h.join("   "), "mu"); }
+  }
+});
+  
   function load(fromLogin) {
   return rpc("club_load", { p: pw }).then(function (d) {
     committees = d.committees || []; members = d.members || []; positions = d.positions || [];
@@ -956,7 +1537,7 @@ $("giveForm").addEventListener("submit", function (ev) {
     warnings = d.warnings || []; role = d.role === "member" ? "member" : "board";
     if (!sel || (sel !== "none" && !comById(sel))) sel = committees.length ? committees[0].id : "none";
     $("login").hidden = true; $("app").hidden = false; $("actions").hidden = false;
-    $("awBtn").hidden = !canEdit(); document.body.classList.toggle("view", !canEdit());
+    $("awBtn").hidden = !canEdit(); $("cmdBtn").hidden = !canEdit(); document.body.classList.toggle("view", !canEdit());
     render(); touch();
   }).catch(function (e) {
     if (/password/i.test(e.message)) lock("Wrong password. Try again.");
@@ -966,7 +1547,7 @@ $("giveForm").addEventListener("submit", function (ev) {
 }
 function lock(msg) {
   pw = null; role = null; committees = []; members = []; positions = []; awards = []; memberAwards = []; warnings = []; sel = null; q = ""; clearTimeout(idle);
-  document.body.classList.remove("view");
+  document.body.classList.remove("view"); cmdReset();
   $("q").value = ""; $("side").textContent = ""; $("main").textContent = "";
   $("app").hidden = true; $("actions").hidden = true; $("login").hidden = false; $("loginErr").textContent = msg || "";
   ["comDlg", "memDlg", "posDlg", "awDlg", "giveDlg"].forEach(function (d) { if ($(d).open) $(d).close(); });
