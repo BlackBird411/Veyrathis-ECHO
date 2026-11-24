@@ -713,9 +713,9 @@ function renderMain() {
 var BOARD = [
   { title: "President", fixed: true, re: /^(?!.*vice).*\bpresident\b/i },
   { title: "Vice President", fixed: true, re: /vice[\s-]*president/i },
+  { title: "Curators", re: /\bcurator\b/i },
   { title: "Heads", re: /^(?!.*(?:vice|deputy|assistant)[\s-]*head).*\bhead\b/i },
-  { title: "Vice Heads", re: /(?:vice|deputy|assistant)[\s-]*head/i },
-  { title: "Curators", re: /\bcurator\b/i }
+  { title: "Vice Heads", re: /(?:vice|deputy|assistant)[\s-]*head/i }
 ];
 function boardTier(m) {
   var r = roleLabel(m), i;
@@ -750,7 +750,7 @@ function renderBoard(host) {
     canEdit() && missing.length ? el("div", { class: "tools" },
       el("button", { class: "btn sec sm", type: "button", text: "Add " + missing.join(" + ") + (missing.length > 1 ? " positions" : " position"),
         on: { click: function () { addBoardPositions(missing, this); } } })) : null,
-    el("p", { class: "sub", text: num(all.length) + " active board member" + (all.length === 1 ? "" : "s") + " · president, vice president, heads, vice heads and curators" })));
+    el("p", { class: "sub", text: num(all.length) + " active board member" + (all.length === 1 ? "" : "s") + " · president, vice president, curators, heads and vice heads" })));
   BOARD.forEach(function (t, i) {
     var list = all.filter(function (m) { return boardTier(m) === i; }).sort(function (a, b) {
       return comName(a.committee_id).localeCompare(comName(b.committee_id)) || byName(a, b);
