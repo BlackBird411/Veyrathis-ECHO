@@ -250,6 +250,17 @@ body.cmdopen main{padding-bottom:330px}
 .etbl .st.on{color:var(--ok);border-color:#b8e0c8;background:#eaf7ef}
 .etbl .st.no{color:var(--red-d);border-color:var(--redln);background:var(--redbg)}
 .etbl .wn{margin-left:6px;font-size:11px;font-weight:800;color:var(--amber);background:var(--amberbg);border:1px solid var(--amberln);border-radius:3px;padding:0 7px}
+@media (min-width:1100px){   /* computer screens: wider page, roomier cards, bigger pop-ups */
+  :root{--wrap:1680px}
+  .bar,.stats,.layout{padding-left:40px;padding-right:40px}
+  .layout{grid-template-columns:300px minmax(0,1fr);gap:40px;padding-top:24px}
+  .cards{grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
+  .head h1{font-size:34px}
+  .etbl{font-size:15px}
+  .etbl th,.etbl td{padding:12px 18px}
+  dialog{width:min(560px,92vw)}
+  #posDlg,#awDlg,#giveDlg{width:min(760px,94vw)}
+}
 @media (max-width:900px){
   .bar,.stats,.layout{padding-left:18px;padding-right:18px}
   .layout{grid-template-columns:1fr;gap:16px}
