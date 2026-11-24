@@ -231,6 +231,25 @@ body.cmdopen main{padding-bottom:330px}
 #toast.show{opacity:1}
 #toast.err{background:var(--red);color:#fff}
 
+.vac{color:var(--mut);border:1.5px dashed var(--line2);border-radius:6px;padding:14px 16px;margin:0;font-size:14px}
+.ftools{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:14px 0 4px}
+.ftools select{font:inherit;font-size:14px;padding:7px 10px;border:1.5px solid var(--line2);border-radius:4px;background:#fff;color:var(--ink)}
+.fchip{font:inherit;font-size:13px;font-weight:700;padding:7px 14px;border:1.5px solid var(--line2);border-radius:999px;background:#fff;color:var(--ink);cursor:pointer}
+.fchip.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.twrap{overflow-x:auto;margin-top:12px;border:1px solid var(--line);border-radius:6px;background:#fff}
+.etbl{width:100%;border-collapse:collapse;font-size:14px}
+.etbl th{text-align:left;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--mut);padding:10px 14px;background:var(--soft);white-space:nowrap}
+.etbl td{padding:10px 14px;border-top:1px solid var(--line);vertical-align:middle}
+.etbl tbody tr{cursor:pointer}
+.etbl tbody tr:hover,.etbl tbody tr:focus{background:var(--soft);outline:0}
+.etbl .n{color:var(--mut);width:44px;font-variant-numeric:tabular-nums}
+.etbl .who{display:flex;align-items:center;gap:10px;font-weight:700;white-space:nowrap}
+.etbl .mini{flex:none;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-size:11px;font-weight:800;color:#fff}
+.etbl tr.off .who b{text-decoration:line-through;text-decoration-color:var(--red);color:var(--mut)}
+.etbl .st{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;border-radius:3px;padding:1px 7px;border:1px solid}
+.etbl .st.on{color:var(--ok);border-color:#b8e0c8;background:#eaf7ef}
+.etbl .st.no{color:var(--red-d);border-color:var(--redln);background:var(--redbg)}
+.etbl .wn{margin-left:6px;font-size:11px;font-weight:800;color:var(--amber);background:var(--amberbg);border:1px solid var(--amberln);border-radius:3px;padding:0 7px}
 @media (max-width:900px){
   .bar,.stats,.layout{padding-left:18px;padding-right:18px}
   .layout{grid-template-columns:1fr;gap:16px}
@@ -590,6 +609,10 @@ function chan(k, name, count) {
 }
 function renderSide() {
   var s = $("side"); s.textContent = "";
+  s.appendChild(el("h2", { text: "Overview" }));
+  s.appendChild(spChan("__board", "Board", boardMembers().length));
+  s.appendChild(spChan("__all", "Everyone", members.length));
+  s.appendChild(el("div", { class: "sep" }));
   s.appendChild(el("h2", { text: "Committees" }));
   committees.forEach(function (c) { s.appendChild(chan(c.id, c.name, activeCount(c.id))); });
   s.appendChild(el("div", { class: "sep" }));
@@ -629,6 +652,8 @@ function renderMain() {
   var host = $("main"); host.textContent = "";
   $("qx").hidden = !q;
   if (q) return renderSearch(host);
+  if (sel === "__board") return renderBoard(host);
+  if (sel === "__all") return renderEveryone(host);
 
   if (!committees.length && sel !== "none") sel = "none";
   if (sel !== "none" && !comById(sel)) sel = committees.length ? committees[0].id : "none";
@@ -681,6 +706,114 @@ function renderMain() {
     host.appendChild(el("div", { class: "grp off", text: "Terminated — " + off.length }));
     host.appendChild(el("div", { class: "cards" }, off.map(function (m) { return card(m, false); })));
   }
+}
+
+/* ---------- board + everyone ---------- */
+/* The board is whoever holds one of these titles. First match wins, so “Vice President” is never read as “President”. */
+var BOARD = [
+  { title: "President", fixed: true, re: /^(?!.*vice).*\bpresident\b/i },
+  { title: "Vice President", fixed: true, re: /vice[\s-]*president/i },
+  { title: "Heads", re: /^(?!.*(?:vice|deputy|assistant)[\s-]*head).*\bhead\b/i },
+  { title: "Vice Heads", re: /(?:vice|deputy|assistant)[\s-]*head/i },
+  { title: "Curators", re: /\bcurator\b/i }
+];
+function boardTier(m) {
+  var r = roleLabel(m), i;
+  for (i = 0; i < BOARD.length; i++) if (BOARD[i].re.test(r)) return i;
+  return -1;
+}
+function boardMembers() { return members.filter(function (m) { return isActive(m) && boardTier(m) >= 0; }); }
+
+function spChan(k, name, count) {   // sidebar entry for a view that is not a committee (no drag and drop)
+  return el("button", { class: "chan" + (!q && sel === k ? " on" : ""), type: "button", "data-k": k, on: {
+    click: function () { q = ""; $("q").value = ""; sel = k; render(); }
+  } }, el("span", { class: "hash", text: "#" }), el("span", { class: "nm", text: name }), el("span", { class: "ct", text: num(count) }));
+}
+
+function addBoardPositions(names, btn) {   // creates the shared President / Vice President positions with the normal position_add call
+  btn.disabled = true;
+  names.reduce(function (chain, name) {
+    return chain.then(function () {
+      var k = "position||" + name.toLowerCase();
+      return op("position_add", { rid: rid(k), name: name, committee_id: null }).then(function (p) { ridDone(k); if (!posById(p.id)) positions.push(p); });
+    });
+  }, Promise.resolve()).then(function () { toast("Added. Give a member that position and they appear here."); render(); })
+    .catch(fail).then(function () { btn.disabled = false; });
+}
+
+function renderBoard(host) {
+  var all = boardMembers(), missing = ["President", "Vice President"].filter(function (n) {
+    return !positions.some(function (p) { return p.name.toLowerCase() === n.toLowerCase(); });
+  });
+  host.appendChild(el("div", { class: "head" },
+    el("h1", { text: "Board" }),
+    canEdit() && missing.length ? el("div", { class: "tools" },
+      el("button", { class: "btn sec sm", type: "button", text: "Add " + missing.join(" + ") + (missing.length > 1 ? " positions" : " position"),
+        on: { click: function () { addBoardPositions(missing, this); } } })) : null,
+    el("p", { class: "sub", text: num(all.length) + " active board member" + (all.length === 1 ? "" : "s") + " · president, vice president, heads, vice heads and curators" })));
+  BOARD.forEach(function (t, i) {
+    var list = all.filter(function (m) { return boardTier(m) === i; }).sort(function (a, b) {
+      return comName(a.committee_id).localeCompare(comName(b.committee_id)) || byName(a, b);
+    });
+    if (!list.length && !t.fixed) return;
+    host.appendChild(el("div", { class: "grp", text: t.title + " — " + list.length }));
+    host.appendChild(list.length
+      ? el("div", { class: "cards" }, list.map(function (m) { return card(m, true); }))
+      : el("p", { class: "vac", text: "Vacant" }));
+  });
+  if (!all.length) host.appendChild(el("p", { class: "empty", text: "Nobody holds a board position yet. Give a member a position such as “President”, “Head of Media” or “Design Curator” and they show up here." }));
+}
+
+var everyF = { status: "all", com: "", sort: "name" };
+function renderEveryone(host) {
+  var act = members.filter(isActive).length;
+  host.appendChild(el("div", { class: "head" },
+    el("h1", { text: "Everyone" }),
+    el("p", { class: "sub", text: num(members.length) + " people · " + num(act) + " active · " + num(members.length - act) + " terminated, across all committees" })));
+
+  function chip(v, label) {
+    return el("button", { class: "fchip" + (everyF.status === v ? " on" : ""), type: "button", text: label, on: { click: function () { everyF.status = v; render(); } } });
+  }
+  var comSel = el("select", { "aria-label": "Committee", on: { change: function () { everyF.com = this.value; render(); } } },
+    el("option", { value: "", text: "All committees" }),
+    committees.map(function (c) { return el("option", { value: c.id, text: c.name }); }),
+    el("option", { value: "none", text: "Unassigned" }));
+  comSel.value = everyF.com;
+  var sortSel = el("select", { "aria-label": "Sort", on: { change: function () { everyF.sort = this.value; render(); } } },
+    [["name", "Sort: name"], ["com", "Sort: committee"], ["pos", "Sort: position"]].map(function (o) { return el("option", { value: o[0], text: o[1] }); }));
+  sortSel.value = everyF.sort;
+  host.appendChild(el("div", { class: "ftools" }, chip("all", "All"), chip("active", "Active"), chip("off", "Terminated"), comSel, sortSel));
+
+  var list = members.filter(function (m) {
+    if (everyF.status === "active" && !isActive(m)) return false;
+    if (everyF.status === "off" && isActive(m)) return false;
+    return !everyF.com || key(m) === everyF.com;
+  }).sort(function (a, b) {
+    var r = isActive(b) - isActive(a);   // active people first
+    if (r) return r;
+    if (everyF.sort === "com") return comName(a.committee_id).localeCompare(comName(b.committee_id)) || memRank(a) - memRank(b) || byName(a, b);
+    if (everyF.sort === "pos") return memRank(a) - memRank(b) || roleLabel(a).localeCompare(roleLabel(b)) || byName(a, b);
+    return byName(a, b);
+  });
+  if (!list.length) { host.appendChild(el("p", { class: "empty", text: "Nobody matches these filters." })); return; }
+
+  var rows = list.map(function (m, i) {
+    var wn = liveWarns(m.id).length, aw = myAwards(m.id).length;
+    return el("tr", { class: isActive(m) ? "" : "off", tabindex: "0", on: {
+      click: function () { openMember(m.id); },
+      keydown: function (e) { if (e.key === "Enter") openMember(m.id); }
+    } },
+      el("td", { class: "n", text: String(i + 1) }),
+      el("td", null, el("div", { class: "who" }, el("span", { class: "mini", style: "background:hsl(" + hue(m.name) + " 45% 40%)", text: initials(m.name) }), el("b", { text: m.name }))),
+      el("td", { text: comName(m.committee_id) }),
+      el("td", { text: roleLabel(m) }),
+      el("td", { text: aw ? String(aw) : "—" }),
+      el("td", null, el("span", { class: "st " + (isActive(m) ? "on" : "no"), text: isActive(m) ? "Active" : "Terminated" }),
+        wn ? el("span", { class: "wn", title: wn + " live warning" + (wn === 1 ? "" : "s"), text: "⚠ " + wn }) : null));
+  });
+  host.appendChild(el("div", { class: "twrap" }, el("table", { class: "etbl" },
+    el("thead", null, el("tr", null, ["#", "Name", "Committee", "Position", "Awards", "Status"].map(function (h) { return el("th", { text: h }); }))),
+    el("tbody", null, rows))));
 }
 
 function renderSearch(host) {
@@ -771,7 +904,7 @@ function perr(e) {   // errors inside this window show here, a dialog covers the
 }
 function openPositions() {
   posEditId = null; $("posErr").textContent = ""; $("posName").value = "";
-  fillScope($("posScope"), sel && sel !== "none" ? sel : "");
+  fillScope($("posScope"), sel && comById(sel) ? sel : "");
   renderPositions(); $("posDlg").showModal(); $("posName").focus();
 }
 function renderPositions() {
@@ -1620,7 +1753,7 @@ $("cmdin").addEventListener("keydown", function (e) {
     committees = d.committees || []; members = d.members || []; positions = d.positions || [];
     awards = d.awards || []; memberAwards = d.member_awards || [];
     warnings = d.warnings || []; role = d.role === "member" ? "member" : "board";
-    if (!sel || (sel !== "none" && !comById(sel))) sel = committees.length ? committees[0].id : "none";
+    if (!sel || (sel !== "none" && sel !== "__board" && sel !== "__all" && !comById(sel))) sel = committees.length ? committees[0].id : "none";
     $("login").hidden = true; $("app").hidden = false; $("actions").hidden = false;
     $("awBtn").hidden = !canEdit(); $("cmdBtn").hidden = !canEdit(); document.body.classList.toggle("view", !canEdit());
     render(); touch();
