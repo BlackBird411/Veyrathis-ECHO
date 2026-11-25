@@ -2472,7 +2472,9 @@ function showBird(app) {
   var box = h("div", { id: "birdbox" }); app.append(box); renderBar();
   function go() { if (maintOn() && !editing && box.isConnected) window.TedxBird.mount(box); }
   if (window.TedxBird) return go();
-  var sc = document.createElement("script"); sc.src = "/tedxbird.js"; sc.onload = go; document.body.append(sc);
+ var sc = document.createElement("script"); sc.src = "/tedxbird.js"; sc.onload = go;
+  sc.onerror = function () { box.style.cssText = "padding:120px 24px;text-align:center;font-family:sans-serif"; box.textContent = "The website is being updated. Please check back soon."; };
+  document.body.append(sc);
 }
 function applyFx() { window.tedxFxOn = fxOn(); }
 
