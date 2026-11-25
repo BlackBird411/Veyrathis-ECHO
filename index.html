@@ -637,6 +637,7 @@ var DEFAULTS = {
   },
    finale: { on: false, name: "Yousef Al 3ashry", tag: "The final closing of the event", sub: "Live on stage · 19.11.2026 · MSA University", image: "", acts: [], bg: "#000000", bgImage: "" },
   fx: { on: true },
+  maint: { on: false },
   stats: [
     { num: "2017", label: "Year of our first event" },
     { num: "10", label: "Speakers on our first stage" },
@@ -2450,6 +2451,7 @@ head("site.regHead"), h("div", { class: "regs" + (editing ? "" : " tkr") }, card
 /* ---------- render ---------- */
 function render() {
   var y = window.scrollY, app = document.getElementById("app");
+  if (maintOn() && !editing) { showBird(app); return; }
   app.textContent = "";
   [announceBar(), nav(), hero(), closingSec(), stats(), about(), nextBand(), announcementsSec(), whatifSec(), regSec(), rulesSec(), eventsSec(), gallerySec(), videosSec(), teamSec(), contactSec(), footer()]
     .forEach(function (n) { if (n) app.append(n); });
@@ -2461,6 +2463,17 @@ applyFx();
 }
 
 function fxOn() { return !(state.site.fx && state.site.fx.on === false); }
+  function maintOn() { return !!(state.site.maint && state.site.maint.on === true); }
+var CTRL_PATH = "/controlsh123";
+function isCtrl() { return location.pathname.replace(/\/+$/, "") === CTRL_PATH; }
+function showBird(app) {
+  if (app.querySelector("#birdbox")) return;
+  app.textContent = ""; window.tedxFxOn = false;
+  var box = h("div", { id: "birdbox" }); app.append(box); renderBar();
+  function go() { if (maintOn() && !editing && box.isConnected) window.TedxBird.mount(box); }
+  if (window.TedxBird) return go();
+  var sc = document.createElement("script"); sc.src = "/tedxbird.js"; sc.onload = go; document.body.append(sc);
+}
 function applyFx() { window.tedxFxOn = fxOn(); }
 
 function renderBar() {  var b = document.getElementById("bar");
@@ -2470,6 +2483,10 @@ function renderBar() {  var b = document.getElementById("bar");
 h("button", { class: "btn sm ghost", type: "button", on: { click: function () {
       state.site.fx.on = !fxOn(); dirty = true; applyFx(); renderBar();
     } } }, "? / ! effect: " + (fxOn() ? "On" : "Off")),
+            h("button", { class: "btn sm ghost", type: "button", on: { click: function () {
+      state.site.maint.on = !maintOn(); dirty = true; renderBar();
+      toast("Maintenance " + (maintOn() ? "ON" : "OFF") + ". Press Save to apply.");
+    } } }, "Maintenance: " + (maintOn() ? "ON" : "Off")),
     h("button", { class: "btn sm", type: "button", on: { click: save } }, "Save"),
            h("button", { class: "btn sm ghost", type: "button", on: { click: logout } }, "Log out"));
 }
@@ -2554,10 +2571,11 @@ function init(d) {
 function load() {
   api("team_hierarchy?id=eq.1&select=data").then(function (rows) {
     init((rows[0] && rows[0].data) || {}); loaded = true; dirty = false; render();
-  if (!new URLSearchParams(location.search).get("form")) setTimeout(entrancePopup, 700);
-        trackVisit();
+  if (isCtrl()) openLogin();
+  else if (!maintOn() && !new URLSearchParams(location.search).get("form")) setTimeout(entrancePopup, 700);
+  if (!isCtrl()) trackVisit();
     loadFull();
-    openFromLink();
+if (!maintOn()) openFromLink();
   }).catch(function (e) {
     init({}); loaded = false; render(); toast("Could not load saved content: " + e.message, true);
   });
