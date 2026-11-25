@@ -1275,7 +1275,8 @@ function hero() {
       T("p", s + "sub", "sub", "Intro sentence", true),
       cdEl(get(s + "cd"), { done: "Happening now" }),
       editing ? CDI(s + "cd") : null,
-      h("div", { class: "cta" }, ctaBtn(s + "cta1", "#events", false), ctaBtn(s + "cta2", "#team", true)),
+      h("div", { class: "cta" }, ctaBtn(s + "cta1", "#events", false), ctaBtn(s + "cta2", "#team", true),
+  editing ? null : h("a", { class: "btn ghost", href: "/play" }, "Play TEDxBird")),
       editing ? h("div", { class: "ctl" }, picControls(s + "image", 2000, "background photo", 16 / 9)) : null));
 }
 
