@@ -1,5 +1,6 @@
 /* TEDxBird v4: side-scrolling meteor shooter. Your ship faces right, meteors come from the right.
    No upgrade caps: the further you get, the faster and tougher the meteors, and the stronger you can become.
+   A boss fight starts every few levels (see BOSS_EVERY). Power-ups are rarer (see DROP_SCALE).
    Move: WASD / arrows, or press and drag. Auto-fire. Loaded by index.html only while maintenance is ON. */
 (function () {
   "use strict";
@@ -20,6 +21,18 @@
   };
   var BAG = []; Object.keys(KIND).forEach(function (k) { for (var i = 0; i < KIND[k].w; i++) BAG.push(k); });
 
+  /* Tuning knobs */
+  var DROP_SCALE = 0.5;                       // multiplies every meteor's power-up drop chance (1 = the old rate)
+  var BOSS_EVERY = 5;                         // a boss arrives each time you reach a multiple of this level
+  var BOSS_HP_BASE = 120, BOSS_HP_LEVEL = 26; // boss health = base + level * per-level
+  var BOSSES = [
+    { n: "DOUBT",        c: "#b388ff" },
+    { n: "FEAR",         c: "#ff4d4d" },
+    { n: "HESITATION",   c: "#4cc9f0" },
+    { n: "COMFORT ZONE", c: "#7cf2a2" },
+    { n: "IMPOSTER",     c: "#ff9a3d" }
+  ];
+
   /* r = radius, hp = base health, hl = extra health per level, sp = speed multiplier, drop = drop chance */
   var TY = {
     rock0: { r: 16, hp: 1,  hl: 0.25, pts: 10,  sp: 1,   drop: 0.08, c: "#6b3a26", tc: "#ff9a3d" },
@@ -27,7 +40,7 @@
     rock2: { r: 40, hp: 8,  hl: 1.4,  pts: 80,  sp: 0.9, drop: 0.4,  c: "#7a4630", tc: "#ff9a3d" },
     dart:  { r: 12, hp: 1,  hl: 0.1,  pts: 25,  sp: 2.6, drop: 0.1,  c: "#dff6ff", tc: "#4cc9f0" },
     heavy: { r: 46, hp: 14, hl: 2,    pts: 150, sp: 0.55, drop: 0.7, c: "#6c7480", tc: "#9aa5b1" },
-    gold:  { r: 24, hp: 5,  hl: 0.6,  pts: 120, sp: 0.9, drop: 2,    c: GOLD,      tc: GOLD },
+    gold:  { r: 24, hp: 5,  hl: 0.6,  pts: 120, sp: 0.9, drop: 1,    c: GOLD,      tc: GOLD },   // drop >= 1 means a guaranteed number of drops
     bomb:  { r: 22, hp: 3,  hl: 0.4,  pts: 60,  sp: 1,   drop: 0.2,  c: "#c4200f", tc: "#ff6b3d" },
     wave:  { r: 18, hp: 2,  hl: 0.3,  pts: 50,  sp: 1.1, drop: 0.2,  c: "#8e5bd9", tc: "#b388ff" }
   };
@@ -74,6 +87,7 @@
     try { best = +localStorage.getItem("tedxbird-best") || 0; } catch (e) {}
 
     var meteors, shots, drops, parts, pops, keys = {}, tgt = null, pressed = false;
+    var ebul, boss, bossAt, bossN, warnUntil;   // boss fight: enemy bullets, the boss, next boss level, bosses spawned, warning timer
     var px, py, lives, power, spd, pierce, drones, shield, invulnUntil, score, combo, comboUntil, level;
     var x2Until, frenzyUntil, freezeUntil, magnetUntil, flashUntil, nextShot, nextSpawn, started, over, deadAt = 0, shake;
     var last = performance.now(), stars = [];
@@ -81,6 +95,7 @@
 
     function reset() {
       meteors = []; shots = []; drops = []; parts = []; pops = [];
+      ebul = []; boss = null; bossAt = BOSS_EVERY; bossN = 0; warnUntil = 0;
       px = 110; py = H / 2; lives = 3; power = 1; spd = 0; pierce = 0; drones = 0; shield = false;
       invulnUntil = 0; score = 0; combo = 0; comboUntil = 0; level = 1;
       x2Until = 0; frenzyUntil = 0; freezeUntil = 0; magnetUntil = 0; flashUntil = 0;
@@ -131,7 +146,7 @@
       bump(now);
       var gain = T.pts * mult(now) * (now < x2Until ? 2 : 1);
       score += gain; pop("+" + gain, m.x, m.y, now < x2Until ? GOLD : "#fff", now, 0.8 + m.r / 50);
-      var nd = T.drop >= 1 ? T.drop : (Math.random() < T.drop ? 1 : 0);
+      var nd = T.drop >= 1 ? T.drop : (Math.random() < T.drop * DROP_SCALE ? 1 : 0);
       for (var d = 0; d < nd; d++) drops.push({ x: m.x + d * 22, y: m.y, k: BAG[(Math.random() * BAG.length) | 0], vx: -1.2 + rnd(-0.3, 0.3), vy: rnd(-0.5, 0.5) });
     }
 
@@ -141,8 +156,45 @@
       else if (k === "drone") drones++; else if (k === "life") lives++; else if (k === "shield") shield = true;
       else if (k === "x2") x2Until = now + 10000; else if (k === "frenzy") frenzyUntil = now + 8000;
       else if (k === "freeze") freezeUntil = now + 6000; else if (k === "magnet") magnetUntil = now + 10000;
-      else { meteors.slice().forEach(function (m) { kill(m, now, true, true); }); shake = 14; flashUntil = now + 160; }
+      else {
+        meteors.slice().forEach(function (m) { kill(m, now, true, true); }); ebul = []; shake = 14; flashUntil = now + 160;
+        if (boss) { boss.hp -= boss.max * 0.12; boss.flash = now + 120; if (boss.hp <= 0) killBoss(now); }   // a bomb hurts a boss, it doesn't delete it
+      }
       pop(P.n, x, y - 22, P.c, now, 1.1); burst(x, y, P.c, 16);
+    }
+
+    /* ---------- boss fights ---------- */
+    function bossName(n) {
+      var c = Math.floor((n - 1) / BOSSES.length);
+      return BOSSES[(n - 1) % BOSSES.length].n + (c ? " " + (c + 1) : "");
+    }
+    function bossPhase() { var r = boss.hp / boss.max; return r > 0.66 ? 1 : (r > 0.33 ? 2 : 3); }
+    function ebullet(x, y, a, sp) { ebul.push({ x: x, y: y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, r: 7 }); }
+    function spawnBoss(now) {
+      var n = ++bossN, hp = Math.round(BOSS_HP_BASE + level * BOSS_HP_LEVEL);
+      boss = { n: n, name: bossName(n), c: BOSSES[(n - 1) % BOSSES.length].c, x: W + 110, y: H / 2, r: 68, hp: hp, max: hp, ph: 0, state: "enter", next: 0, atk: 0, flash: 0 };
+    }
+    /* phase 1: aimed triple shot. phase 2: aimed fan, alternating with a pair of darts. phase 3: rotating ring, alternating with a fast triple */
+    function bossAttack(ph) {
+      var b = boss, k, n, off, a0 = Math.atan2(py - b.y, px - b.x), sp = Math.min(7, 3.4 + level * 0.12), mx = b.x - b.r * 0.6;
+      if (ph === 1) { for (k = -1; k <= 1; k++) ebullet(mx, b.y, a0 + k * 0.22, sp); }
+      else if (ph === 2) {
+        if (b.atk % 2) { for (k = -2; k <= 2; k++) ebullet(mx, b.y, a0 + k * 0.2, sp); }
+        else { spawn("dart", b.x - b.r, b.y - 36); spawn("dart", b.x - b.r, b.y + 36); }
+      } else if (b.atk % 2) {
+        n = 14; off = rnd(0, 6.283);
+        for (k = 0; k < n; k++) ebullet(b.x, b.y, off + k * 6.283 / n, sp * 0.8);
+      } else { for (k = -1; k <= 1; k++) ebullet(mx, b.y, a0 + k * 0.12, sp * 1.25); }
+    }
+    function killBoss(now) {
+      var b = boss, i, gain = (400 + 150 * level) * (now < x2Until ? 2 : 1);
+      boss = null; ebul = [];
+      burst(b.x, b.y, "#fff", 50); burst(b.x, b.y, b.c, 60); burst(b.x, b.y, GOLD, 30);
+      meteors.slice().forEach(function (m) { kill(m, now, false, true); });   // clear the leftover minions
+      shake = 18; flashUntil = now + 220;
+      bossAt = (Math.floor(level / BOSS_EVERY) + 1) * BOSS_EVERY;
+      score += gain; pop("BOSS DOWN  +" + gain, b.x - 60, b.y, GOLD, now, 1.3);
+      for (i = 0; i < 2; i++) drops.push({ x: b.x - 30 + i * 60, y: b.y + (i ? 40 : -40), k: BAG[(Math.random() * BAG.length) | 0], vx: -1.2, vy: rnd(-0.5, 0.5) });
     }
 
     function die(now) {
@@ -183,7 +235,10 @@
       /* level follows score: more score = faster, tougher, more meteors (no limit) */
       var lv = 1 + Math.floor(Math.sqrt(score / 50));
       if (lv > level) { level = lv; pop("LEVEL " + level, W / 2, H / 2, GOLD, now, 2); }
-      if (now > nextSpawn) { nextSpawn = now + Math.max(150, 950 - level * 45) * rnd(0.7, 1.3); spawn(pickType(), W + 60, rnd(40, H - 40)); }
+      /* boss fights: a warning, then a boss each time you reach a multiple of BOSS_EVERY */
+      if (!boss && !warnUntil && level >= bossAt) warnUntil = now + 2200;
+      if (warnUntil && now >= warnUntil) { warnUntil = 0; spawnBoss(now); }
+      if (now > nextSpawn) { nextSpawn = now + Math.max(150, 950 - level * 45) * rnd(0.7, 1.3) * ((boss || warnUntil) ? 2.5 : 1); spawn(pickType(), W + 60, rnd(40, H - 40)); }
 
       /* auto-fire to the right */
       if (now > nextShot) {
@@ -204,6 +259,32 @@
         if (now >= invulnUntil && dist(px, py, m.x, m.y) < 12 + m.r * 0.85) { kill(m, now, false, true); hurt(now); if (over) return; }
       }
 
+      /* boss + its bullets (freeze slows both) */
+      if (boss) {
+        var bo = boss, bph = bossPhase();
+        if (bo.state === "enter") {
+          bo.x -= 2.4 * dt * fz;
+          if (bo.x <= W - 120) { bo.state = "fight"; bo.next = now + 900; }
+        } else {
+          bo.x += (W - 120 - bo.x) * Math.min(1, 0.1 * dt);
+          bo.ph += 0.025 * dt * fz;
+          var track = bph === 1 ? 0 : (bph === 2 ? 0.35 : 0.6);      // later phases chase the player more
+          var ty = (1 - track) * (H / 2 + Math.sin(bo.ph) * (H / 2 - bo.r - 30)) + track * py;
+          ty = Math.max(bo.r + 10, Math.min(H - bo.r - 10, ty));
+          var bv = (1.4 + 0.5 * bph + level * 0.04) * dt * fz;
+          bo.y += Math.max(-bv, Math.min(bv, ty - bo.y));
+          if (now >= bo.next) { bo.atk++; bo.next = now + Math.max(650, (1700 - bph * 200) * (1 - Math.min(0.35, level * 0.015))); bossAttack(bph); }
+          else if (fz < 1) bo.next += dt * 16.667 * (1 - fz);
+        }
+        if (now >= invulnUntil && dist(px, py, bo.x, bo.y) < 12 + bo.r * 0.9) { hurt(now); if (over) return; }
+      }
+      for (i = ebul.length - 1; i >= 0; i--) {
+        var eb = ebul[i];
+        eb.x += eb.vx * dt * fz; eb.y += eb.vy * dt * fz;
+        if (eb.x < -30 || eb.x > W + 30 || eb.y < -30 || eb.y > H + 30) { ebul.splice(i, 1); continue; }
+        if (now >= invulnUntil && dist(px, py, eb.x, eb.y) < 9 + eb.r) { ebul.splice(i, 1); hurt(now); if (over) return; }
+      }
+
       /* bolts */
       for (i = shots.length - 1; i >= 0; i--) {
         b = shots[i]; b.x += b.vx * dt; b.y += b.vy * dt;
@@ -215,6 +296,11 @@
           b.hits.push(m); m.hp -= b.dmg; m.flash = now + 70; burst(b.x, b.y, "#ffe08a", 3);
           if (m.hp <= 0) kill(m, now, true, false);
           if (--b.left <= 0) { gone = true; break; }
+        }
+        if (!gone && boss && b.hits.indexOf(boss) < 0 && dist(b.x, b.y, boss.x, boss.y) < boss.r + 5) {
+          b.hits.push(boss); boss.hp -= b.dmg; boss.flash = now + 70; burst(b.x, b.y, "#ffe08a", 3);
+          if (boss.hp <= 0) killBoss(now);
+          if (--b.left <= 0) gone = true;
         }
         if (gone) shots.splice(i, 1);
       }
@@ -265,11 +351,35 @@
         if (m.hp < m.max && m.r > 20) { g.fillStyle = "#222"; g.fillRect(m.x - m.r, m.y - m.r - 10, m.r * 2, 4); g.fillStyle = RED; g.fillRect(m.x - m.r, m.y - m.r - 10, m.r * 2 * Math.max(0, m.hp / m.max), 4); }
       }
 
+      /* boss: dark disc, coloured ring, spinning spikes and a big question mark */
+      if (boss) {
+        var bo = boss, fl = now < bo.flash;
+        g.save(); g.translate(bo.x, bo.y);
+        g.shadowColor = bo.c; g.shadowBlur = 26; g.fillStyle = fl ? "#fff" : bo.c;
+        for (k = 0; k < 8; k++) {
+          var sa = bo.ph * 1.5 + k * Math.PI / 4;
+          g.beginPath(); g.moveTo(Math.cos(sa - 0.16) * bo.r * 0.9, Math.sin(sa - 0.16) * bo.r * 0.9);
+          g.lineTo(Math.cos(sa) * bo.r * 1.22, Math.sin(sa) * bo.r * 1.22);
+          g.lineTo(Math.cos(sa + 0.16) * bo.r * 0.9, Math.sin(sa + 0.16) * bo.r * 0.9); g.closePath(); g.fill();
+        }
+        circ(0, 0, bo.r, fl ? "#fff" : "#1a0d14"); g.shadowBlur = 0;
+        g.lineWidth = 7; g.strokeStyle = fl ? "#fff" : bo.c; g.beginPath(); g.arc(0, 0, bo.r - 4, 0, 6.283); g.stroke();
+        circ(0, 0, bo.r * 0.55, fl ? "#ddd" : "rgba(255,255,255,.08)");
+        text("?", 0, bo.r * 0.32, bo.r, fl ? "#000" : bo.c);
+        g.restore();
+      }
+
       /* drops */
       for (i = 0; i < drops.length; i++) {
         var dr = drops[i], P = KIND[dr.k], pl = 1 + 0.1 * Math.sin(now / 160 + dr.y);
         g.shadowColor = P.c; g.shadowBlur = 16; circ(dr.x, dr.y, 16 * pl, P.c); g.shadowBlur = 0;
         g.fillStyle = "#000"; g.font = "bold 15px " + FONT; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText(P.t, dr.x, dr.y + 1); g.textBaseline = "alphabetic";
+      }
+
+      /* boss bullets */
+      for (i = 0; i < ebul.length; i++) {
+        var eb = ebul[i];
+        g.shadowColor = "#ff3d6e"; g.shadowBlur = 12; circ(eb.x, eb.y, eb.r, "#ff3d6e"); g.shadowBlur = 0; circ(eb.x, eb.y, eb.r * 0.45, "#fff");
       }
 
       /* bolts (little "!" strokes) */
@@ -314,13 +424,25 @@
         g.fillStyle = "#222"; g.fillRect(W - 144, y0 + 5, 120, 5); g.fillStyle = tm[i][3]; g.fillRect(W - 144, y0 + 5, 120 * Math.max(0, (tm[i][1] - now) / tm[i][2]), 5); y0 += 28;
       }
       text("POWER " + power + "    SPEED " + spd + "    PIERCE " + pierce + "    DRONES " + drones, 24, H - 16, 14, "#fff", "left");
+      if (boss) {
+        var bw = Math.min(420, W - 80), bx = (W - bw) / 2, by = H - 46;
+        text(boss.name, W / 2, by - 8, 15, boss.c);
+        g.fillStyle = "#222"; g.fillRect(bx, by, bw, 8);
+        g.fillStyle = boss.c; g.fillRect(bx, by, bw * Math.max(0, boss.hp / boss.max), 8);
+        g.fillStyle = "rgba(0,0,0,.6)"; g.fillRect(bx + bw / 3 - 1, by, 2, 8); g.fillRect(bx + bw * 2 / 3 - 1, by, 2, 8);   // phase marks
+      }
+      if (warnUntil && now < warnUntil) {
+        if (((now / 220) | 0) % 2) text("WARNING", W / 2, H / 2 - 24, 56, RED);
+        text(bossName(bossN + 1) + " APPROACHES", W / 2, H / 2 + 14, 22, "#fff");
+      }
 
       if (!started && !over) {
         text("Move: WASD / arrows, or press and drag", W / 2, H / 2 - 20, 24);
         text("Your ship auto-fires to the right. Blast the meteors before they hit you.", W / 2, H / 2 + 12, 16, GOLD);
         text("Drops:  P power \u00b7 V speed \u00b7 X pierce \u00b7 D drone \u00b7 H shield \u00b7 B bomb \u00b7 L life", W / 2, H / 2 + 40, 15, "#bdbdbd");
         text("M magnet \u00b7 F frenzy \u00b7 Z freeze \u00b7 x2 points.  Upgrades never cap, and neither do the meteors.", W / 2, H / 2 + 62, 15, "#bdbdbd");
-        text("Click, tap or press any key to start", W / 2, H / 2 + 100, 20);
+        text("Every " + BOSS_EVERY + " levels a boss attacks. Dodge its shots and bring it down.", W / 2, H / 2 + 84, 15, GOLD);
+        text("Click, tap or press any key to start", W / 2, H / 2 + 112, 20);
       }
       if (over) {
         g.fillStyle = "rgba(0,0,0,.6)"; g.fillRect(0, 0, W, H);
