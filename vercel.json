@@ -1,6 +1,7 @@
 {
   "rewrites": [
 { "source": "/m/:file", "destination": "/api/m?file=:file" },
+    { "source": "/controlsh123", "destination": "/index.html" },
     { "source": "/analytics", "destination": "/analytics.html" },
     { "source": "/club-management", "destination": "/club-management.html" }
   ],
