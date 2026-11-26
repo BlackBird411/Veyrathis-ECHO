@@ -271,7 +271,7 @@ body.cmdopen main{padding-bottom:330px}
 .ospine.s{height:16px}
 .olabel{font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--red-d);background:#fff;border:1.5px solid var(--redln);border-radius:999px;padding:4px 14px}
 .orow{display:flex;justify-content:center}
-.onode{position:relative;padding:26px 8px 0;display:flex;flex-direction:column;align-items:center}
+.onode{position:relative;padding:26px 5px 0;display:flex;flex-direction:column;align-items:center}
 .onode::before,.onode::after{content:"";position:absolute;top:0;width:50%;height:26px;border-top:2px solid var(--red)}
 .onode::before{right:50%}
 .onode::after{left:50%;border-left:2px solid var(--red)}
@@ -280,19 +280,21 @@ body.cmdopen main{padding-bottom:330px}
 .onode:first-child::after{border-radius:8px 0 0 0}
 .onode:only-child{padding-top:0}
 .onode:only-child::before,.onode:only-child::after{display:none}
-.onode .card{flex-direction:column;text-align:center;width:172px;padding:14px 10px;cursor:pointer}
+.onode .card{flex-direction:column;text-align:center;width:152px;padding:10px 8px;cursor:pointer}
 .onode .card:hover{transform:none}
 .onode .card .tx{width:100%}
 .onode .card .nm{white-space:normal}
 .onode .card .bd{justify-content:center}
-.onode .card .av{width:48px;height:48px;font-size:16px}
+.onode .card .av{width:40px;height:40px;font-size:14px}
+.onode .card .rl{white-space:normal;overflow:visible;text-overflow:clip}
 .onode.big .card,.onode.big .ovac{width:224px}
-.ovac{width:172px;padding:18px 10px;text-align:center;border:1.5px dashed var(--line2);border-radius:6px;background:#fff;color:var(--mut);display:flex;flex-direction:column;gap:2px;font-size:13px}
-.ovac b{color:var(--ink);font-size:15px}
+.ovac{width:152px;padding:8px;text-align:center;border:1.5px dashed var(--line2);border-radius:6px;background:#fff;color:var(--mut);display:flex;flex-direction:column;gap:2px;font-size:13px}
+.ovac b{color:var(--ink);font-size:13px}
+.ovac span{font-size:12px;line-height:1.25}
 .oseatw{margin-top:10px;display:flex;justify-content:center;text-align:center}
 .oseat{font:inherit;font-size:13px;font-weight:700;padding:7px 10px;border:1.5px solid var(--ink);border-radius:3px;background:#fff;width:100%;max-width:260px;cursor:pointer}
 .oseat:hover{border-color:var(--red)}
-.ocom{display:flex;flex-direction:column;align-items:center;width:188px}
+.ocom{display:flex;flex-direction:column;align-items:center;width:162px}
 .ocomh{width:100%;text-align:center;font-weight:800;font-size:14px;color:#fff;background:var(--red);border-radius:4px 4px 0 0;padding:8px 10px;margin-bottom:12px}
 .oslot{display:flex;flex-direction:column;align-items:center;width:100%}
 .ostitle{font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--mut);margin-bottom:5px}
@@ -301,10 +303,30 @@ body.cmdopen main{padding-bottom:330px}
 .pdfhead{display:none}
 /* several heads / vice heads under one curator: each position is its own seat */
 .oseatbox{display:flex;flex-direction:column;align-items:center;width:100%;gap:8px}
-.oseatbox+.oseatbox{margin-top:12px;padding-top:12px;border-top:1px dashed var(--line2)}
+.obranch{display:flex;flex-direction:column;align-items:center;width:100%}
+.obranch+.obranch{margin-top:10px;padding-top:10px;border-top:1px dashed var(--line2)}
+.ospine.xs{height:8px}
 .oseatbox .oseatw{margin-top:2px;width:100%}
 .oadd{margin-top:12px;font:inherit;font-size:12px;font-weight:700;color:var(--ink);background:#fff;border:1.5px dashed var(--line2);border-radius:3px;padding:6px 10px;width:100%;max-width:172px;cursor:pointer}
 .oadd:hover{border-color:var(--red)}
+.ochg{font:inherit;font-size:12px;font-weight:700;border:0;background:transparent;color:var(--mut);cursor:pointer;text-decoration:underline;padding:2px 6px}
+.ochg:hover{color:var(--red-d)}
+.ovac.pick{cursor:pointer}
+.ovac.pick:hover,.ovac.drop,.oseatbox.drop,.onode.big.drop{border-color:var(--red);color:var(--ink)}
+.oseatbox.drop,.onode.big.drop{outline:2px dashed var(--red);outline-offset:3px;border-radius:6px;background:var(--redbg)}
+/* open seats, listed above the chart while vacant seats are hidden */
+.ovstrip{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:12px 0 0}
+.ovstrip b{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--mut);margin-right:4px}
+.ovchip{font:inherit;font-size:12px;font-weight:700;padding:4px 11px;border:1.5px dashed var(--line2);border-radius:999px;background:#fff;color:var(--ink)}
+button.ovchip{cursor:pointer}
+button.ovchip:hover{border-color:var(--red);background:var(--redbg)}
+/* seat picker */
+#pickList{max-height:44vh;overflow:auto;margin-top:10px;border:1px solid var(--line);border-radius:4px}
+.spi{display:flex;align-items:center;gap:10px;width:100%;text-align:left;border:0;border-bottom:1px solid var(--line);background:#fff;padding:9px 12px;font-size:15px;cursor:pointer}
+.spi:last-child{border-bottom:0}
+.spi:hover,.spi:focus{background:var(--soft);outline:0}
+.spi b{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.spi small{flex:none;color:var(--mut);font-size:12px;max-width:50%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 /* full-width board: the committee list becomes a strip on top so the chart gets the whole page */
 body.bwide .layout{grid-template-columns:1fr;gap:16px}
 body.bwide aside{position:static;display:flex;gap:6px;overflow-x:auto;padding:8px;max-height:none;box-shadow:none}
@@ -325,7 +347,7 @@ body.bwide .chan.add{margin:0;border-style:dashed}
 @media print{
   body.pdfboard{background:#fff;padding:0}
   body.pdfboard,body.pdfboard *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
-  body.pdfboard header,body.pdfboard .stats,body.pdfboard aside,body.pdfboard #cmdbar,body.pdfboard #pickbar,body.pdfboard #toast,body.pdfboard .head,body.pdfboard .oseatw,body.pdfboard .oadd,body.pdfboard .bd,body.pdfboard .wn,body.pdfboard .pt,body.pdfboard main>p.meta{display:none!important}
+  body.pdfboard header,body.pdfboard .stats,body.pdfboard aside,body.pdfboard #cmdbar,body.pdfboard #pickbar,body.pdfboard #toast,body.pdfboard .head,body.pdfboard .oseatw,body.pdfboard .oadd,body.pdfboard .ovstrip,body.pdfboard .bd,body.pdfboard .wn,body.pdfboard .pt,body.pdfboard main>p.meta{display:none!important}
   body.pdfboard .layout{display:block;max-width:none;padding:0;margin:0}
   body.pdfboard main{padding:0}
   body.pdfboard .pdfhead{display:block;text-align:center;font-size:16px;margin:0 0 6px}
@@ -484,6 +506,19 @@ body.bwide .chan.add{margin:0;border-style:dashed}
     <p class="err" id="posErr" role="alert"></p>
     <div id="posList"></div>
     <div class="row"><span class="gap"></span><button class="btn sec" id="posClose" type="button">Close</button></div>
+  </div>
+</dialog>
+<dialog id="pickDlg">
+  <div class="posbox">
+    <h3 id="pickTitle">Assign</h3>
+    <p class="meta" id="pickMeta"></p>
+    <input id="pickQ" type="search" placeholder="Find a member by name, role or committee" autocomplete="off" aria-label="Find a member">
+    <div id="pickList"></div>
+    <div class="row">
+      <button class="btn warn sm" id="pickVac" type="button">Leave vacant</button>
+      <span class="gap"></span>
+      <button class="btn sec" id="pickCancel" type="button">Cancel</button>
+    </div>
   </div>
 </dialog>
 <dialog id="seatDlg">
@@ -961,33 +996,57 @@ function seatSet(o, m) {   // o = { title, pos, holders, com }
                         : (m ? m.name + " is now " + o.title + "." : o.title + " is now vacant."), r.errs.length > 0);
   }).catch(fail).then(function () { selBusy = false; render(); });
 }
-function seatPicker(o) {
-  var s = el("select", { class: "oseat", "aria-label": (o.holders.length ? "Change " : "Assign ") + o.title });
-  s.appendChild(el("option", { value: "", text: (o.holders.length ? "Change " : "Assign ") + o.title + "…" }));
-  members.filter(function (m) { return isActive(m) && o.holders.indexOf(m) < 0; }).sort(function (a, b) {
+function seatPicker(o) {   // small "Change…" link under a filled seat; opens the searchable list
+  return el("div", { class: "oseatw" }, el("button", { class: "ochg", type: "button", text: o.holders.length ? "Change…" : "Assign…",
+    on: { click: function (e) { e.stopPropagation(); seatPick(o); } } }));
+}
+var pickO = null;
+function seatPick(o) {
+  if (!canEdit() || !o || !o.pos || selBusy || cmdBusy) return;
+  pickO = o;
+  $("pickTitle").textContent = (o.holders.length ? "Change " : "Assign ") + o.title;
+  $("pickMeta").textContent = o.holders.length ? "Now: " + nameList(o.holders) + ". Whoever is replaced keeps no position." : "Pick who holds this seat.";
+  $("pickQ").value = ""; $("pickVac").hidden = !o.holders.length;
+  drawPick(); $("pickDlg").showModal(); $("pickQ").focus();
+}
+function drawPick() {
+  var o = pickO, t = $("pickQ").value.trim().toLowerCase(), host = $("pickList"); host.textContent = "";
+  var ms = members.filter(function (m) {
+    return isActive(m) && o.holders.indexOf(m) < 0 && (!t || (m.name + " " + roleLabel(m) + " " + comName(m.committee_id)).toLowerCase().indexOf(t) >= 0);
+  }).sort(function (a, b) {
     var ia = o.com && a.committee_id === o.com.id ? 0 : 1, ib = o.com && b.committee_id === o.com.id ? 0 : 1;
     return ia - ib || byName(a, b);
-  }).forEach(function (m) {
-    var bits = [];
-    if (roleLabel(m) !== "Member") bits.push(roleLabel(m));
-    if (o.com && m.committee_id !== o.com.id) bits.push(comName(m.committee_id));
-    s.appendChild(el("option", { value: m.id, text: m.name + (bits.length ? " (" + bits.join(", ") + ")" : "") }));
   });
-  if (o.holders.length) s.appendChild(el("option", { value: "__vacant", text: "Leave " + o.title + " vacant" }));
-  s.addEventListener("change", function () {
-    var v = s.value; s.value = "";
-    if (v) seatSet(o, v === "__vacant" ? null : memById(v));
+  ms.slice(0, 80).forEach(function (m) {
+    host.appendChild(el("button", { class: "spi", type: "button", on: { click: function () { $("pickDlg").close(); seatSet(o, m); } } },
+      el("b", { text: m.name }), el("small", { text: (roleLabel(m) !== "Member" ? roleLabel(m) + " · " : "") + comName(m.committee_id) })));
   });
-  return el("div", { class: "oseatw" }, s);
+  if (!ms.length) host.appendChild(el("p", { class: "empty", style: "padding:14px", text: "Nobody matches." }));
+  else if (ms.length > 80) host.appendChild(el("p", { class: "meta", style: "padding:8px 12px", text: "Type to narrow the list…" }));
+}
+$("pickQ").addEventListener("input", drawPick);
+$("pickQ").addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); var b = $("pickList").querySelector(".spi"); if (b) b.click(); } });
+$("pickVac").addEventListener("click", function () { var o = pickO; $("pickDlg").close(); if (o) seatSet(o, null); });
+$("pickCancel").addEventListener("click", function () { $("pickDlg").close(); });
+function seatDrop(node, o) {   // drop a member card (from anywhere on the page) onto a seat to put them in it
+  if (!canEdit() || !o.pos) return node;
+  node.addEventListener("dragover", function (e) { if (dragId) { e.preventDefault(); node.classList.add("drop"); } });
+  node.addEventListener("dragleave", function () { node.classList.remove("drop"); });
+  node.addEventListener("drop", function (e) {
+    e.preventDefault(); node.classList.remove("drop");
+    var m = dragId ? memById(dragId) : null;
+    if (m && isActive(m) && o.holders.indexOf(m) < 0) seatSet(o, m);
+  });
+  return node;
 }
 /* “+ Add head position” / “+ Add vice head position”: another seat with its own name under the same curator */
 var seatCtx = null;
-function openSeatAdd(c, kd) {
+function openSeatAdd(c, kd, tail) {
   seatCtx = { c: c, kd: kd };
   var pre = kd.tier === 3 ? "Head of " : "Vice Head of ";
   $("seatTitle").textContent = "Add " + kd.title.toLowerCase() + " position";
   $("seatMeta").textContent = c.name + " · e.g. “" + pre + "Photography”. It shows up as its own seat under the curator.";
-  $("seatName").value = pre; $("seatErr").textContent = "";
+  $("seatName").value = pre + (tail || ""); $("seatErr").textContent = "";
   $("seatDlg").showModal();
   var i = $("seatName"); i.focus(); i.setSelectionRange(i.value.length, i.value.length);
 }
@@ -1014,11 +1073,23 @@ $("seatForm").addEventListener("submit", function (ev) {
     $("seatErr").textContent = e.message;
   }).then(function () { $("seatGo").disabled = false; });
 });
-function vacant(label) { return el("div", { class: "ovac" }, el("b", { text: "Vacant" }), el("span", { text: label })); }
+function vacant(label, o) {   // with a seat (o) it is a button: click to assign, or drop a member on it
+  var v = el("div", { class: "ovac" }, el("b", { text: "Vacant" }), el("span", { text: label }));
+  if (o && o.pos && canEdit()) {
+    v.className += " pick"; v.setAttribute("tabindex", "0"); v.setAttribute("role", "button"); v.title = "Click to assign, or drop a member here";
+    v.addEventListener("click", function () { seatPick(o); });
+    v.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); seatPick(o); } });
+  }
+  return v;
+}
 
 var bwide = true;   // board chart uses the full page width (sidebar becomes a strip); the button in the board header turns it off
+var hideVac = true; // vacant seats stay off the chart (and the PDF); they are listed as chips above it, click one to fill it
+function seatTopic(name) {   // "Head of Social Media" and "Vice Head of Social Media" share the topic "socialmedia"
+  return norm(name.replace(/^\s*(?:(?:vice|deputy|assistant)[\s-]*)?head\b\s*(?:of\b)?/i, ""));
+}
 function renderBoard(host) {
-  var all = boardMembers(), org = el("div", { class: "org" }), miss = missingSeats(), first = true, homes = {}, other = [];
+  var all = boardMembers(), org = el("div", { class: "org" }), miss = missingSeats(), first = true, homes = {}, other = [], vac = [];
   all.forEach(function (m) {
     var t = boardTier(m), h = t >= 2 ? homeCom(m) : null;
     if (h) (homes[h + "|" + t] = homes[h + "|" + t] || []).push(m);
@@ -1045,7 +1116,10 @@ function renderBoard(host) {
     return tier;
   }
 
+  var subEl = el("p", { class: "sub" }), pdfEl = el("div", { class: "pdfhead" }), strip = el("div", { class: "ovstrip", hidden: "hidden" });
+  var togBtn = el("button", { class: "btn sec sm", type: "button", on: { click: function () { hideVac = !hideVac; render(); } } });
   var tools = el("div", { class: "tools" });
+  tools.appendChild(togBtn);
   tools.appendChild(el("button", { class: "btn sec sm", type: "button", text: bwide ? "Show sidebar" : "Full width", on: { click: function () { bwide = !bwide; render(); } } }));
   tools.appendChild(el("button", { class: "btn sec sm", type: "button", text: "Export PDF", on: { click: exportBoardPdf } }));
   if (canEdit() && miss.length) tools.appendChild(el("button", { class: "btn sm", type: "button",
@@ -1055,44 +1129,82 @@ function renderBoard(host) {
     } } }));
   var pt = posTools();
   if (pt) Array.prototype.slice.call(pt.childNodes).forEach(function (n) { tools.appendChild(n); });
-  host.appendChild(el("div", { class: "head" },
-    el("h1", { text: "Board" }),
-    tools,
-    el("p", { class: "sub", text: num(all.length) + " active board member" + (all.length === 1 ? "" : "s") + " · president, vice president, and for every committee a curator with as many heads and vice heads as it needs" })));
-  host.appendChild(el("div", { class: "pdfhead" }, el("b", { text: "TEDxMSAUniversity" }), " · Board hierarchy · " + fmtDate(new Date().toISOString())));
+  host.appendChild(el("div", { class: "head" }, el("h1", { text: "Board" }), tools, subEl));
+  host.appendChild(pdfEl);
+  host.appendChild(strip);
+
+  /* one seat = one position and whoever holds it. A vacant seat is noted for the chips and only drawn when vacancies are shown. */
+  function seatNode(st, c) {
+    var o = { title: st.p.name, pos: st.p, holders: st.list, com: c };
+    if (!st.list.length) { vac.push({ o: o, label: st.p.name }); if (hideVac) return null; }
+    return seatDrop(el("div", { class: "oseatbox" },
+      el("div", { class: "ocards" }, (st.list.length ? st.list : [null]).map(function (m) { return m ? card(m, false) : vacant(st.p.name, o); })),
+      canEdit() && st.list.length ? seatPicker(o) : null), o);
+  }
+  function looseNode(list) {   // people whose title is plain text with no position behind it
+    return list.length ? el("div", { class: "oseatbox" }, el("div", { class: "ocards" }, list.map(function (m) { return card(m, false); }))) : null;
+  }
 
   /* President and Vice President */
   [0, 1].forEach(function (i) {
-    var list = all.filter(function (m) { return boardTier(m) === i; }).sort(byName), pos = seatPos(i), tier = tierBox(BOARD[i].title);
+    var list = all.filter(function (m) { return boardTier(m) === i; }).sort(byName), pos = seatPos(i);
+    var o = { title: BOARD[i].title, pos: pos, holders: list, com: null };
+    if (!list.length) { if (pos) vac.push({ o: o, label: BOARD[i].title }); if (hideVac) return; }
+    var tier = tierBox(BOARD[i].title);
     tier.appendChild(el("div", { class: "ospine s" }));
     tier.appendChild(el("div", { class: "orow" }, (list.length ? list : [null]).map(function (m) {
-      return el("div", { class: "onode big" }, m ? card(m, false) : vacant(BOARD[i].title));
+      return seatDrop(el("div", { class: "onode big" }, m ? card(m, false) : vacant(BOARD[i].title, o)), o);
     })));
-    if (canEdit()) tier.appendChild(pos ? seatPicker({ title: BOARD[i].title, pos: pos, holders: list, com: null })
-      : el("p", { class: "meta oseatw", text: "Add the “" + BOARD[i].title + "” position first (button at the top)." }));
+    if (canEdit()) {
+      if (!pos) tier.appendChild(el("p", { class: "meta oseatw", text: "Add the “" + BOARD[i].title + "” position first (button at the top)." }));
+      else if (list.length) tier.appendChild(seatPicker(o));
+    }
   });
 
-  /* one column per committee: Curator, then Heads, then Vice Heads. Every position of a kind is its own seat, so a
-     curator can have several heads and vice heads with different names. All committees sit in ONE row. */
+  /* one column per committee, all in ONE row: the curator, then branches. A branch is a head with the vice head(s) under it,
+     so a curator can have several heads and vice heads with different position names. */
   if (committees.length) {
     var ctier = tierBox("Committees");
     ctier.appendChild(el("div", { class: "ospine s" }));
     ctier.appendChild(el("div", { class: "orow" }, committees.map(function (c) {
       var col = el("div", { class: "ocom" }, el("div", { class: "ocomh", text: c.name }));
-      KINDS.forEach(function (kd, k) {
-        var seats = seatMap[c.id + "|" + kd.tier], rest = (homes[c.id + "|" + kd.tier] || []).filter(function (m) { return !claimed[m.id]; }).sort(byName);
-        if (k) col.appendChild(el("div", { class: "ospine s" }));
-        var slot = el("div", { class: "oslot" }, el("div", { class: "ostitle", text: kd.title + (seats.length + (rest.length ? 1 : 0) > 1 ? "s" : "") }));
-        seats.forEach(function (st) {
-          slot.appendChild(el("div", { class: "oseatbox" },
-            el("div", { class: "ocards" }, (st.list.length ? st.list : [null]).map(function (m) { return m ? card(m, false) : vacant(st.p.name); })),
-            canEdit() ? seatPicker({ title: st.p.name, pos: st.p, holders: st.list, com: c }) : null));
-        });
-        if (rest.length) slot.appendChild(el("div", { class: "oseatbox" }, el("div", { class: "ocards" }, rest.map(function (m) { return card(m, false); }))));   // titles typed as plain text, no position behind them
-        if (!seats.length && !rest.length) slot.appendChild(el("div", { class: "ocards" }, vacant(kd.title)));
-        if (canEdit() && kd.tier >= 3) slot.appendChild(el("button", { class: "oadd", type: "button", text: "+ Add " + kd.title.toLowerCase() + " position", on: { click: function () { openSeatAdd(c, kd); } } }));
-        col.appendChild(slot);
+      function loose(t) { return (homes[c.id + "|" + t] || []).filter(function (m) { return !claimed[m.id]; }).sort(byName); }
+
+      var cur = seatMap[c.id + "|2"].map(function (st) { return seatNode(st, c); }).filter(Boolean), lc = looseNode(loose(2));
+      if (lc) cur.push(lc);
+      if (!cur.length && !hideVac && !seatMap[c.id + "|2"].length) cur.push(vacant("Curator"));
+      if (cur.length) col.appendChild(el("div", { class: "oslot" }, el("div", { class: "ostitle", text: cur.length > 1 ? "Curators" : "Curator" }), cur));
+
+      var heads = seatMap[c.id + "|3"], br = heads.map(function (h) { return { h: h, v: [] }; }), stray = [];
+      seatMap[c.id + "|4"].forEach(function (v) {   // a vice head goes under the head with the same topic
+        var tp = seatTopic(v.p.name), b = br.filter(function (x) { return seatTopic(x.h.p.name) === tp; })[0];
+        if (b) b.v.push(v); else stray.push(v);
       });
+      stray.forEach(function (v) {   // no matching head: under the committee's main head
+        var b = br.filter(function (x) { return x.h && seatTopic(x.h.p.name) === norm(c.name); })[0] || br[0];
+        if (b) b.v.push(v); else br.push({ h: null, v: [v] });
+      });
+      var bn = br.map(function (b) {
+        var nodes = [], hn = b.h ? seatNode(b.h, c) : null;
+        if (hn) nodes.push(hn);
+        b.v.forEach(function (v) {
+          var vn = seatNode(v, c);
+          if (vn) { if (nodes.length) nodes.push(el("div", { class: "ospine xs" })); nodes.push(vn); }
+        });
+        if (nodes.length && canEdit() && b.h && !b.v.length) {
+          var tail = b.h.p.name.replace(/^\s*head\b\s*(?:of\b)?\s*/i, "");
+          nodes.push(el("button", { class: "oadd", type: "button", text: "+ Vice head", on: { click: function () { openSeatAdd(c, KINDS[2], tail === b.h.p.name ? "" : tail); } } }));
+        }
+        return nodes.length ? el("div", { class: "obranch" }, nodes) : null;
+      }).filter(Boolean);
+      var ll = [looseNode(loose(3)), looseNode(loose(4))].filter(Boolean);
+      if (ll.length) bn.push(el("div", { class: "obranch" }, ll));
+      if (!bn.length && !hideVac && !heads.length && !seatMap[c.id + "|4"].length) bn.push(el("div", { class: "obranch" }, vacant("Head")));
+      if (bn.length) {
+        if (col.querySelector(".oslot")) col.appendChild(el("div", { class: "ospine s" }));
+        col.appendChild(el("div", { class: "oslot" }, el("div", { class: "ostitle", text: "Heads & vice heads" }), bn));
+      }
+      if (canEdit()) col.appendChild(el("button", { class: "oadd", type: "button", text: "+ Head position", on: { click: function () { openSeatAdd(c, KINDS[1]); } } }));
       return el("div", { class: "onode" }, col);
     })));
   }
@@ -1104,6 +1216,24 @@ function renderBoard(host) {
     rowsOf(other, 6).forEach(function (row) {
       otier.appendChild(el("div", { class: "ospine s" }));
       otier.appendChild(el("div", { class: "orow" }, row.map(function (m) { return el("div", { class: "onode" }, card(m, true)); })));
+    });
+  }
+
+  /* everything is built, so the numbers are known */
+  var open = vac.length;
+  subEl.textContent = num(all.length) + " active board member" + (all.length === 1 ? "" : "s") + " · " + (open ? num(open) + " open seat" + (open === 1 ? "" : "s") : "no open seats") +
+    (canEdit() ? " · click a seat or drop a member on it to assign" : "");
+  pdfEl.appendChild(el("b", { text: "TEDxMSAUniversity" }));
+  pdfEl.appendChild(document.createTextNode(" · Board hierarchy · " + fmtDate(new Date().toISOString()) + " · " + num(all.length) + " board members" + (open ? " · " + num(open) + " open seat" + (open === 1 ? "" : "s") : "")));
+  togBtn.textContent = hideVac ? "Show vacant seats" + (open ? " (" + open + ")" : "") : "Hide vacant seats";
+  togBtn.hidden = !open;
+  if (hideVac && open) {
+    strip.hidden = false;
+    strip.appendChild(el("b", { text: "Open seats" }));
+    vac.forEach(function (x) {
+      strip.appendChild(canEdit() && x.o.pos
+        ? el("button", { class: "ovchip", type: "button", text: x.label, title: "Click to assign", on: { click: function () { seatPick(x.o); } } })
+        : el("span", { class: "ovchip", text: x.label }));
     });
   }
   host.appendChild(el("div", { class: "orgwrap" }, org));
@@ -2258,7 +2388,7 @@ function lock(msg) {
   document.body.classList.remove("view"); cmdReset();
   $("q").value = ""; $("side").textContent = ""; $("main").textContent = "";
   $("app").hidden = true; $("actions").hidden = true; $("login").hidden = false; $("loginErr").textContent = msg || "";
-  ["comDlg", "memDlg", "posDlg", "awDlg", "giveDlg", "bulkDlg", "seatDlg", "attDlg"].forEach(function (d) { if ($(d).open) $(d).close(); });
+  ["comDlg", "memDlg", "posDlg", "awDlg", "giveDlg", "bulkDlg", "seatDlg", "attDlg", "pickDlg"].forEach(function (d) { if ($(d).open) $(d).close(); });
 }
 function touch() {
   clearTimeout(idle);
