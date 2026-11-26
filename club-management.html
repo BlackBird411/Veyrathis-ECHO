@@ -263,7 +263,7 @@ body.cmdopen main{padding-bottom:330px}
 .etbl .st.on{color:var(--ok);border-color:#b8e0c8;background:#eaf7ef}
 .etbl .st.no{color:var(--red-d);border-color:var(--redln);background:var(--redbg)}
 .etbl .wn{margin-left:6px;font-size:11px;font-weight:800;color:var(--amber);background:var(--amberbg);border:1px solid var(--amberln);border-radius:3px;padding:0 7px}
-  /* board hierarchy */
+/* board hierarchy */
 .orgwrap{overflow-x:auto;padding:8px 4px 28px;margin-top:12px}
 .org{display:flex;flex-direction:column;align-items:center;width:max-content;min-width:100%}
 .otier{display:flex;flex-direction:column;align-items:center}
@@ -280,25 +280,45 @@ body.cmdopen main{padding-bottom:330px}
 .onode:first-child::after{border-radius:8px 0 0 0}
 .onode:only-child{padding-top:0}
 .onode:only-child::before,.onode:only-child::after{display:none}
-.onode .card{flex-direction:column;text-align:center;width:172px;padding:16px 12px;cursor:pointer}
+.onode .card{flex-direction:column;text-align:center;width:172px;padding:14px 10px;cursor:pointer}
 .onode .card:hover{transform:none}
 .onode .card .tx{width:100%}
 .onode .card .nm{white-space:normal}
 .onode .card .bd{justify-content:center}
-.onode .card .av{width:52px;height:52px;font-size:17px}
+.onode .card .av{width:48px;height:48px;font-size:16px}
 .onode.big .card,.onode.big .ovac{width:224px}
-.ovac{width:172px;padding:22px 12px;text-align:center;border:1.5px dashed var(--line2);border-radius:6px;background:#fff;color:var(--mut);display:flex;flex-direction:column;gap:2px;font-size:13px}
+.ovac{width:172px;padding:18px 10px;text-align:center;border:1.5px dashed var(--line2);border-radius:6px;background:#fff;color:var(--mut);display:flex;flex-direction:column;gap:2px;font-size:13px}
 .ovac b{color:var(--ink);font-size:15px}
-.oseatw{margin-top:12px;display:flex;justify-content:center;text-align:center}
-.oseat{font:inherit;font-size:13px;font-weight:700;padding:7px 10px;border:1.5px solid var(--ink);border-radius:3px;background:#fff;max-width:260px;cursor:pointer}
+.oseatw{margin-top:10px;display:flex;justify-content:center;text-align:center}
+.oseat{font:inherit;font-size:13px;font-weight:700;padding:7px 10px;border:1.5px solid var(--ink);border-radius:3px;background:#fff;width:100%;max-width:260px;cursor:pointer}
 .oseat:hover{border-color:var(--red)}
+.ocom{display:flex;flex-direction:column;align-items:center;width:188px}
+.ocomh{width:100%;text-align:center;font-weight:800;font-size:14px;color:#fff;background:var(--red);border-radius:4px 4px 0 0;padding:8px 10px;margin-bottom:12px}
+.oslot{display:flex;flex-direction:column;align-items:center;width:100%}
+.ostitle{font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--mut);margin-bottom:5px}
+.ocards{display:flex;flex-direction:column;align-items:center;gap:8px}
+.ocom .oseat{max-width:172px}
+.pdfhead{display:none}
 @media (max-width:700px){
-  .orgwrap{overflow:visible}
-  .org{width:auto;min-width:0}
-  .orow{flex-direction:column;align-items:center}
-  .onode,.onode:only-child{padding-top:16px}
-  .org .onode::before{content:"";display:block;position:absolute;top:0;left:50%;right:auto;width:0;height:16px;border:0;border-left:2px solid var(--red);border-radius:0}
-  .org .onode::after{display:none}
+  body:not(.pdfboard) .orgwrap{overflow:visible}
+  body:not(.pdfboard) .org{width:auto;min-width:0}
+  body:not(.pdfboard) .orow{flex-direction:column;align-items:center}
+  body:not(.pdfboard) .onode,body:not(.pdfboard) .onode:only-child{padding-top:16px}
+  body:not(.pdfboard) .org .onode::before{content:"";display:block;position:absolute;top:0;left:50%;right:auto;width:0;height:16px;border:0;border-left:2px solid var(--red);border-radius:0}
+  body:not(.pdfboard) .org .onode::after{display:none}
+}
+/* Export PDF: only the chart, one landscape page, colours kept */
+@page{size:A4 landscape;margin:10mm}
+@media print{
+  body.pdfboard{background:#fff;padding:0}
+  body.pdfboard,body.pdfboard *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  body.pdfboard header,body.pdfboard .stats,body.pdfboard aside,body.pdfboard #cmdbar,body.pdfboard #pickbar,body.pdfboard #toast,body.pdfboard .head,body.pdfboard .oseatw,body.pdfboard .bd,body.pdfboard .wn,body.pdfboard .pt,body.pdfboard main>p.meta{display:none!important}
+  body.pdfboard .layout{display:block;max-width:none;padding:0;margin:0}
+  body.pdfboard main{padding:0}
+  body.pdfboard .pdfhead{display:block;text-align:center;font-size:16px;margin:0 0 6px}
+  body.pdfboard .orgwrap{overflow:visible;padding:0;margin:0}
+  body.pdfboard .org{margin:0 auto}
+  body.pdfboard .card{box-shadow:none;break-inside:avoid}
 }
 @media (min-width:1100px){   /* computer screens: wider page, roomier cards, bigger pop-ups */
   :root{--wrap:1680px}
@@ -594,7 +614,13 @@ function rpc(name, body) {
     throw e;
   });
 }
-function op(name, d) { return rpc("club_op", { p: pw, op: name, d: d }); }
+function op(name, d) {
+  return rpc("club_op", { p: pw, op: name, d: d }).then(function (r) {
+    if (name !== "committee_add" || !r || !r.id) return r;   // a new committee gets its Curator, Head and Vice Head positions right away
+    var c = { id: r.id, name: r.name || d.name };
+    return seedSeats(missingSeats([c])).then(function () { return r; }, function () { return r; });
+  });
+}
 
 /* one request id per create attempt: the server returns the first row if the same id arrives twice */
 var rids = {};
@@ -838,78 +864,179 @@ function addBoardPositions(names, btn) {   // creates the shared President / Vic
     .catch(fail).then(function () { btn.disabled = false; });
 }
 
-/* ---------- board hierarchy (replaces the old renderBoard) ---------- */
+/* ---------- board hierarchy ---------- */
 var SEAT_RE = [/^president$/i, /^vice[\s-]*president$/i];   // BOARD tiers 0 and 1
 function seatPos(i) {
   return positions.filter(function (p) { return !p.committee_id && SEAT_RE[i].test(p.name.trim()); })[0] || null;
 }
 
-/* board login only: pick who is President / Vice President. The old holder is cleared first, then the new one is set. */
-function seat(i, m) {
-  var t = BOARD[i], pos = seatPos(i);
-  if (!canEdit() || !pos || selBusy || cmdBusy) return;
-  var holders = members.filter(function (x) { return isActive(x) && boardTier(x) === i && x !== m; });
+/* every committee gets three seats: Curator, Head, Vice Head (BOARD tiers 2, 3, 4) */
+var KINDS = [
+  { title: "Curator", tier: 2, name: function (c) { return c + " Curator"; } },
+  { title: "Head", tier: 3, name: function (c) { return "Head of " + c; } },
+  { title: "Vice Head", tier: 4, name: function (c) { return "Vice Head of " + c; } }
+];
+function comPos(c, kd) {   // the position for that seat: by its usual name (shared or the committee's own), else any of the committee's own that fits
+  var want = norm(kd.name(c.name));
+  return positions.filter(function (p) { return (!p.committee_id || p.committee_id === c.id) && norm(p.name) === want; })[0]
+    || positions.filter(function (p) { return p.committee_id === c.id && BOARD[kd.tier].re.test(p.name); })[0] || null;
+}
+function homeCom(m) {   // which committee column a Curator / Head / Vice Head sits in
+  var t = boardTier(m), i, p;
+  if (t === 2) for (i = 0; i < committees.length; i++) { p = comPos(committees[i], KINDS[0]); if (p && m.position_id === p.id) return committees[i].id; }
+  return m.committee_id && comById(m.committee_id) ? m.committee_id : null;
+}
+function missingSeats(list) {
+  var out = [];
+  (list || committees).forEach(function (c) { KINDS.forEach(function (kd) { if (!comPos(c, kd)) out.push({ c: c, kd: kd }); }); });
+  return out;
+}
+function seedSeats(list) {   // creates the missing positions one at a time; one failing does not stop the rest
+  var bad = 0;
+  return list.reduce(function (chain, x) {
+    return chain.then(function () {
+      var name = x.kd.name(x.c.name), k = "position|" + x.c.id + "|" + norm(name);
+      return op("position_add", { rid: rid(k), name: name, committee_id: x.c.id }).then(function (p) {
+        ridDone(k); if (!posById(p.id)) positions.push(p);
+      }, function () { bad++; });
+    });
+  }, Promise.resolve()).then(function () { return bad; });
+}
+
+/* board login only: put one person in a seat. The old holder is cleared first, then the new one is set. */
+function seatSet(o, m) {   // o = { title, pos, holders, com }
+  if (!canEdit() || !o.pos || selBusy || cmdBusy) return;
+  var holders = o.holders.filter(function (x) { return x !== m; });
+  var hasRole = !!m && roleLabel(m) !== "Member", moving = !!m && !!o.com && (m.committee_id || null) !== o.com.id;
   if (!m && !holders.length) return;
-  if (m && roleLabel(m) !== "Member" && !confirm(m.name + " is currently " + roleLabel(m) + ". Make them " + t.title + " instead?")) return;
-  if (!m && !confirm("Leave " + t.title + " vacant? " + nameList(holders) + " will have no position.")) return;
+  if (m && (hasRole || moving) && !confirm(m.name + (hasRole ? " is currently " + roleLabel(m) : "") + (moving ? (hasRole ? ", in " : " is in ") + comName(m.committee_id) : "") +
+      ". Make them " + o.title + (moving ? " and move them to " + o.com.name : "") + "?")) return;
+  if (!m && !confirm("Leave " + o.title + " vacant? " + nameList(holders) + " will have no position.")) return;
   var steps = holders.map(function (h) {
     return h.position_id ? editStep(h, { position_id: null }, { position_id: h.position_id })
                          : editStep(h, { role: "" }, { role: h.role || "" });
   });
-  if (m) steps.push(editStep(m, { position_id: pos.id }, restore(m, false)));
+  if (m) steps.push(editStep(m, moving ? { position_id: o.pos.id, committee_id: o.com.id } : { position_id: o.pos.id }, restore(m, moving)));
   selBusy = true;
   pool(steps, 1).then(function (r) {   // one at a time, so the old holder is cleared before the new one is set
-    if (r.inv.length) cmdUndo = { inv: r.inv, label: "set " + t.title, par: 1 };
+    if (r.inv.length) cmdUndo = { inv: r.inv, label: "set " + o.title, par: 1 };
     toast(r.errs.length ? r.ok + " of " + steps.length + " done, " + r.errs.length + " failed: " + uniq(r.errs).slice(0, 2).join(" | ")
-                        : (m ? m.name + " is now " + t.title + "." : t.title + " is now vacant."), r.errs.length > 0);
+                        : (m ? m.name + " is now " + o.title + "." : o.title + " is now vacant."), r.errs.length > 0);
   }).catch(fail).then(function () { selBusy = false; render(); });
 }
-function seatPicker(i, list) {
-  var t = BOARD[i];
-  if (!seatPos(i)) return el("p", { class: "meta oseatw", text: "Add the “" + t.title + "” position first (button at the top), then you can pick who holds it." });
-  var s = el("select", { class: "oseat", "aria-label": (list.length ? "Change " : "Assign ") + t.title });
-  s.appendChild(el("option", { value: "", text: (list.length ? "Change " : "Assign ") + t.title + "…" }));
-  members.filter(function (m) { return isActive(m) && list.indexOf(m) < 0; }).sort(byName).forEach(function (m) {
-    s.appendChild(el("option", { value: m.id, text: m.name + (roleLabel(m) !== "Member" ? " (" + roleLabel(m) + ")" : "") }));
+function seatPicker(o) {
+  var s = el("select", { class: "oseat", "aria-label": (o.holders.length ? "Change " : "Assign ") + o.title });
+  s.appendChild(el("option", { value: "", text: (o.holders.length ? "Change " : "Assign ") + o.title + "…" }));
+  members.filter(function (m) { return isActive(m) && o.holders.indexOf(m) < 0; }).sort(function (a, b) {
+    var ia = o.com && a.committee_id === o.com.id ? 0 : 1, ib = o.com && b.committee_id === o.com.id ? 0 : 1;
+    return ia - ib || byName(a, b);
+  }).forEach(function (m) {
+    var bits = [];
+    if (roleLabel(m) !== "Member") bits.push(roleLabel(m));
+    if (o.com && m.committee_id !== o.com.id) bits.push(comName(m.committee_id));
+    s.appendChild(el("option", { value: m.id, text: m.name + (bits.length ? " (" + bits.join(", ") + ")" : "") }));
   });
-  if (list.length) s.appendChild(el("option", { value: "__vacant", text: "Leave " + t.title + " vacant" }));
+  if (o.holders.length) s.appendChild(el("option", { value: "__vacant", text: "Leave " + o.title + " vacant" }));
   s.addEventListener("change", function () {
     var v = s.value; s.value = "";
-    if (v) seat(i, v === "__vacant" ? null : memById(v));
+    if (v) seatSet(o, v === "__vacant" ? null : memById(v));
   });
   return el("div", { class: "oseatw" }, s);
 }
+function vacant(label) { return el("div", { class: "ovac" }, el("b", { text: "Vacant" }), el("span", { text: label })); }
 
 function renderBoard(host) {
-  var all = boardMembers(), org = el("div", { class: "org" }), first = true;
-  host.appendChild(el("div", { class: "head" },
-    el("h1", { text: "Board" }),
-    posTools(),
-    el("p", { class: "sub", text: num(all.length) + " active board member" + (all.length === 1 ? "" : "s") + " · president, vice president, curators, heads and vice heads" })));
-
-  BOARD.forEach(function (t, i) {
-    var list = all.filter(function (m) { return boardTier(m) === i; }).sort(function (a, b) {
-      return comName(a.committee_id).localeCompare(comName(b.committee_id)) || byName(a, b);
-    });
-    if (!list.length && !t.fixed) return;
-    var tier = el("div", { class: "otier" }), rows = [], c;
+  var all = boardMembers(), org = el("div", { class: "org" }), miss = missingSeats(), first = true, homes = {}, other = [];
+  all.forEach(function (m) {
+    var t = boardTier(m), h = t >= 2 ? homeCom(m) : null;
+    if (h) (homes[h + "|" + t] = homes[h + "|" + t] || []).push(m);
+    else if (t >= 2) other.push(m);
+  });
+  function rowsOf(list, n) { var r = [], c; for (c = 0; c < list.length; c += n) r.push(list.slice(c, c + n)); return r; }
+  function tierBox(label) {
+    var tier = el("div", { class: "otier" });
     if (!first) tier.appendChild(el("div", { class: "ospine" }));
     first = false;
-    tier.appendChild(el("div", { class: "olabel", text: t.title + (t.fixed ? "" : " — " + list.length) }));
-    for (c = 0; c < list.length; c += 6) rows.push(list.slice(c, c + 6));
-    if (!rows.length) rows.push([null]);
-    rows.forEach(function (row) {
-      tier.appendChild(el("div", { class: "ospine s" }));
-      tier.appendChild(el("div", { class: "orow" }, row.map(function (m) {
-        return el("div", { class: "onode" + (t.fixed ? " big" : "") },
-          m ? card(m, i >= 3) : el("div", { class: "ovac" }, el("b", { text: "Vacant" }), el("span", { text: t.title })));
+    tier.appendChild(el("div", { class: "olabel", text: label }));
+    org.appendChild(tier);
+    return tier;
+  }
+
+  var tools = el("div", { class: "tools" });
+  tools.appendChild(el("button", { class: "btn sec sm", type: "button", text: "Export PDF", on: { click: exportBoardPdf } }));
+  if (canEdit() && miss.length) tools.appendChild(el("button", { class: "btn sm", type: "button",
+    text: "Add Curator / Head / Vice Head positions (" + miss.length + ")", on: { click: function () {
+      var b = this; b.disabled = true;
+      seedSeats(miss).then(function (bad) { toast(bad ? "Added, but " + bad + " could not be created." : "Positions added. Pick who holds each seat.", !!bad); render(); });
+    } } }));
+  var pt = posTools();
+  if (pt) Array.prototype.slice.call(pt.childNodes).forEach(function (n) { tools.appendChild(n); });
+  host.appendChild(el("div", { class: "head" },
+    el("h1", { text: "Board" }),
+    tools,
+    el("p", { class: "sub", text: num(all.length) + " active board member" + (all.length === 1 ? "" : "s") + " · president, vice president, and a curator, head and vice head for every committee" })));
+  host.appendChild(el("div", { class: "pdfhead" }, el("b", { text: "TEDxMSAUniversity" }), " · Board hierarchy · " + fmtDate(new Date().toISOString())));
+
+  /* President and Vice President */
+  [0, 1].forEach(function (i) {
+    var list = all.filter(function (m) { return boardTier(m) === i; }).sort(byName), pos = seatPos(i), tier = tierBox(BOARD[i].title);
+    tier.appendChild(el("div", { class: "ospine s" }));
+    tier.appendChild(el("div", { class: "orow" }, (list.length ? list : [null]).map(function (m) {
+      return el("div", { class: "onode big" }, m ? card(m, false) : vacant(BOARD[i].title));
+    })));
+    if (canEdit()) tier.appendChild(pos ? seatPicker({ title: BOARD[i].title, pos: pos, holders: list, com: null })
+      : el("p", { class: "meta oseatw", text: "Add the “" + BOARD[i].title + "” position first (button at the top)." }));
+  });
+
+  /* one column per committee: Curator, then Head, then Vice Head */
+  if (committees.length) {
+    var ctier = tierBox("Committees");
+    rowsOf(committees, 6).forEach(function (row) {
+      ctier.appendChild(el("div", { class: "ospine s" }));
+      ctier.appendChild(el("div", { class: "orow" }, row.map(function (c) {
+        var col = el("div", { class: "ocom" }, el("div", { class: "ocomh", text: c.name }));
+        KINDS.forEach(function (kd, k) {
+          var list = (homes[c.id + "|" + kd.tier] || []).sort(byName), pos = comPos(c, kd);
+          if (k) col.appendChild(el("div", { class: "ospine s" }));
+          col.appendChild(el("div", { class: "oslot" },
+            el("div", { class: "ostitle", text: kd.title }),
+            el("div", { class: "ocards" }, (list.length ? list : [null]).map(function (m) { return m ? card(m, false) : vacant(kd.title); })),
+            canEdit() && pos ? seatPicker({ title: kd.title + " of " + c.name, pos: pos, holders: list, com: c }) : null));
+        });
+        return el("div", { class: "onode" }, col);
       })));
     });
-    if (t.fixed && canEdit()) tier.appendChild(seatPicker(i, list));
-    org.appendChild(tier);
-  });
+  }
+
+  /* board members that belong to no committee shown above */
+  if (other.length) {
+    var otier = tierBox("Other board members — " + other.length);
+    other.sort(function (a, b) { return boardTier(a) - boardTier(b) || byName(a, b); });
+    rowsOf(other, 6).forEach(function (row) {
+      otier.appendChild(el("div", { class: "ospine s" }));
+      otier.appendChild(el("div", { class: "orow" }, row.map(function (m) { return el("div", { class: "onode" }, card(m, true)); })));
+    });
+  }
   host.appendChild(el("div", { class: "orgwrap" }, org));
-  if (!all.length) host.appendChild(el("p", { class: "empty", text: "Nobody holds a board position yet." + (canEdit() ? " Use the pickers above to seat a President and Vice President." : "") }));
+  if (canEdit() && miss.length) host.appendChild(el("p", { class: "meta", style: "text-align:center", text: "Some committees have no Curator, Head or Vice Head position yet. The button at the top creates them." }));
+}
+
+/* Export PDF: opens the browser's print window with only the chart, scaled to one landscape page. Choose "Save as PDF". */
+function exportBoardPdf() {
+  var org = document.querySelector("#main .org"); if (!org) return;
+  var title = document.title;
+  document.body.classList.add("pdfboard");
+  org.style.zoom = "";
+  var w = Math.max.apply(null, Array.prototype.map.call(org.children, function (t) { return t.getBoundingClientRect().width; })), h = org.getBoundingClientRect().height;
+  var s = Math.min(1, 1020 / (w || 1), 600 / (h || 1));
+  if (s < 1) org.style.zoom = String(s);
+  document.title = "Board hierarchy · TEDxMSAUniversity";
+  var done = function () {
+    window.removeEventListener("afterprint", done);
+    document.body.classList.remove("pdfboard"); org.style.zoom = ""; document.title = title;
+  };
+  window.addEventListener("afterprint", done);
+  setTimeout(function () { window.print(); }, 80);
 }
 
 var everyF = { status: "all", com: "", sort: "name" };
