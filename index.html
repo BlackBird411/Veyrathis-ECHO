@@ -10,6 +10,7 @@
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
   <meta name="description" content="Stop fearing the question mark. Start chasing the exclamation point. 19.11.2026 · MSA University. Register now →">
 <meta name="theme-color" content="#e62b1e">
+  <link rel="preconnect" href="https://fdiounclxvaescxfkcnt.supabase.co" crossorigin>
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="TEDxMSAUniversity">
 <meta property="og:title" content="TEDxMSAUniversity">
@@ -560,11 +561,45 @@ html:has(dialog[open]){scroll-behavior:auto}
 #closing .fpic{width:min(340px,48vh,60vw);max-width:none;justify-self:end;margin-right:18px;animation:cpop .9s .1s both cubic-bezier(.2,.8,.2,1)}
 @media(max-width:820px){#closing .cin{grid-template-columns:1fr;gap:36px;text-align:center}#closing .fpic{order:-1;justify-self:center;width:min(220px,38vh,60vw);margin-right:0}}
 .finale .fextra .addrow .btn.line{color:#fff;border:2px solid #fff;background:transparent;padding:12px 22px;font-size:14px}
-.finale .fextra .addrow .btn.line:hover{background:var(--red);border-color:var(--red)}  </style>
+.finale .fextra .addrow .btn.line:hover{background:var(--red);border-color:var(--red)}  
+  /* ---- skeleton loading ---- */
+.sk,.skd{position:relative;overflow:hidden;border-radius:3px;background:#ececec}
+.skd{background:#1c1c1c}
+.sk::after,.skd::after{content:"";position:absolute;inset:0;transform:translateX(-100%);background:linear-gradient(90deg,transparent,rgba(255,255,255,.6),transparent);animation:skm 1.3s infinite}
+.skd::after{background:linear-gradient(90deg,transparent,rgba(255,255,255,.08),transparent)}
+@keyframes skm{to{transform:translateX(100%)}}
+.skl{height:14px;margin:0 0 12px}
+#sk .sknav{height:64px;display:flex;align-items:center;justify-content:space-between;padding:0 24px;border-bottom:1px solid #eee}
+#sk .skhero{background:#000;padding:150px 0 130px}
+#sk .skgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;padding-top:96px;padding-bottom:96px}
+@media(max-width:820px){#sk .skgrid{grid-template-columns:1fr}#sk .skhero{padding:110px 0 90px}}
+#app.first>*{animation:appin .45s ease both}
+@keyframes appin{from{opacity:0}to{opacity:1}}
+img{transition:opacity .45s ease}
+img:not(.ld){opacity:0}
+:is(.herobg,.pimg,.pic,.av,.fpic,.cpic,.starimg):has(>img:not(.ld)),.pic:has(img:not(.ld)){background:linear-gradient(90deg,rgba(128,128,128,.16) 25%,rgba(128,128,128,.3) 50%,rgba(128,128,128,.16) 75%) 0 0/200% 100%;animation:skbg 1.3s linear infinite}
+.gal .pic:has(img:not(.ld)){min-height:180px}
+@keyframes skbg{to{background-position:-200% 0}}
+@media(prefers-reduced-motion:reduce){.sk::after,.skd::after{animation:none}:is(.herobg,.pimg,.pic,.av,.fpic,.cpic,.starimg):has(>img:not(.ld)),.pic:has(img:not(.ld)){animation:none}#app.first>*{animation:none}}
+  </style>
 <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
 </head>
 <body>
-<div id="app"><div class="wrap" style="padding:120px 24px;color:#888">Loading…</div></div>
+<div id="app"><div id="sk" aria-busy="true" aria-label="Loading">
+<div class="sknav"><div class="sk" style="width:150px;height:22px"></div><div class="sk" style="width:220px;height:14px"></div></div>
+<div class="skhero"><div class="wrap">
+<div class="skd" style="width:260px;height:14px;margin-bottom:26px"></div>
+<div class="skd" style="width:min(720px,90%);height:clamp(44px,8vw,96px);margin-bottom:16px"></div>
+<div class="skd" style="width:min(480px,65%);height:clamp(44px,8vw,96px);margin-bottom:32px"></div>
+<div class="skd" style="width:min(560px,90%);height:16px;margin-bottom:10px"></div>
+<div class="skd" style="width:min(400px,70%);height:16px;margin-bottom:36px"></div>
+<div style="display:flex;gap:12px"><div class="skd" style="width:150px;height:48px"></div><div class="skd" style="width:150px;height:48px"></div></div>
+</div></div>
+<div class="wrap skgrid">
+<div><div class="sk" style="aspect-ratio:16/9;margin-bottom:16px"></div><div class="sk skl" style="width:40%"></div><div class="sk skl" style="width:90%;height:22px"></div><div class="sk skl" style="width:70%"></div></div>
+<div><div class="sk" style="aspect-ratio:16/9;margin-bottom:16px"></div><div class="sk skl" style="width:40%"></div><div class="sk skl" style="width:90%;height:22px"></div><div class="sk skl" style="width:70%"></div></div>
+<div><div class="sk" style="aspect-ratio:16/9;margin-bottom:16px"></div><div class="sk skl" style="width:40%"></div><div class="sk skl" style="width:90%;height:22px"></div><div class="sk skl" style="width:70%"></div></div>
+</div></div></div>
 <div id="bar" hidden></div>
 <div id="toast" role="status"></div>
 
@@ -816,6 +851,21 @@ function api(path, opts) {
   });
 }
 
+/* ---------- skeleton helpers ---------- */
+function skLines(n) { var w = h("div", null); for (var i = 0; i < (n || 4); i++) w.append(h("div", { class: "sk skl", style: "width:" + (100 - i * 12) + "%" })); return w; }
+function imgDone(e) { var t = e.target; if (t && t.tagName === "IMG") t.classList.add("ld"); }
+document.addEventListener("load", imgDone, true);
+document.addEventListener("error", imgDone, true);
+function sweepImgs(all) { Array.prototype.forEach.call(document.images, function (i) { if (all || i.complete) i.classList.add("ld"); }); }
+setTimeout(function () { sweepImgs(true); }, 8000);   // safety: never leave a photo hidden
+function whenImg(urls, go) {   // run go() once the photos are cached (max 1.6s) so a popup never opens empty
+  var left = 0, done = false;
+  function fin() { if (done) return; done = true; go(); }
+  urls.forEach(function (u) { if (!u) return; left++; var i = new Image(); i.onload = i.onerror = function () { if (--left === 0) fin(); }; i.src = cdn(u); });
+  if (!left) return fin();
+  setTimeout(fin, 1600);
+}
+  
 var tt;
 function toast(m, err) {
   var t = document.getElementById("toast");
@@ -1596,7 +1646,13 @@ function showPopup(all) {
 function entrancePopup() {
   if (popShown || editing) return;
   popShown = true;
-  if (!openClosing()) showPopup(false);
+  var urls, fin = state.site.finale;
+  if (finOn()) { var a0 = finActs()[0]; urls = [fin.bgImage, a0 && a0.image]; }
+  else { var a1 = popItems()[0]; urls = [a1 && a1.image]; }
+  whenImg(urls, function () {
+    if (document.querySelector("dialog[open]")) return;   // visitor already opened something (form, lightbox...)
+    if (!openClosing()) showPopup(false);
+  });
 }
 
 function announceBar() {
@@ -2460,6 +2516,7 @@ applyFx();
   renderBar();
   fitTree();
   watchNews();
+    setTimeout(sweepImgs, 0);
   window.scrollTo({ top: y, behavior: "instant" });
 }
 
@@ -2574,6 +2631,7 @@ function init(d) {
 function load() {
   api("team_hierarchy?id=eq.1&select=data").then(function (rows) {
     init((rows[0] && rows[0].data) || {}); loaded = true; dirty = false; render();
+var ap = document.getElementById("app"); ap.classList.add("first"); setTimeout(function () { ap.classList.remove("first"); }, 700);
   if (isCtrl()) openLogin();
   else if (!maintOn() && !new URLSearchParams(location.search).get("form")) setTimeout(entrancePopup, 700);
   if (!isCtrl()) trackVisit();
