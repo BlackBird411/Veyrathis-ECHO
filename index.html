@@ -1486,10 +1486,10 @@ function finPic(path, a) {
   if (!src && !editing) return null;
   var bg = isPng(a) && /^#[0-9a-f]{6}$/i.test(a.imageBg) ? a.imageBg : "";
   var w = h("div", { class: "pic fpic" + (src ? "" : " empty"), style: bg ? "background:" + bg : null });
-  if (src) w.append(h("img", { src: cdn(src), alt: a.name, on: { error: noPic } }));
+  if (src) w.append(h("img", { src: cdn(src), alt: a.name, decoding: "async", on: { error: noPic } }));
   else w.append(h("span", { class: "ph" }, "No photo yet"));
   if (editing) {
-    var pc = picControls(path, 2800, "photo", 4 / 5);
+    var pc = picControls(path, 1200, "photo", 4 / 5);   // shown at max 420 CSS px; 1200 px covers 2-3x screens (was 2800 = 1.3-2.3 MB PNGs)
     if (isPng(a)) pngBgBtn(a, w).forEach(function (n) { if (n) pc.append(n); });
     w.append(pc);
   }
@@ -1511,6 +1511,33 @@ function finView(a) {
       a.sub ? h("p", { class: "fsub" }, a.sub) : null,
       h("a", { class: "btn", href: "#registration" }, "Get your ticket")),
     finPic(null, a)];
+}
+/* Card cache. A card's DOM is built ONCE and re-used for every later swap, so its <img> keeps the bitmap it
+   already loaded instead of being re-created (= re-requested through /m/) on every tween. The NEXT card is
+   built early, so its photo downloads while the current card is still on screen instead of at swap time. */
+var finViews = {}, closingViews = {};
+function actKey(a) { return [a.name, a.tag, a.sub, a.image, a.imagePng, a.imageBg].join("\u0001"); }
+function keepLoaded(kids, store, key) {
+  kids.forEach(function (n) {
+    if (!n || !n.querySelectorAll) return;
+    n.addEventListener("error", function () { delete store[key]; }, true);   // a failed photo is rebuilt (retried) on its next turn
+    Array.prototype.forEach.call(n.querySelectorAll("img"), function (im) {  // a detached <img> never reaches the document-level "load" listener
+      if (im.complete) { im.classList.add("ld"); return; }
+      var ld = function () { im.classList.add("ld"); };
+      im.addEventListener("load", ld, { once: true }); im.addEventListener("error", ld, { once: true });
+    });
+  });
+  return kids;
+}
+function finViewCached(a) {
+  if (editing) return finView(a);
+  var k = actKey(a);
+  return finViews[k] || (finViews[k] = keepLoaded(finView(a), finViews, k));
+}
+function closingCardCached(a) {
+  if (editing) return closingCard(a);
+  var k = actKey(a);
+  return closingViews[k] || (closingViews[k] = keepLoaded(closingCard(a), closingViews, k));
 }
 function finExtras() {
   var f = state.site.finale;
@@ -1544,7 +1571,7 @@ function closingSec() {
   for (var k = 0; k < 8; k++) acts.forEach(function (a) { mq.push(a.tag, h("b", null, "✦"), a.name, h("b", null, "✦")); });
   var dots = rot ? h("div", { class: "fdots" }, acts.map(function (a, i) { return h("i", { class: i ? "" : "on" }); })) : null;
   var body = rot
-    ? h("div", { class: "wrap fin" + (f.image ? "" : " nopic") }, finView(f))
+    ? h("div", { class: "wrap fin" + (f.image ? "" : " nopic") }, finViewCached(f))
     : h("div", { class: "wrap fin" + (f.image || editing ? "" : " nopic") },
       h("div", null,
         editing ? h("div", { class: "fedit" },
@@ -1559,13 +1586,15 @@ function closingSec() {
       finPic());
   if (rot) {
     var n = 0;
+    setTimeout(function () { finViewCached(acts[1]); }, 2000);            // card 2 downloads shortly after load, not during first paint
     finRot = setInterval(function () {
       n = (n + 1) % acts.length;
       body.classList.add("swap");
       setTimeout(function () {
         body.className = "wrap fin" + (acts[n].image ? "" : " nopic");
-        swapKids(body, finView(acts[n]));
+        swapKids(body, finViewCached(acts[n]));
         Array.prototype.forEach.call(dots.children, function (d, i) { d.className = i === n ? "on" : ""; });
+        finViewCached(acts[(n + 1) % acts.length]);                        // next photo downloads while this one is on screen
       }, 350);
     }, 5000);
   }
@@ -1591,15 +1620,19 @@ function openClosing(force) {
   closingPreview = !!force;
   var acts = finActs(), per = 3500, k = 0;
   var total = acts.length > 1 ? acts.length * per : 8000;
-  var cin = h("div", { class: "cin" + (acts[0].image ? "" : " nopic") }, closingCard(acts[0]));
+  var cin = h("div", { class: "cin" + (acts[0].image ? "" : " nopic") }, closingCardCached(acts[0]));
   var box = $id("closingbox"); box.textContent = "";
   box.append(h("div", { class: "fbeam" }), cin, h("div", { class: "cbar", style: "animation-duration:" + total + "ms" }));
   clearInterval(closingRot);
-  if (acts.length > 1) closingRot = setInterval(function () {
-    k = (k + 1) % acts.length;
-    cin.className = "cin" + (acts[k].image ? "" : " nopic");
-    swapKids(cin, closingCard(acts[k]));
-  }, per);
+  if (acts.length > 1) {
+    closingCardCached(acts[1]);                                            // card 2 downloads while card 1 is on screen
+    closingRot = setInterval(function () {
+      k = (k + 1) % acts.length;
+      cin.className = "cin" + (acts[k].image ? "" : " nopic");
+      swapKids(cin, closingCardCached(acts[k]));
+      closingCardCached(acts[(k + 1) % acts.length]);                      // ...and always stays one card ahead
+    }, per);
+  }
   var d = $id("closing"), fb = state.site.finale;
   d.style.background = fb.bg || "#000";
   d.style.backgroundImage = fb.bgImage ? "url(\"" + cdn(fb.bgImage) + "\")" : "";
