@@ -263,6 +263,43 @@ body.cmdopen main{padding-bottom:330px}
 .etbl .st.on{color:var(--ok);border-color:#b8e0c8;background:#eaf7ef}
 .etbl .st.no{color:var(--red-d);border-color:var(--redln);background:var(--redbg)}
 .etbl .wn{margin-left:6px;font-size:11px;font-weight:800;color:var(--amber);background:var(--amberbg);border:1px solid var(--amberln);border-radius:3px;padding:0 7px}
+  /* board hierarchy */
+.orgwrap{overflow-x:auto;padding:8px 4px 28px;margin-top:12px}
+.org{display:flex;flex-direction:column;align-items:center;width:max-content;min-width:100%}
+.otier{display:flex;flex-direction:column;align-items:center}
+.ospine{width:0;height:26px;border-left:2px solid var(--red)}
+.ospine.s{height:16px}
+.olabel{font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--red-d);background:#fff;border:1.5px solid var(--redln);border-radius:999px;padding:4px 14px}
+.orow{display:flex;justify-content:center}
+.onode{position:relative;padding:26px 8px 0;display:flex;flex-direction:column;align-items:center}
+.onode::before,.onode::after{content:"";position:absolute;top:0;width:50%;height:26px;border-top:2px solid var(--red)}
+.onode::before{right:50%}
+.onode::after{left:50%;border-left:2px solid var(--red)}
+.onode:first-child::before,.onode:last-child::after{border:0}
+.onode:last-child::before{border-right:2px solid var(--red);border-radius:0 8px 0 0}
+.onode:first-child::after{border-radius:8px 0 0 0}
+.onode:only-child{padding-top:0}
+.onode:only-child::before,.onode:only-child::after{display:none}
+.onode .card{flex-direction:column;text-align:center;width:172px;padding:16px 12px;cursor:pointer}
+.onode .card:hover{transform:none}
+.onode .card .tx{width:100%}
+.onode .card .nm{white-space:normal}
+.onode .card .bd{justify-content:center}
+.onode .card .av{width:52px;height:52px;font-size:17px}
+.onode.big .card,.onode.big .ovac{width:224px}
+.ovac{width:172px;padding:22px 12px;text-align:center;border:1.5px dashed var(--line2);border-radius:6px;background:#fff;color:var(--mut);display:flex;flex-direction:column;gap:2px;font-size:13px}
+.ovac b{color:var(--ink);font-size:15px}
+.oseatw{margin-top:12px;display:flex;justify-content:center;text-align:center}
+.oseat{font:inherit;font-size:13px;font-weight:700;padding:7px 10px;border:1.5px solid var(--ink);border-radius:3px;background:#fff;max-width:260px;cursor:pointer}
+.oseat:hover{border-color:var(--red)}
+@media (max-width:700px){
+  .orgwrap{overflow:visible}
+  .org{width:auto;min-width:0}
+  .orow{flex-direction:column;align-items:center}
+  .onode,.onode:only-child{padding-top:16px}
+  .org .onode::before{content:"";display:block;position:absolute;top:0;left:50%;right:auto;width:0;height:16px;border:0;border-left:2px solid var(--red);border-radius:0}
+  .org .onode::after{display:none}
+}
 @media (min-width:1100px){   /* computer screens: wider page, roomier cards, bigger pop-ups */
   :root{--wrap:1680px}
   .bar,.stats,.layout{padding-left:40px;padding-right:40px}
@@ -801,23 +838,78 @@ function addBoardPositions(names, btn) {   // creates the shared President / Vic
     .catch(fail).then(function () { btn.disabled = false; });
 }
 
+/* ---------- board hierarchy (replaces the old renderBoard) ---------- */
+var SEAT_RE = [/^president$/i, /^vice[\s-]*president$/i];   // BOARD tiers 0 and 1
+function seatPos(i) {
+  return positions.filter(function (p) { return !p.committee_id && SEAT_RE[i].test(p.name.trim()); })[0] || null;
+}
+
+/* board login only: pick who is President / Vice President. The old holder is cleared first, then the new one is set. */
+function seat(i, m) {
+  var t = BOARD[i], pos = seatPos(i);
+  if (!canEdit() || !pos || selBusy || cmdBusy) return;
+  var holders = members.filter(function (x) { return isActive(x) && boardTier(x) === i && x !== m; });
+  if (!m && !holders.length) return;
+  if (m && roleLabel(m) !== "Member" && !confirm(m.name + " is currently " + roleLabel(m) + ". Make them " + t.title + " instead?")) return;
+  if (!m && !confirm("Leave " + t.title + " vacant? " + nameList(holders) + " will have no position.")) return;
+  var steps = holders.map(function (h) {
+    return h.position_id ? editStep(h, { position_id: null }, { position_id: h.position_id })
+                         : editStep(h, { role: "" }, { role: h.role || "" });
+  });
+  if (m) steps.push(editStep(m, { position_id: pos.id }, restore(m, false)));
+  selBusy = true;
+  pool(steps, 1).then(function (r) {   // one at a time, so the old holder is cleared before the new one is set
+    if (r.inv.length) cmdUndo = { inv: r.inv, label: "set " + t.title, par: 1 };
+    toast(r.errs.length ? r.ok + " of " + steps.length + " done, " + r.errs.length + " failed: " + uniq(r.errs).slice(0, 2).join(" | ")
+                        : (m ? m.name + " is now " + t.title + "." : t.title + " is now vacant."), r.errs.length > 0);
+  }).catch(fail).then(function () { selBusy = false; render(); });
+}
+function seatPicker(i, list) {
+  var t = BOARD[i];
+  if (!seatPos(i)) return el("p", { class: "meta oseatw", text: "Add the “" + t.title + "” position first (button at the top), then you can pick who holds it." });
+  var s = el("select", { class: "oseat", "aria-label": (list.length ? "Change " : "Assign ") + t.title });
+  s.appendChild(el("option", { value: "", text: (list.length ? "Change " : "Assign ") + t.title + "…" }));
+  members.filter(function (m) { return isActive(m) && list.indexOf(m) < 0; }).sort(byName).forEach(function (m) {
+    s.appendChild(el("option", { value: m.id, text: m.name + (roleLabel(m) !== "Member" ? " (" + roleLabel(m) + ")" : "") }));
+  });
+  if (list.length) s.appendChild(el("option", { value: "__vacant", text: "Leave " + t.title + " vacant" }));
+  s.addEventListener("change", function () {
+    var v = s.value; s.value = "";
+    if (v) seat(i, v === "__vacant" ? null : memById(v));
+  });
+  return el("div", { class: "oseatw" }, s);
+}
+
 function renderBoard(host) {
-  var all = boardMembers();
+  var all = boardMembers(), org = el("div", { class: "org" }), first = true;
   host.appendChild(el("div", { class: "head" },
     el("h1", { text: "Board" }),
     posTools(),
     el("p", { class: "sub", text: num(all.length) + " active board member" + (all.length === 1 ? "" : "s") + " · president, vice president, curators, heads and vice heads" })));
+
   BOARD.forEach(function (t, i) {
     var list = all.filter(function (m) { return boardTier(m) === i; }).sort(function (a, b) {
       return comName(a.committee_id).localeCompare(comName(b.committee_id)) || byName(a, b);
     });
     if (!list.length && !t.fixed) return;
-    host.appendChild(el("div", { class: "grp", text: t.title + " — " + list.length }));
-    host.appendChild(list.length
-      ? el("div", { class: "cards" }, list.map(function (m) { return card(m, true); }))
-      : el("p", { class: "vac", text: "Vacant" }));
+    var tier = el("div", { class: "otier" }), rows = [], c;
+    if (!first) tier.appendChild(el("div", { class: "ospine" }));
+    first = false;
+    tier.appendChild(el("div", { class: "olabel", text: t.title + (t.fixed ? "" : " — " + list.length) }));
+    for (c = 0; c < list.length; c += 6) rows.push(list.slice(c, c + 6));
+    if (!rows.length) rows.push([null]);
+    rows.forEach(function (row) {
+      tier.appendChild(el("div", { class: "ospine s" }));
+      tier.appendChild(el("div", { class: "orow" }, row.map(function (m) {
+        return el("div", { class: "onode" + (t.fixed ? " big" : "") },
+          m ? card(m, i >= 3) : el("div", { class: "ovac" }, el("b", { text: "Vacant" }), el("span", { text: t.title })));
+      })));
+    });
+    if (t.fixed && canEdit()) tier.appendChild(seatPicker(i, list));
+    org.appendChild(tier);
   });
-  if (!all.length) host.appendChild(el("p", { class: "empty", text: "Nobody holds a board position yet. Give a member a position such as “President”, “Head of Media” or “Design Curator” and they show up here." }));
+  host.appendChild(el("div", { class: "orgwrap" }, org));
+  if (!all.length) host.appendChild(el("p", { class: "empty", text: "Nobody holds a board position yet." + (canEdit() ? " Use the pickers above to seat a President and Vice President." : "") }));
 }
 
 var everyF = { status: "all", com: "", sort: "name" };
