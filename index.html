@@ -726,6 +726,62 @@ section{padding:clamp(56px,9vw,96px) 0}
   #annpop h3{font-size:24px}
 }
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+
+/* gallery v2: swipe reel + grid on mobile, staggered reveal, swipe lightbox */
+.gmodes,.gmeta{display:none}
+.gal figure:active .pic{scale:.97}
+.gwrap.rv .gal figure .pic{transition:opacity .7s ease,translate .7s cubic-bezier(.2,.8,.2,1),scale .7s cubic-bezier(.2,.8,.2,1);transition-delay:calc(var(--d,0) * 70ms)}
+.gwrap.rv .gal figure:not(.in) .pic{opacity:0;translate:0 38px;scale:.94}
+.gm{font:inherit;font-size:13px;font-weight:700;padding:9px 18px;min-height:40px;border:2px solid #444;background:transparent;color:#ddd;border-radius:99px;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:background .2s,border-color .2s,color .2s}
+.gm.on{background:var(--red);border-color:var(--red);color:#fff}
+@keyframes gkb{from{transform:scale(1) translate(0,0)}to{transform:scale(1.12) translate(-2%,-2%)}}
+@keyframes gnudge{0%,100%{transform:translateX(0)}50%{transform:translateX(6px)}}
+@media(max-width:700px){
+  .gmodes{display:flex;gap:8px;margin:-16px 0 22px}
+  .gwrap[data-mode=reel] .gal{position:relative;columns:auto;display:flex;gap:14px;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch;scrollbar-width:none;margin:0 -24px;padding:26px calc((100vw - min(66vw,290px)) / 2) 34px;perspective:1000px}
+  .gwrap[data-mode=reel] .gal::-webkit-scrollbar{display:none}
+  .gwrap[data-mode=reel] .gal figure{flex:0 0 min(66vw,290px);margin:0;scroll-snap-align:center;scroll-snap-stop:always;transform:scale(var(--s,.86)) rotateY(var(--r,0deg));opacity:var(--o,.55);will-change:transform,opacity}
+  .gwrap[data-mode=reel] .gal .pic{aspect-ratio:4/5;border-radius:14px;overflow:hidden;box-shadow:0 18px 40px rgba(0,0,0,.45)}
+  .gwrap[data-mode=reel] .gal .pic img{height:100%}
+  .gwrap[data-mode=reel] .gal figure.on .pic{box-shadow:0 0 0 2px var(--red),0 22px 50px rgba(230,43,30,.35)}
+  .gwrap[data-mode=reel] .gal figure.on .pic img{animation:gkb 10s ease-in-out infinite alternate}
+  .gwrap[data-mode=reel] .gal figure::after{content:attr(data-n);position:absolute;left:14px;top:6px;font-size:54px;font-weight:800;letter-spacing:-.04em;line-height:1;color:transparent;-webkit-text-stroke:1.5px rgba(255,255,255,.55);pointer-events:none;z-index:3}
+  .gwrap[data-mode=reel] .gal figcaption{position:absolute;left:0;right:0;bottom:0;margin:0;padding:44px 16px 16px;color:#fff;font-size:14px;font-weight:600;background:linear-gradient(transparent,rgba(0,0,0,.78));border-radius:0 0 14px 14px;pointer-events:none;z-index:3}
+  .gwrap[data-mode=reel] .gmeta{display:flex;align-items:center;gap:14px;margin-top:-6px}
+  .gcount{font-weight:800;font-size:14px;letter-spacing:.1em;font-variant-numeric:tabular-nums;color:#bdbdbd}
+  .gcount b{color:#fff;font-size:20px}
+  .gbar{flex:1;height:3px;background:#2a2a2a;border-radius:3px;overflow:hidden}
+  .gbar i{display:block;height:100%;background:var(--red);border-radius:3px;transform-origin:left;transform:scaleX(var(--p,.1))}
+  .ghint{font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#8d8d8d;transition:opacity .4s;animation:gnudge 1.6s ease-in-out infinite}
+  .gwrap.seen .ghint{opacity:0}
+  .gwrap[data-mode=grid] .gal{columns:2 130px;column-gap:10px}
+  .gwrap[data-mode=grid] .gal figure{margin-bottom:10px}
+  .gwrap[data-mode=grid] .gal .pic{border-radius:10px;overflow:hidden}
+}
+@media(prefers-reduced-motion:reduce){.gwrap .gal figure .pic{transition:none}.gwrap[data-mode=reel] .gal figure.on .pic img,.ghint{animation:none}}
+/* lightbox: full screen, swipe to browse, drag down to close */
+html:has(#lb[open]){overflow:hidden}
+#lb{max-width:none;max-height:none;width:100vw;height:100vh;height:100dvh;padding:0;border-radius:0;background:rgba(0,0,0,.94);overflow:hidden;overscroll-behavior:contain}
+#lb::backdrop{background:#000}
+#lb[open]{display:flex;flex-direction:column;animation:cfade .25s ease}
+.lbtop{position:absolute;left:0;right:0;top:0;z-index:3;display:flex;justify-content:space-between;align-items:center;padding:calc(env(safe-area-inset-top,0px) + 12px) 16px 12px;color:#fff;font-weight:800;font-size:13px;letter-spacing:.1em;font-variant-numeric:tabular-nums;pointer-events:none}
+.lbtop button,.lbnav{width:44px;height:44px;border:0;border-radius:50%;background:rgba(255,255,255,.14);color:#fff;font-size:26px;line-height:1;cursor:pointer;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);pointer-events:auto;-webkit-tap-highlight-color:transparent}
+.lbstage{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;touch-action:none;-webkit-user-select:none;user-select:none;overflow:hidden}
+#lb img{max-width:calc(100vw - 24px);max-height:calc(100vh - 150px);max-height:calc(100dvh - 150px);width:auto;height:auto;object-fit:contain;cursor:default;-webkit-user-drag:none;will-change:transform,opacity;transition:none}
+#lb img.pop{animation:lbpop .35s cubic-bezier(.2,.8,.2,1)}
+#lb img.fromR{animation:lbR .3s cubic-bezier(.2,.8,.2,1)}
+#lb img.fromL{animation:lbL .3s cubic-bezier(.2,.8,.2,1)}
+@keyframes lbpop{from{opacity:0;transform:scale(.9)}}
+@keyframes lbR{from{opacity:0;transform:translateX(60px) scale(.96)}}
+@keyframes lbL{from{opacity:0;transform:translateX(-60px) scale(.96)}}
+.lbcap{position:absolute;left:0;right:0;bottom:0;z-index:2;padding:34px 20px calc(env(safe-area-inset-bottom,0px) + 20px);text-align:center;color:#eee;font-size:15px;background:linear-gradient(transparent,rgba(0,0,0,.7));pointer-events:none}
+.lbcap:empty{display:none}
+.lbnav{display:none;position:absolute;top:50%;margin-top:-22px;z-index:3}
+.lbnav.prev{left:20px}.lbnav.next{right:20px}
+.lbnav[hidden]{display:none!important}
+@media(hover:hover) and (pointer:fine){.lbnav{display:block}.lbnav:hover{background:var(--red)}}
+
+    
   </style>
 <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
 </head>
@@ -758,7 +814,13 @@ section{padding:clamp(56px,9vw,96px) 0}
     <button class="btn line" id="loginCancel" type="button">Cancel</button>
   </div>
 </dialog>
-<dialog id="lb"><img alt=""></dialog>
+<dialog id="lb" aria-label="Photo viewer">
+<div class="lbtop"><span id="lbn"></span><button id="lbx" type="button" aria-label="Close">&times;</button></div>
+<div class="lbstage" id="lbs"><img alt=""></div>
+<div class="lbcap" id="lbc"></div>
+<button class="lbnav prev" id="lbp" type="button" aria-label="Previous photo">&lsaquo;</button>
+<button class="lbnav next" id="lbnx" type="button" aria-label="Next photo">&rsaquo;</button>
+</dialog>
 
 <dialog id="regdlg" aria-label="Registration form"><div id="regbox"></div></dialog>
 <dialog id="respdlg" aria-label="Responses"><div id="respbox"></div></dialog>
@@ -2065,20 +2127,82 @@ function addGalleryPhotos() {
   inp.click();
 }
 
+function p2(x) { return (x < 10 ? "0" : "") + x; }
+/* mobile reel (swipe, 3D tilt, Ken Burns on the centred card), grid mode, staggered reveal */
+function galFx(wrap, rail, figs) {
+  var n = figs.length, raf = 0, cur = -1;
+  var reduce = !!(window.matchMedia && matchMedia("(prefers-reduced-motion:reduce)").matches);
+  var mob = window.matchMedia ? matchMedia("(max-width:700px)") : { matches: false };
+  wrap.setAttribute("data-mode", "reel");
+  if (!reduce && "IntersectionObserver" in window) {
+    wrap.classList.add("rv");
+    var io = new IntersectionObserver(function (es) {
+      var k = 0;
+      es.forEach(function (e) { if (!e.isIntersecting) return; e.target.style.setProperty("--d", k++); e.target.classList.add("in"); io.unobserve(e.target); });
+    }, { threshold: .12 });
+    figs.forEach(function (f) { io.observe(f); });
+  }
+  if (n < 2) return;
+  var bR = h("button", { type: "button", class: "gm on" }, "Reel"), bG = h("button", { type: "button", class: "gm" }, "Grid");
+  var num = h("b", null, "01"), bar = h("i"), hint = h("span", { class: "ghint" }, "Swipe \u2192");
+  wrap.insertBefore(h("div", { class: "gmodes" }, bR, bG), rail);
+  wrap.append(h("div", { class: "gmeta" }, h("span", { class: "gcount" }, num, " / " + p2(n)), h("div", { class: "gbar" }, bar), hint));
+  function setMode(m) {
+    wrap.setAttribute("data-mode", m);
+    bR.className = "gm" + (m === "reel" ? " on" : ""); bG.className = "gm" + (m === "grid" ? " on" : "");
+    rail.scrollLeft = 0; tick();
+  }
+  bR.addEventListener("click", function () { setMode("reel"); });
+  bG.addEventListener("click", function () { setMode("grid"); });
+  function tick() {
+    raf = 0;
+    if (!mob.matches || wrap.getAttribute("data-mode") !== "reel" || !rail.clientWidth) return;
+    var mid = rail.scrollLeft + rail.clientWidth / 2, best = 0, bd = 1e9;
+    figs.forEach(function (f, i) {
+      var d = (f.offsetLeft + f.offsetWidth / 2 - mid) / (f.offsetWidth || 1), a = Math.min(Math.abs(d), 1);
+      f.style.setProperty("--s", (1 - a * .14).toFixed(3));
+      f.style.setProperty("--o", (1 - a * .5).toFixed(3));
+      f.style.setProperty("--r", reduce ? "0deg" : (-Math.max(-1.4, Math.min(1.4, d)) * 16).toFixed(1) + "deg");
+      if (Math.abs(d) < bd) { bd = Math.abs(d); best = i; }
+    });
+    if (best !== cur) {
+      if (cur >= 0) figs[cur].classList.remove("on");
+      figs[best].classList.add("on"); cur = best; num.textContent = p2(best + 1);
+    }
+    var max = rail.scrollWidth - rail.clientWidth;
+    bar.style.setProperty("--p", (.08 + .92 * (max > 0 ? rail.scrollLeft / max : 0)).toFixed(3));
+    if (rail.scrollLeft > 12) wrap.classList.add("seen");
+  }
+  rail.addEventListener("scroll", function () { if (!raf) raf = requestAnimationFrame(tick); }, { passive: true });
+  if (window.ResizeObserver) new ResizeObserver(tick).observe(rail); else setTimeout(tick, 400);
+  if (mob.addEventListener) mob.addEventListener("change", tick);
+  wrap.showAt = function (j) {   // lightbox closed on photo j: bring that card to the middle
+    var f = figs[j];
+    if (f && wrap.getAttribute("data-mode") === "reel" && mob.matches) rail.scrollTo({ left: f.offsetLeft - (rail.clientWidth - f.offsetWidth) / 2, behavior: "auto" });
+  };
+}
+
 function gallerySec() {
-  var s = "site.gallery", figs = [];
+  var s = "site.gallery", figs = [], list = [], wrap = h("div", { class: "gwrap" });
   state.site.gallery.forEach(function (g, i) {
     if (!editing && !g.src) return;
     var p = s + "." + i + ".";
 var fig = h("figure", { class: editing ? (g.src ? "" : "slot") : "vf" },
             PIC(p + "src", "", 1280, "photo"), T("figcaption", p + "caption", "", "Caption (optional)"),
       editing ? ctl(s, i) : null);
-    if (!editing && g.src) fig.addEventListener("click", function () { openLb(cdn(g.src)); });
+    if (!editing && g.src) {
+      var k = list.push({ src: cdn(g.src), caption: g.caption || "" }) - 1;
+      fig.setAttribute("data-n", p2(k + 1));
+      fig.addEventListener("click", function () { openLb(list, k, function (j) { if (wrap.showAt) wrap.showAt(j); }); });
+    }
     figs.push(fig);
   });
   if (!editing && !figs.length) return null;
+  var rail = h("div", { class: "gal" }, figs);
+  wrap.append(rail);
+  if (!editing) galFx(wrap, rail, figs);
   return h("section", { class: "dark", id: "gallery" }, h("div", { class: "wrap" },
-    head("site.galleryHead"), h("div", { class: "gal" }, figs),
+    head("site.galleryHead"), wrap,
     editing ? h("div", { class: "addrow" }, h("button", { type: "button", class: "btn sm line", on: { click: addGalleryPhotos } }, "+ Add photos")) : null));
 }
 
@@ -2950,8 +3074,53 @@ function save() {
 }
 
 /* ---------- lightbox ---------- */
-function openLb(src) { var d = document.getElementById("lb"); d.querySelector("img").src = src; d.showModal(); }
-document.getElementById("lb").addEventListener("click", function () { this.close(); });
+var lbS = { list: [], i: 0, done: null };
+function lbShow(i, dir) {
+  var n = lbS.list.length; if (!n) return;
+  i = (i + n) % n; lbS.i = i;
+  var it = lbS.list[i], im = $id("lb").querySelector("img");
+  im.style.transform = ""; im.style.opacity = ""; im.style.transition = "";
+  im.className = ""; im.src = it.src; im.alt = it.caption || "";
+  void im.offsetWidth;
+  im.className = "ld " + (dir > 0 ? "fromR" : dir < 0 ? "fromL" : "pop");
+  $id("lbn").textContent = n > 1 ? p2(i + 1) + " / " + p2(n) : "";
+  $id("lbc").textContent = it.caption || "";
+  [1, -1].forEach(function (k) { if (n > 1) new Image().src = lbS.list[(i + k + n) % n].src; });   // warm the neighbours
+}
+function openLb(list, i, done) {
+  if (typeof list === "string") list = [{ src: list, caption: "" }];
+  var d = $id("lb"); lbS.list = list; lbS.done = done || null; d.style.background = "";
+  $id("lbp").hidden = $id("lbnx").hidden = list.length < 2;
+  lbShow(i || 0, 0); d.showModal();
+}
+(function () {
+  var d = $id("lb"), st = $id("lbs"), im = st.querySelector("img"), g = null;
+  function step(k) { if (lbS.list.length > 1) lbShow(lbS.i + k, k); }
+  $id("lbx").addEventListener("click", function () { d.close(); });
+  $id("lbp").addEventListener("click", function () { step(-1); });
+  $id("lbnx").addEventListener("click", function () { step(1); });
+  d.addEventListener("close", function () { var f = lbS.done; lbS.done = null; d.style.background = ""; if (f) f(lbS.i); });
+  d.addEventListener("keydown", function (e) { if (e.key === "ArrowLeft") step(-1); else if (e.key === "ArrowRight") step(1); });
+  st.addEventListener("pointerdown", function (e) { g = { x: e.clientX, y: e.clientY, dx: 0, dy: 0, m: "", t: Date.now(), tgt: e.target }; st.setPointerCapture(e.pointerId); });
+  st.addEventListener("pointermove", function (e) {
+    if (!g) return;
+    g.dx = e.clientX - g.x; g.dy = e.clientY - g.y;
+    if (!g.m && Math.abs(g.dx) + Math.abs(g.dy) > 8) g.m = Math.abs(g.dx) > Math.abs(g.dy) ? "x" : "y";
+    if (g.m === "x" && lbS.list.length > 1) { im.style.transform = "translateX(" + g.dx + "px) rotate(" + (g.dx / 40) + "deg)"; im.style.opacity = 1 - Math.min(Math.abs(g.dx) / 400, .5); }
+    else if (g.m === "y") { var p = Math.max(0, g.dy); im.style.transform = "translateY(" + p + "px) scale(" + (1 - p / 900) + ")"; d.style.background = "rgba(0,0,0," + (.94 - Math.min(p / 400, .8)) + ")"; }
+  });
+  function end() {
+    if (!g) return;
+    var s = g, ms = Math.max(1, Date.now() - s.t); g = null;
+    if (s.m === "x" && lbS.list.length > 1 && (Math.abs(s.dx) > 60 || Math.abs(s.dx) / ms > .5)) { step(s.dx < 0 ? 1 : -1); return; }
+    if (s.m === "y" && (s.dy > 100 || s.dy / ms > .6)) { d.close(); return; }
+    if (!s.m && s.tgt !== im) { d.close(); return; }                   // tap on the dark area closes
+    im.style.transition = "transform .25s ease,opacity .25s ease";      // otherwise snap back
+    im.style.transform = ""; im.style.opacity = ""; d.style.background = "";
+    setTimeout(function () { im.style.transition = ""; }, 260);
+  }
+  st.addEventListener("pointerup", end); st.addEventListener("pointercancel", end);
+})();
 $id("closing").addEventListener("click", closeClosing);
 $id("closing").addEventListener("close", function () { clearTimeout(closingTimer); clearInterval(closingRot); if (!closingPreview) showPopup(false); closingPreview = false; });
   $id("annx").addEventListener("click", function () { $id("annpop").close(); });
