@@ -1,0 +1,81 @@
+name: iOS IPA
+
+# FREE build: no Apple Developer account needed. This produces an UNSIGNED .ipa.
+# Install it on your own iPhone by letting Sideloadly or AltStore sign it with a free
+# Apple ID (the signature lasts 7 days, then you refresh it from the same tool).
+#
+# The app loads the live site, so web/Supabase changes need NO rebuild.
+# Run this only when native stuff changes (icon, permissions, plugins, Capacitor version).
+on:
+  workflow_dispatch:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  ipa:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # Capacitor 8 needs a recent Xcode; take the newest stable one on the runner.
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: Install deps
+        run: npm install --no-audit --no-fund
+
+      - name: Generate iOS project
+        run: |
+          npx cap add ios
+          npx @capacitor/assets generate --ios \
+            --iconBackgroundColor '#0a0a0a' --iconBackgroundColorDark '#0a0a0a' \
+            --splashBackgroundColor '#0a0a0a' --splashBackgroundColorDark '#0a0a0a'
+          bash scripts/ios-setup.sh
+          npx cap sync ios
+
+      - name: Build (unsigned)
+        run: |
+          set -o pipefail
+          xcodebuild \
+            -project ios/App/App.xcodeproj \
+            -scheme App \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath build \
+            MARKETING_VERSION=1.0.${{ github.run_number }} \
+            CURRENT_PROJECT_VERSION=${{ github.run_number }} \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
+            build
+
+      - name: Package IPA
+        run: |
+          APP="build/Build/Products/Release-iphoneos/App.app"
+          [ -d "$APP" ] || { echo "App.app not found"; find build -name '*.app' -maxdepth 6; exit 1; }
+          mkdir -p out/Payload
+          cp -R "$APP" out/Payload/
+          (cd out && zip -qry TEDxMSA.ipa Payload && rm -rf Payload)
+          ls -la out
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: TEDxMSA-ipa
+          path: out/TEDxMSA.ipa
+
+      # android.yml publishes to the same tag, so whichever job runs second just adds its file.
+      - name: Publish release (tags only)
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${{ github.ref_name }}" out/TEDxMSA.ipa --title "${{ github.ref_name }}" \
+            --notes "Android APK + unsigned iOS IPA (sign with Sideloadly/AltStore). Loads the live site, so content updates need no reinstall." \
+            || gh release upload "${{ github.ref_name }}" out/TEDxMSA.ipa --clobber
