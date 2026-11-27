@@ -1,0 +1,12 @@
+{
+  "name": "veyrathis-echo-mobile",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Capacitor shell that loads the live Veyrathis-ECHO site",
+  "devDependencies": {
+    "@capacitor/android": "8.6.3",
+    "@capacitor/assets": "^3.0.5",
+    "@capacitor/cli": "8.6.3",
+    "@capacitor/core": "8.6.3"
+  }
+}

@@ -1,0 +1,75 @@
+name: Android APK
+
+# The app loads the live site, so web/Supabase changes need NO rebuild.
+# Run this only when native stuff changes (icon, permissions, plugins, Capacitor version).
+on:
+  workflow_dispatch:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    env:
+      KS_B64: ${{ secrets.ANDROID_KEYSTORE_B64 }}
+      KS_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+      KS_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Install deps
+        run: npm install --no-audit --no-fund
+
+      - name: Generate Android project
+        run: |
+          npx cap add android
+          npx @capacitor/assets generate --android \
+            --iconBackgroundColor '#0a0a0a' --iconBackgroundColorDark '#0a0a0a' \
+            --splashBackgroundColor '#0a0a0a' --splashBackgroundColorDark '#0a0a0a'
+          VERSION_CODE=${{ github.run_number }} VERSION_NAME=1.0.${{ github.run_number }} bash scripts/android-setup.sh
+          npx cap sync android
+
+      - name: Build
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          if [ -n "$KS_B64" ]; then ./gradlew assembleRelease --no-daemon; else ./gradlew assembleDebug --no-daemon; fi
+
+      - name: Sign + collect APK
+        run: |
+          mkdir -p out
+          if [ -n "$KS_B64" ]; then
+            BT="$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)"
+            echo "$KS_B64" | base64 -d > release.jks
+            "$BT/zipalign" -p -f 4 android/app/build/outputs/apk/release/app-release-unsigned.apk aligned.apk
+            "$BT/apksigner" sign --ks release.jks --ks-key-alias "$KS_ALIAS" \
+              --ks-pass env:KS_PASS --key-pass env:KS_PASS --out out/TEDxMSA.apk aligned.apk
+            rm -f release.jks
+          else
+            echo "::warning::No keystore secrets set - built a DEBUG-signed APK. Updates over an older install will fail until you add the keystore secrets."
+            cp android/app/build/outputs/apk/debug/app-debug.apk out/TEDxMSA.apk
+          fi
+          ls -la out
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: TEDxMSA-apk
+          path: out/TEDxMSA.apk
+
+      - name: Publish release (tags only)
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "${{ github.ref_name }}" out/TEDxMSA.apk --title "${{ github.ref_name }}" --notes "Android APK. Loads the live site, so content updates need no reinstall."

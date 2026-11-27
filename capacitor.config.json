@@ -1,0 +1,13 @@
+{
+  "appId": "com.tedxmsa.echo",
+  "appName": "TEDxMSA",
+  "webDir": "www",
+  "server": {
+    "url": "https://veyrathis-echo.vercel.app",
+    "cleartext": false,
+    "errorPath": "index.html"
+  },
+  "android": {
+    "allowMixedContent": false
+  }
+}
