@@ -586,6 +586,129 @@ img:not(.ld){opacity:0}
 .gal .pic:has(img:not(.ld)){min-height:180px}
 @keyframes skbg{to{background-position:-200% 0}}
 @media(prefers-reduced-motion:reduce){.sk::after,.skd::after{animation:none}:is(.herobg,.pimg,.pic,.av,.fpic,.cpic,.starimg):has(>img:not(.ld)),.pic:has(img:not(.ld)){animation:none}#app.first>*{animation:none}}
+
+/* ===== team hierarchy: mobile depth explorer ===== */
+.xp{display:none}
+@media(max-width:860px){
+  #team:not(.tm-edit) .treewrap{display:none}
+  .xp{display:block;position:relative}
+}
+.xp-top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 20px;min-height:40px}
+.xp-hint{display:flex;align-items:center;gap:10px;font-size:13px;color:#777;transition:opacity .4s,transform .4s}
+.xp-hint i{flex:none;width:8px;height:8px;border-right:2px solid var(--red);border-bottom:2px solid var(--red);transform:rotate(45deg);animation:xpBob 1.3s ease-in-out infinite}
+.xp.seen .xp-hint{opacity:0;transform:translateX(-8px);pointer-events:none}
+.xp-map{display:inline-flex;align-items:center;gap:9px;font:inherit;font-size:13px;font-weight:700;padding:9px 15px;border:2px solid var(--ink);background:transparent;color:var(--ink);border-radius:99px;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:background .2s,color .2s}
+.xp-map:active{background:var(--ink);color:#fff}
+.xp-mi{display:inline-flex;flex-direction:column;gap:3px}
+.xp-mi b{display:block;height:2px;background:currentColor;border-radius:2px}
+.xp-mi b:nth-child(1){width:14px}
+.xp-mi b:nth-child(2),.xp-mi b:nth-child(3){width:10px;margin-left:4px}
+
+.xp-stage{transition:opacity .7s ease,transform .7s cubic-bezier(.2,.8,.2,1)}
+.xp:not(.live) .xp-stage{opacity:0;transform:translateY(28px)}
+
+/* ancestors: stacked layers above the focus card */
+.xp-stack{display:flex;flex-direction:column;position:relative;z-index:1}
+.xp-anc{position:relative;display:flex;align-items:center;gap:10px;margin:0 calc(var(--k) * 11px) -20px;padding:11px 14px 30px;text-align:left;font:inherit;color:var(--ink);background:hsl(0 0% calc(100% - var(--k) * 2%));border:1px solid #e3e3e3;border-top:3px solid var(--red);border-radius:8px 8px 0 0;cursor:pointer;box-shadow:0 -6px 16px rgba(0,0,0,.04);-webkit-tap-highlight-color:transparent}
+.xp-anc:active{background:#fff}
+.xp-sl{flex:none;font-size:10px;font-weight:800;letter-spacing:.1em;color:#fff;background:var(--red);padding:2px 7px;border-radius:99px}
+.xp-sn{flex:1;min-width:0;font-weight:700;font-size:14px;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.xp-more{flex:none;font-size:11px;font-weight:700;color:#888}
+.xp-sa{flex:none;color:var(--red);font-weight:800;font-size:17px;line-height:1}
+
+/* focus card */
+.xp-focus{position:relative;z-index:5;background:var(--ink);color:#fff;border-radius:10px;padding:22px 20px 28px;overflow:hidden;box-shadow:0 18px 40px rgba(0,0,0,.28),0 0 0 1px #1d1d1d;outline:none}
+.xp-focus::before{content:"";position:absolute;right:-32%;top:-48%;width:92%;aspect-ratio:1;background:radial-gradient(circle,rgba(230,43,30,.5),rgba(230,43,30,0) 65%);pointer-events:none}
+.xp-focus::after{content:attr(data-wm);position:absolute;right:12px;bottom:-40px;font-size:180px;font-weight:800;line-height:1;color:rgba(255,255,255,.055);pointer-events:none}
+.xp-fh{position:relative;display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.xp-lv{color:var(--red);font-weight:800;font-size:12px;letter-spacing:.14em;text-transform:uppercase}
+.xp-pips{display:flex;align-items:center;gap:5px}
+.xp-pips i{width:7px;height:7px;border-radius:99px;background:#3b3b3b}
+.xp-pips i.on{background:var(--red)}
+.xp-pips i.cur{width:22px}
+.xp-focus h3{position:relative;font-size:clamp(28px,8.4vw,42px);letter-spacing:-.03em;line-height:1.02;overflow-wrap:anywhere}
+.xp-meta{position:relative;display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;font-size:12px;font-weight:600;color:#c4c4c4}
+.xp-meta span{padding:4px 11px;border:1px solid #363636;border-radius:99px}
+.xp-ppl{position:relative;display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:22px 10px;margin-top:26px}
+.xp-p{text-align:center}
+.xp-p .av{width:68px;height:68px;font-size:24px;margin:0 auto 9px;box-shadow:0 0 0 2px var(--ink),0 0 0 4px var(--red)}
+.xp-p .pn{font-size:13px;color:#ececec}
+.xp-tba{position:relative;margin-top:24px;font-size:14px;color:#8d8d8d}
+.xp-focus.pop{animation:xpFocusIn .55s cubic-bezier(.2,.8,.2,1) backwards}
+
+/* connector between the focus card and the row below */
+.xp-link{display:flex;flex-direction:column;align-items:center}
+.xp-ln{position:relative;width:2px;height:30px;border-radius:2px;background:linear-gradient(var(--red),rgba(230,43,30,.35));transform-origin:top}
+.xp-ln.b{height:14px}
+.xp-ln:not(.b)::after{content:"";position:absolute;left:50%;top:0;width:8px;height:8px;margin-left:-4px;border-radius:50%;background:var(--red);opacity:0;animation:xpDrip 1.9s 1s ease-in infinite}
+.xp-lab{font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--red);background:#fff;border:1px solid #f1c4c0;padding:6px 13px;border-radius:99px;box-shadow:0 6px 16px rgba(230,43,30,.12)}
+.xp-link.side .xp-ln{background:repeating-linear-gradient(#b9b9b9 0 4px,transparent 4px 8px)}
+.xp-link.side .xp-ln::after{display:none}
+.xp-link.side .xp-lab{color:#777;border-color:#ddd;box-shadow:none}
+.xp-end{margin-top:26px;text-align:center;font-size:14px;color:#777}
+.xp-end b{color:var(--red)}
+
+/* the swipeable row of child roles */
+.xp-rail{display:flex;gap:14px;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain;scrollbar-width:none;margin:14px -24px 0;padding:10px calc((100vw - min(72vw,330px)) / 2) 24px;scroll-padding:0 calc((100vw - min(72vw,330px)) / 2)}
+.xp-rail::-webkit-scrollbar{display:none}
+.xp-kid{flex:0 0 min(72vw,330px);scroll-snap-align:center;display:block;font:inherit;color:inherit;text-align:left;background:none;border:0;padding:0;cursor:pointer;transform:scale(var(--s,1));opacity:var(--o,1);will-change:transform;-webkit-tap-highlight-color:transparent}
+.xp-kin{position:relative;display:flex;flex-direction:column;height:100%;min-height:178px;background:#fff;border-top:4px solid var(--red);border-radius:2px 2px 10px 10px;padding:20px 18px 18px;box-shadow:0 0 0 1px #ececec,0 14px 30px rgba(0,0,0,.09);transition:transform .15s}
+.xp-kid:active .xp-kin{transform:scale(.97)}
+.xp-idx{position:absolute;right:14px;top:8px;font-size:44px;font-weight:800;line-height:1;letter-spacing:-.04em;color:#efefef}
+.xp-kin h3{position:relative;padding-right:48px;font-size:21px;letter-spacing:-.02em;line-height:1.12;overflow-wrap:anywhere}
+.xp-mini{display:flex;align-items:center;margin-top:14px;min-height:34px}
+.xp-mini .av{flex:none;width:34px;height:34px;font-size:13px;margin:0 0 0 -9px;border:2px solid #fff}
+.xp-mini .av:first-child{margin-left:0}
+.xp-pl{margin-left:7px;font-size:12px;font-weight:700;color:#777}
+.xp-mini .xp-pl:first-child{margin-left:0}
+.xp-go{margin-top:auto;padding-top:16px;display:flex;align-items:center;justify-content:space-between;font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--red)}
+.xp-go b{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:50%;background:var(--red);color:#fff;font-size:15px;line-height:1}
+.xp-dots{display:flex;justify-content:center;gap:7px}
+.xp-dots i{width:7px;height:7px;border-radius:99px;background:#cfcfcf;transition:width .3s,background .3s}
+.xp-dots i.on{width:24px;background:var(--red)}
+
+/* entrance motion (only once the section scrolls into view) */
+.xp.live .d-init .xp-anc,.xp.live .d-jump .xp-anc{animation:xpAncIn .5s cubic-bezier(.2,.8,.2,1) backwards;animation-delay:calc((4 - var(--k)) * 70ms)}
+.xp.live .d-down .xp-anc.new{animation:xpAncUp .5s cubic-bezier(.2,.8,.2,1) backwards}
+.xp.live .xp-p{animation:xpPop .5s cubic-bezier(.2,.8,.2,1) backwards;animation-delay:calc(var(--i) * 45ms + 260ms)}
+.xp.live .xp-ln{animation:xpDraw .55s .2s cubic-bezier(.2,.8,.2,1) backwards}
+.xp.live .xp-lab{animation:xpPop .45s .5s cubic-bezier(.2,.8,.2,1) backwards}
+.xp.live .xp-kin{animation:xpKin .6s cubic-bezier(.2,.8,.2,1) backwards;animation-delay:calc(var(--i) * 80ms + 300ms)}
+
+/* full-map bottom sheet */
+#xpmap{margin:auto auto 0;width:100%;max-width:640px;max-height:84vh;max-height:84dvh;padding:0;border-radius:18px 18px 0 0;overflow:hidden;background:#fff;color:var(--ink)}
+#xpmap[open]{display:flex;flex-direction:column;animation:xpSheet .42s cubic-bezier(.2,.8,.2,1)}
+#xpmap::backdrop{background:rgba(0,0,0,.6);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)}
+.xp-sh{display:flex;align-items:center;justify-content:space-between;padding:20px 22px 14px;border-bottom:1px solid #eee}
+.xp-sh h3{font-size:22px;margin:0;letter-spacing:-.02em}
+.xp-x{width:36px;height:36px;border-radius:50%;border:0;background:#f1f1f1;color:#111;font:inherit;font-size:15px;cursor:pointer}
+.xp-sb{overflow-y:auto;-webkit-overflow-scrolling:touch;padding:8px 22px 34px}
+.xp-sb ul{list-style:none;margin:0;padding:0}
+.xp-sb ul ul{margin-left:11px;padding-left:16px;border-left:2px solid var(--red)}
+.xp-sb li{position:relative;padding-top:8px;animation:xpRow .45s cubic-bezier(.2,.8,.2,1) backwards;animation-delay:calc(var(--i) * 35ms + 120ms)}
+.xp-sb ul ul>li::before{content:"";position:absolute;left:-16px;top:31px;width:12px;border-top:2px solid var(--red)}
+.xp-mr{display:flex;align-items:center;gap:10px;width:100%;text-align:left;font:inherit;font-size:15px;font-weight:700;padding:11px 14px;border:1px solid #e6e6e6;border-left:4px solid var(--red);background:#fff;color:var(--ink);border-radius:2px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.xp-mr.on{background:var(--ink);border-color:var(--ink);border-left-color:var(--red);color:#fff}
+.xp-mr .c{margin-left:auto;flex:none;font-size:12px;font-weight:700;color:#999}
+.xp-mr.on .c{color:#aaa}
+
+@keyframes xpBob{0%,100%{transform:translateY(0) rotate(45deg)}50%{transform:translateY(4px) rotate(45deg)}}
+@keyframes xpDraw{from{transform:scaleY(0)}}
+@keyframes xpPop{from{opacity:0;transform:scale(.6)}}
+@keyframes xpKin{from{opacity:0;transform:translateX(46px) scale(.92)}}
+@keyframes xpAncIn{from{opacity:0;transform:translateY(-22px)}}
+@keyframes xpAncUp{from{opacity:0;transform:translateY(46px) scale(.96)}}
+@keyframes xpDrip{0%{transform:translateY(0);opacity:0}25%{opacity:1}100%{transform:translateY(24px);opacity:0}}
+@keyframes xpFocusIn{from{opacity:0;transform:translateY(30px) scale(.94)}}
+@keyframes xpSheet{from{transform:translateY(100%)}}
+@keyframes xpRow{from{opacity:0;transform:translateX(-14px)}}
+@media(prefers-reduced-motion:reduce){
+  .xp *,#xpmap,#xpmap *{animation:none!important;transition:none!important}
+  .xp:not(.live) .xp-stage{opacity:1;transform:none}
+}
+
+.xp.still .xp-stage,.xp.still .xp-stage *{animation:none!important}
+body:has(#xpmap[open]){overflow:hidden}
   </style>
 <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
 </head>
@@ -626,6 +749,11 @@ img:not(.ld){opacity:0}
 <dialog id="annpop" aria-label="Announcements">
   <button class="pclose" id="annx" type="button" aria-label="Close">×</button>
    <div id="annbox"></div>
+</dialog>
+
+<dialog id="xpmap" aria-label="Full team hierarchy">
+  <div class="xp-sh"><h3>Full hierarchy</h3><button class="xp-x" id="xpmapx" type="button" aria-label="Close">&#10005;</button></div>
+  <div class="xp-sb" id="xpmapbody"></div>
 </dialog>
 
 <dialog id="closing" aria-label="The final closing of the event"><div id="closingbox"></div></dialog>
@@ -2048,14 +2176,185 @@ function teamSec() {
   var tops = state.roles.filter(function (r) {
     return (!r.parent || !byId(r.parent)) && (editing || r.name);
   });
-  return h("section", { class: "soft", id: "team" }, h("div", { class: "wrap" },
+  return h("section", { class: "soft" + (editing ? " tm-edit" : ""), id: "team" }, h("div", { class: "wrap" },
     starsBlock(),
     head("site.teamHead"),
+                                                       editing ? null : xpSec(),
                                                        h("div", { class: "treewrap" }, h("div", { class: "tree" }, h("ul", null, tops.map(treeNode)))),
     editing ? h("div", { class: "addrow" }, h("button", { type: "button", class: "btn sm line", on: { click: function () {
       state.roles.push({ id: newId(), name: "", parent: null, people: [] }); touch();
     } } }, "+ Add top-level role")) : null));
 }
+
+
+/* ---------- mobile hierarchy explorer ---------- */
+var xp = { focus: undefined, dir: "init", live: false, seen: false, sl: 0, io: null };
+function xpNamed(list) { return list.filter(function (p) { return p.name; }); }
+function xpKids(id) { return kidsOf(id).filter(function (k) { return k.name; }); }
+function xpRoots() { return state.roles.filter(function (r) { return (!r.parent || !byId(r.parent)) && r.name; }); }
+function xpChain(id) {
+  var out = [], c = byId(id), seen = {};
+  while (c && c.parent && byId(c.parent) && !seen[c.id]) { seen[c.id] = 1; c = byId(c.parent); out.unshift(c); }
+  return out;
+}
+function xpDepth(list, d) {
+  var m = d;
+  list.forEach(function (r) { var k = xpKids(r.id); m = Math.max(m, k.length ? xpDepth(k, d + 1) : d); });
+  return m;
+}
+function xpAv(pp) {
+  var av = h("div", { class: "av" });
+  if (pp.photo) av.append(h("img", { src: cdn(pp.photo), alt: "", loading: "lazy" }));
+  else av.textContent = (pp.name || "?").trim().charAt(0).toUpperCase() || "?";
+  return av;
+}
+function xpPlural(n, one, many) { return n + " " + (n === 1 ? one : many); }
+function xpSeenNow() {
+  if (xp.seen) return; xp.seen = true;
+  var e = document.querySelector(".xp"); if (e) e.classList.add("seen");
+}
+function xpKid(r, i, side) {
+  var pp = xpNamed(r.people), sub = xpKids(r.id).length, mini = h("div", { class: "xp-mini" });
+  pp.slice(0, 3).forEach(function (p) { mini.append(xpAv(p)); });
+  if (pp.length === 1) mini.append(h("span", { class: "xp-pl" }, pp[0].name));
+  else if (pp.length > 3) mini.append(h("span", { class: "xp-pl" }, "+" + (pp.length - 3)));
+  else if (!pp.length) mini.append(h("span", { class: "xp-pl" }, "To be announced"));
+  return h("button", { type: "button", class: "xp-kid", style: "--i:" + i, "aria-label": r.name,
+      on: { click: function () { xpGo(r.id, side ? "side" : "down"); } } },
+    h("div", { class: "xp-kin" },
+      h("div", { class: "xp-idx" }, (i + 1 < 10 ? "0" : "") + (i + 1)),
+      h("h3", null, r.name), mini,
+      h("div", { class: "xp-go" }, sub ? xpPlural(sub, "sub-role", "sub-roles") : "View", h("b", null, "\u2192"))));
+}
+function xpRail(list, side) {
+  var rail = h("div", { class: "xp-rail" }, list.map(function (r, i) { return xpKid(r, i, side); }));
+  var dots = h("div", { class: "xp-dots", "aria-hidden": "true" }, list.map(function () { return h("i"); }));
+  var kids = Array.prototype.slice.call(rail.children), dd = Array.prototype.slice.call(dots.children), raf = 0;
+  function upd() {
+    raf = 0;
+    var rc = rail.getBoundingClientRect(), mid = rc.left + rc.width / 2, best = 0, bd = 1e9;
+    kids.forEach(function (k, i) {
+      var r = k.getBoundingClientRect(), d = Math.abs(r.left + r.width / 2 - mid), t = Math.min(d / (r.width || 1), 1);
+      k.style.setProperty("--s", (1 - t * 0.07).toFixed(3));
+      k.style.setProperty("--o", (1 - t * 0.4).toFixed(3));
+      if (d < bd) { bd = d; best = i; }
+    });
+    dd.forEach(function (x, i) { x.classList.toggle("on", i === best); });
+  }
+  rail.addEventListener("scroll", function () { xp.sl = rail.scrollLeft; xpSeenNow(); if (!raf) raf = requestAnimationFrame(upd); }, { passive: true });
+  rail._upd = upd;
+  setTimeout(upd, 60); setTimeout(upd, 700);
+  return h("div", null, rail, list.length > 1 ? dots : null);
+}
+function xpStage() {
+  var roots = xpRoots(), multi = roots.length > 1;
+  if (xp.focus === undefined || (xp.focus && (!byId(xp.focus) || !byId(xp.focus).name))) xp.focus = multi ? "" : (roots[0] ? roots[0].id : "");
+  var f = xp.focus ? byId(xp.focus) : null;
+  var anc = f ? xpChain(f.id).filter(function (a) { return a.name; }) : [];
+  var kids = f ? xpKids(f.id) : roots;
+  var ppl = f ? xpNamed(f.people) : [];
+  var stage = h("div", { class: "xp-stage d-" + xp.dir });
+
+  // ancestor layers
+  var items = anc.map(function (a, i) { return { id: a.id, name: a.name, lab: "L" + (i + 1) }; });
+  if (f && multi) items.unshift({ id: "", name: "All roles", lab: "TOP" });
+  var shown = items.slice(-4), stack = h("div", { class: "xp-stack" });
+  shown.forEach(function (a, i) {
+    var k = shown.length - i;
+    stack.append(h("button", { type: "button", class: "xp-anc" + (xp.dir === "down" && k === 1 ? " new" : ""), style: "--k:" + k,
+        "aria-label": "Go up to " + a.name, on: { click: function () { xpGo(a.id, "up"); } } },
+      h("span", { class: "xp-sl" }, a.lab), h("span", { class: "xp-sn" }, a.name), h("span", { class: "xp-sa" }, "\u2191")));
+  });
+  if (shown.length) stage.append(stack);
+
+  // focus card
+  var level = anc.length + 1, total = xpDepth(roots, 0) + 1;
+  var card = h("section", { class: "xp-focus" + (xp.dir === "init" ? "" : " pop"), tabindex: "-1", "data-wm": f ? String(level) : "x",
+      "aria-label": f ? f.name : "Team overview" });
+  var pips = h("div", { class: "xp-pips", "aria-hidden": "true" });
+  if (f) for (var p = 0; p < total && p < 10; p++) pips.append(h("i", { class: p <= anc.length ? (p === anc.length ? "on cur" : "on") : "" }));
+  card.append(h("div", { class: "xp-fh" }, h("span", { class: "xp-lv" }, f ? "Level " + level : "Overview"), pips),
+              h("h3", null, f ? f.name : "The team"));
+  var meta = h("div", { class: "xp-meta" });
+  if (f && ppl.length) meta.append(h("span", null, xpPlural(ppl.length, "person", "people")));
+  if (kids.length) meta.append(h("span", null, xpPlural(kids.length, f ? "sub-role" : "top-level role", f ? "sub-roles" : "top-level roles")));
+  if (meta.children.length) card.append(meta);
+  if (ppl.length) card.append(h("div", { class: "xp-ppl" }, ppl.map(function (pp, i) {
+    return h("div", { class: "xp-p", style: "--i:" + i }, xpAv(pp), h("div", { class: "pn" }, pp.name));
+  })));
+  else if (f) card.append(h("div", { class: "xp-tba" }, "To be announced"));
+  stage.append(card);
+
+  // what's below (or beside, for a role with no sub-roles)
+  if (kids.length) {
+    stage.append(h("div", { class: "xp-link" }, h("div", { class: "xp-ln" }),
+      h("div", { class: "xp-lab" }, f ? "Reports to " + f.name.split(/\s+/).slice(0, 3).join(" ") : "Start here")));
+    stage.append(xpRail(kids, false));
+  } else {
+    var par = f && f.parent && byId(f.parent), sibs = par ? xpKids(par.id).filter(function (x) { return x.id !== f.id; }) : [];
+    stage.append(h("div", { class: "xp-end" }, h("b", null, "End of the line."), " This role has no sub-roles."));
+    if (sibs.length) {
+      stage.append(h("div", { class: "xp-link side" }, h("div", { class: "xp-ln" }), h("div", { class: "xp-lab" }, "Same level")));
+      stage.append(xpRail(sibs, true));
+    }
+  }
+  return stage;
+}
+function xpGo(id, dir) {
+  var el = document.querySelector(".xp"); if (!el) return;
+  xp.focus = id; xp.dir = dir; xp.sl = 0; xpSeenNow();
+  el.classList.remove("still");
+  var old = el.querySelector(".xp-stage"), st = xpStage();
+  old.replaceWith(st);
+  var card = st.querySelector(".xp-focus");
+  if (card) {
+    card.focus({ preventScroll: true });
+    var ft = card.getBoundingClientRect().top;
+    if (ft < 90 || ft > window.innerHeight * 0.6) window.scrollBy({ top: ft - 150 });
+  }
+}
+function xpOpenMap() {
+  var d = $id("xpmap"), body = $id("xpmapbody"), n = 0; body.textContent = "";
+  function list(roles) {
+    var ul = h("ul");
+    roles.forEach(function (r) {
+      var kids = xpKids(r.id);
+      var li = h("li", { style: "--i:" + Math.min(n++, 14) },
+        h("button", { type: "button", class: "xp-mr" + (r.id === xp.focus ? " on" : ""), on: { click: function () { d.close(); xpGo(r.id, "jump"); } } },
+          h("span", null, r.name), kids.length ? h("span", { class: "c" }, kids.length + " below") : null));
+      if (kids.length) li.append(list(kids));
+      ul.append(li);
+    });
+    return ul;
+  }
+  body.append(list(xpRoots()));
+  if (!d.open) d.showModal();
+}
+function xpSec() {
+  if (!xpRoots().length) return null;
+  var el = h("div", { class: "xp" + (xp.seen ? " seen" : "") + (xp.live ? " live still" : "") },
+    h("div", { class: "xp-top" },
+      h("div", { class: "xp-hint" }, h("i"), h("span", null, "Tap a card to go deeper")),
+      h("button", { type: "button", class: "xp-map", on: { click: xpOpenMap } },
+        h("span", { class: "xp-mi", "aria-hidden": "true" }, h("b"), h("b"), h("b")), "Full map")),
+    xpStage());
+  if (xp.io) { xp.io.disconnect(); xp.io = null; }
+  if (!xp.live) {
+    if (!("IntersectionObserver" in window)) { el.classList.add("live"); xp.live = true; }
+    else {
+      xp.io = new IntersectionObserver(function (es) {
+        if (es.some(function (e) { return e.isIntersecting; })) { el.classList.add("live"); xp.live = true; xp.io.disconnect(); xp.io = null; }
+      }, { threshold: 0.15 });
+      xp.io.observe(el);
+    }
+  } else if (xp.sl) {
+    setTimeout(function () { var r = el.querySelector(".xp-rail"); if (r) { r.scrollLeft = xp.sl; if (r._upd) r._upd(); } }, 0);
+  }
+  return el;
+}
+window.addEventListener("resize", function () {
+  var r = document.querySelector(".xp-rail"); if (r && r._upd) r._upd();
+});
 
 /* fit the org chart to the screen width instead of scrolling */
 function fitTree() {
@@ -2634,6 +2933,8 @@ $id("closing").addEventListener("click", closeClosing);
 $id("closing").addEventListener("close", function () { clearTimeout(closingTimer); clearInterval(closingRot); if (!closingPreview) showPopup(false); closingPreview = false; });
   $id("annx").addEventListener("click", function () { $id("annpop").close(); });
   $id("annpop").addEventListener("click", function (e) { if (e.target === this) this.close(); });
+  $id("xpmapx").addEventListener("click", function () { $id("xpmap").close(); });
+  $id("xpmap").addEventListener("click", function (e) { if (e.target === this) this.close(); });
 document.getElementById("loginGo").addEventListener("click", doLogin);
 document.getElementById("loginCancel").addEventListener("click", function () { document.getElementById("login").close(); });
 document.getElementById("pw").addEventListener("keydown", function (e) { if (e.key === "Enter") doLogin(); });
