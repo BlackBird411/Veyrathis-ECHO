@@ -1,0 +1,147 @@
+diff --git a/.github/workflows/android.yml b/.github/workflows/android.yml
+index 7972b2c..74aaabb 100644
+--- a/.github/workflows/android.yml
++++ b/.github/workflows/android.yml
+@@ -72,4 +72,7 @@ jobs:
+         if: startsWith(github.ref, 'refs/tags/')
+         env:
+           GH_TOKEN: ${{ github.token }}
+-        run: gh release create "${{ github.ref_name }}" out/TEDxMSA.apk --title "${{ github.ref_name }}" --notes "Android APK. Loads the live site, so content updates need no reinstall."
++        run: |
++          gh release create "${{ github.ref_name }}" out/TEDxMSA.apk --title "${{ github.ref_name }}" \
++            --notes "Android APK + unsigned iOS IPA (sign with Sideloadly/AltStore). Loads the live site, so content updates need no reinstall." \
++            || gh release upload "${{ github.ref_name }}" out/TEDxMSA.apk --clobber
+diff --git a/.github/workflows/ios.yml b/.github/workflows/ios.yml
+new file mode 100644
+index 0000000..0c5a8de
+--- /dev/null
++++ b/.github/workflows/ios.yml
+@@ -0,0 +1,81 @@
++name: iOS IPA
++
++# FREE build: no Apple Developer account needed. This produces an UNSIGNED .ipa.
++# Install it on your own iPhone by letting Sideloadly or AltStore sign it with a free
++# Apple ID (the signature lasts 7 days, then you refresh it from the same tool).
++#
++# The app loads the live site, so web/Supabase changes need NO rebuild.
++# Run this only when native stuff changes (icon, permissions, plugins, Capacitor version).
++on:
++  workflow_dispatch:
++  push:
++    tags: ["v*"]
++
++permissions:
++  contents: write
++
++jobs:
++  ipa:
++    runs-on: macos-latest
++    steps:
++      - uses: actions/checkout@v4
++
++      - uses: actions/setup-node@v4
++        with:
++          node-version: 22
++
++      # Capacitor 8 needs a recent Xcode; take the newest stable one on the runner.
++      - uses: maxim-lobanov/setup-xcode@v1
++        with:
++          xcode-version: latest-stable
++
++      - name: Install deps
++        run: npm install --no-audit --no-fund
++
++      - name: Generate iOS project
++        run: |
++          npx cap add ios
++          npx @capacitor/assets generate --ios \
++            --iconBackgroundColor '#0a0a0a' --iconBackgroundColorDark '#0a0a0a' \
++            --splashBackgroundColor '#0a0a0a' --splashBackgroundColorDark '#0a0a0a'
++          bash scripts/ios-setup.sh
++          npx cap sync ios
++
++      - name: Build (unsigned)
++        run: |
++          set -o pipefail
++          xcodebuild \
++            -project ios/App/App.xcodeproj \
++            -scheme App \
++            -configuration Release \
++            -sdk iphoneos \
++            -destination 'generic/platform=iOS' \
++            -derivedDataPath build \
++            MARKETING_VERSION=1.0.${{ github.run_number }} \
++            CURRENT_PROJECT_VERSION=${{ github.run_number }} \
++            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
++            build
++
++      - name: Package IPA
++        run: |
++          APP="build/Build/Products/Release-iphoneos/App.app"
++          [ -d "$APP" ] || { echo "App.app not found"; find build -name '*.app' -maxdepth 6; exit 1; }
++          mkdir -p out/Payload
++          cp -R "$APP" out/Payload/
++          (cd out && zip -qry TEDxMSA.ipa Payload && rm -rf Payload)
++          ls -la out
++
++      - uses: actions/upload-artifact@v4
++        with:
++          name: TEDxMSA-ipa
++          path: out/TEDxMSA.ipa
++
++      # android.yml publishes to the same tag, so whichever job runs second just adds its file.
++      - name: Publish release (tags only)
++        if: startsWith(github.ref, 'refs/tags/')
++        env:
++          GH_TOKEN: ${{ github.token }}
++        run: |
++          gh release create "${{ github.ref_name }}" out/TEDxMSA.ipa --title "${{ github.ref_name }}" \
++            --notes "Android APK + unsigned iOS IPA (sign with Sideloadly/AltStore). Loads the live site, so content updates need no reinstall." \
++            || gh release upload "${{ github.ref_name }}" out/TEDxMSA.ipa --clobber
+diff --git a/package.json b/package.json
+index be0b302..8cec2c6 100644
+--- a/package.json
++++ b/package.json
+@@ -7,6 +7,7 @@
+     "@capacitor/android": "8.6.3",
+     "@capacitor/assets": "^3.0.5",
+     "@capacitor/cli": "8.6.3",
+-    "@capacitor/core": "8.6.3"
++    "@capacitor/core": "8.6.3",
++    "@capacitor/ios": "8.6.3"
+   }
+ }
+diff --git a/scripts/ios-setup.sh b/scripts/ios-setup.sh
+new file mode 100755
+index 0000000..4f4617f
+--- /dev/null
++++ b/scripts/ios-setup.sh
+@@ -0,0 +1,28 @@
++#!/usr/bin/env bash
++# Run after `npx cap add ios`. Customises the generated Xcode project.
++set -euo pipefail
++PLIST="ios/App/App/Info.plist"
++
++[ -f "$PLIST" ] || { echo "Missing $PLIST - run 'npx cap add ios' first" >&2; exit 1; }
++
++# iOS kills the app the moment it touches the camera without a usage string.
++# The QR scanner uses getUserMedia (video only, no microphone).
++python3 - "$PLIST" <<'PY'
++import plistlib, sys
++path = sys.argv[1]
++with open(path, "rb") as f:
++    data = plistlib.load(f)
++data.setdefault("NSCameraUsageDescription", "TEDxMSA uses the camera to scan QR codes.")
++# No custom crypto, only HTTPS. Saves the export-compliance prompt if this ever goes to TestFlight.
++data.setdefault("ITSAppUsesNonExemptEncryption", False)
++with open(path, "wb") as f:
++    plistlib.dump(data, f)
++PY
++
++python3 - "$PLIST" <<'PY'
++import plistlib, sys
++with open(sys.argv[1], "rb") as f:
++    d = plistlib.load(f)
++for k in ("NSCameraUsageDescription", "ITSAppUsesNonExemptEncryption", "CFBundleDisplayName"):
++    print(f"{k} = {d.get(k)!r}")
++PY
