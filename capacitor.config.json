@@ -3,7 +3,7 @@
   "appName": "TEDxMSA",
   "webDir": "www",
   "server": {
-    "url": "https://veyrathis-echo.vercel.app",
+    "url": "https://tedx-team.vercel.app",
     "cleartext": false,
     "errorPath": "index.html"
   },
