@@ -114,8 +114,9 @@ main{padding:0 0 80px;min-width:0}
 .card .mb{min-width:22px;height:22px;padding:0 5px;border-radius:11px;display:grid;place-items:center;font-size:10px;font-weight:700;line-height:1}
 .card .mbm{align-self:center;font-size:11px;color:var(--mut)}
 .empty{color:var(--mut);padding:30px 0}
-body.view .card{cursor:pointer}
+body.view .card,body.acct .card{cursor:pointer}
 body.view .brand span::after{content:"  \00B7  view only";color:var(--red);font-weight:800;white-space:pre}
+body.acct .brand span::after{content:"  \00B7  limited access";color:var(--red);font-weight:800;white-space:pre}
 /* attendance */
 .card.att{background:var(--amberbg);border-color:#d9a406;box-shadow:0 0 0 1px #d9a406}
 .card .pt{display:inline-block;margin:4px 4px 0 0;font-size:11px;font-weight:800;color:var(--amber);background:var(--amberbg);border:1px solid var(--amberln);border-radius:3px;padding:0 7px}
@@ -171,6 +172,19 @@ dialog .meta{color:var(--mut);font-size:13px;margin:0 0 4px}
 #posDlg .posadd input{flex:2 1 170px;width:auto}
 #posDlg .posadd select{flex:1 1 150px;width:auto}
 #posList,#awList{max-height:44vh;overflow:auto}
+.card .tag.hid{background:var(--ink);color:#fff;border-color:var(--ink)}
+.card .tag.hid + .tag{margin-left:6px}
+#acctDlg{width:min(640px,94vw)}
+#acctDlg form.posadd{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 10px;padding:0}
+#acctDlg .posadd input[type=text]{flex:1 1 150px;width:auto}
+#acctDlg .prow{flex-wrap:wrap}
+#acctDlg .prow .ps{max-width:none}
+#acctDlg .prow.offacct .pn{color:var(--mut);text-decoration:line-through}
+#acctList{max-height:40vh;overflow:auto}
+.aperms{display:flex;flex-wrap:wrap;gap:6px 16px;flex:1 1 100%}
+.aperms label{display:flex;align-items:center;gap:6px;margin:0;font-weight:600;font-size:14px;cursor:pointer}
+.aperms input{width:auto;accent-color:var(--red)}
+@media (min-width:1100px){#acctDlg{width:min(760px,94vw)}}
 .prow{display:flex;align-items:center;gap:6px;padding:8px 10px;background:var(--soft);border-radius:4px;margin-bottom:6px}
 .prow .pn{flex:1;min-width:0;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .prow .ps{flex:none;color:var(--mut);font-size:12px;max-width:40%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -403,7 +417,8 @@ body.bwide .chan.add{margin:0;border-style:dashed}
       <button class="btn sec sm" id="cmdBtn" type="button" title="Command bar (or press the ` key)" hidden>Commands</button>
       <select id="hlSel" aria-label="Highlight attendees" hidden></select>
       <button class="btn sec sm" id="attBtn" type="button">Attendance</button>
-      <button class="btn sec sm" id="awBtn" type="button">Awards</button>
+     <button class="btn sec sm" id="awBtn" type="button">Awards</button>
+      <button class="btn sec sm" id="acctBtn" type="button" hidden>Accounts</button>
       <button class="btn sec sm" id="refresh" type="button">Refresh</button>
       <button class="btn sec sm" id="out" type="button">Sign out</button>
     </div>
@@ -412,7 +427,7 @@ body.bwide .chan.add{margin:0;border-style:dashed}
 
 <section class="login" id="login">
   <h1>Club management</h1>
-  <p>Enter the board password to manage the club, or the member password to view it.</p>
+<p>Enter your password. The board password manages the club, an account password gives the access the board set for it, and the member password is view only.</p>
   <form id="loginForm" autocomplete="off">
     <label for="pw">Password</label>
     <input id="pw" type="password" autocomplete="off" required>
@@ -486,7 +501,8 @@ body.bwide .chan.add{margin:0;border-style:dashed}
     <p class="err" id="memErr" role="alert"></p>
     <div class="row">
       <button class="btn warn" id="memDel" type="button">Delete</button>
-      <button class="btn sec" id="memTerm" type="button">Terminate</button>
+    <button class="btn sec" id="memTerm" type="button">Terminate</button>
+      <button class="btn sec" id="memHide" type="button">Hide</button>
       <span class="gap"></span>
       <button class="btn sec" id="memCancel" type="button">Cancel</button>
       <button class="btn" id="memSave" type="submit">Save</button>
@@ -591,6 +607,23 @@ body.bwide .chan.add{margin:0;border-style:dashed}
   </form>
 </dialog>
 
+<dialog id="acctDlg">
+  <div class="posbox">
+    <h3>Accounts</h3>
+    <p class="meta">Each account has its own password and only the features ticked here. All four ticked is an HR account. Every password must be different.</p>
+    <form id="acctForm" class="posadd" autocomplete="off">
+      <input id="acctName" type="text" maxlength="40" placeholder="Account name, e.g. HR" aria-label="Account name">
+      <input id="acctPw" type="text" maxlength="100" placeholder="Password (6+ characters)" aria-label="Password" autocomplete="off">
+      <div class="aperms" id="acctPerms"></div>
+      <button class="btn" id="acctAdd" type="submit">Create</button>
+      <button class="btn sec" id="acctCancel" type="button" hidden>Cancel</button>
+    </form>
+    <p class="err" id="acctErr" role="alert"></p>
+    <div id="acctList"></div>
+    <div class="row"><span class="gap"></span><button class="btn sec" id="acctClose" type="button">Close</button></div>
+  </div>
+</dialog>
+
 <div id="pickbar" role="toolbar" aria-label="Selected members" hidden></div>
 
 <dialog id="bulkDlg">
@@ -627,7 +660,7 @@ body.bwide .chan.add{margin:0;border-style:dashed}
 var SB_URL = "https://fdiounclxvaescxfkcnt.supabase.co";
 var SB_KEY = "sb_publishable_pTmK9ZuSQHh915Ke4IAhIA_ib2ip80H";   // public key, same one the website uses
 
-var events = [], eventParts = [], hlEvent = "", pw = null, role = null, committees = [], members = [], positions = [], awards = [], memberAwards = [], warnings = [], sel = null, q = "", idle = null, dragId = null, editId = null, comEditId = null;
+var events = [], eventParts = [], hlEvent = "", pw = null, role = null, perms = [], accounts = [], committees = [], members = [], positions = [], awards = [], memberAwards = [], warnings = [], sel = null, q = "", idle = null, dragId = null, editId = null, comEditId = null;
 
 function $(id) { return document.getElementById(id); }
 function num(n) { return Number(n).toLocaleString("en-US"); }
@@ -702,6 +735,7 @@ function fail(e) {
 /* ---------- data helpers ---------- */
 function isActive(m) { return m.status !== "terminated"; }
 function canEdit() { return role === "board"; }   // the server enforces this too, this only hides the buttons
+function can(p) { return perms.indexOf(p) >= 0; }   // features of a limited account: see_hidden, terminate, warn, award
 function warnsOf(mid) { return warnings.filter(function (w) { return w.member_id === mid; }); }
 function liveWarns(mid) { return warnsOf(mid).filter(function (w) { return !w.revoked_at; }); }
 function key(m) { return m.committee_id || "none"; }
@@ -810,6 +844,7 @@ function card(m, showCom) {
       ptChip(m.id),
       wn ? el("span", { class: "wn", text: "⚠ " + wn + (wn === 1 ? " warning" : " warnings") }) : null,
       showCom ? el("span", { class: "cm", text: comName(m.committee_id) }) : null),
+m.hidden ? el("span", { class: "tag hid", text: "Hidden" }) : null,
     isActive(m) ? null : el("span", { class: "tag", text: "Terminated" }));
   return c;
 }
@@ -1306,7 +1341,8 @@ function renderEveryone(host) {
       el("td", { text: aw ? String(aw) : "—" }),
       el("td", { text: memPoints(m.id) || "—" }),
       el("td", null, el("span", { class: "st " + (isActive(m) ? "on" : "no"), text: isActive(m) ? "Active" : "Terminated" }),
-        wn ? el("span", { class: "wn", title: wn + " live warning" + (wn === 1 ? "" : "s"), text: "⚠ " + wn }) : null));
+        wn ? el("span", { class: "wn", title: wn + " live warning" + (wn === 1 ? "" : "s"), text: "⚠ " + wn }) : null,
+        m.hidden ? el("span", { class: "wn", text: "Hidden" }) : null));
   });
   host.appendChild(el("div", { class: "twrap" }, el("table", { class: "etbl" },
     el("thead", null, el("tr", null, ["#", "Name", "Committee", "Position", "Awards", "Points", "Status"].map(function (h) { return el("th", { text: h }); }))),
@@ -1361,7 +1397,8 @@ function openMember(id) {
   s.appendChild(el("option", { value: "", text: "Unassigned" }));
   s.value = m.committee_id || "";
   fillPos(m.committee_id || null, m.position_id || "");
-  $("memMeta").textContent = isActive(m) ? "Active member" : "Terminated" + (m.terminated_at ? " on " + fmtDate(m.terminated_at) : "");
+  $("memMeta").textContent = (isActive(m) ? "Active member" : "Terminated" + (m.terminated_at ? " on " + fmtDate(m.terminated_at) : "")) + (m.hidden ? " · Hidden from everyone without access" : "");
+  $("memHide").textContent = m.hidden ? "Unhide" : "Hide";
   var rb = $("memReason"); rb.textContent = ""; rb.hidden = isActive(m) || !m.termination_reason;
   if (!rb.hidden) { rb.appendChild(el("b", { text: "Reason for termination" })); rb.appendChild(document.createTextNode(m.termination_reason)); }
   $("memTerm").textContent = isActive(m) ? "Terminate" : "Reinstate";
@@ -1370,11 +1407,14 @@ function openMember(id) {
   applyViewMode();
   $("memDlg").showModal();
 }
-function applyViewMode() {   // members get a read-only window: nothing to type, nothing to press
+function applyViewMode() {   // members: read-only. Limited accounts: only the buttons the board gave them.
   var m = memById(editId), ro = !canEdit();
   ["memName", "memCom", "memPos"].forEach(function (id) { $(id).disabled = ro; });
-  ["memGive", "memDel", "memTerm", "memSave"].forEach(function (id) { $(id).hidden = ro; });
-  $("memWarnAdd").hidden = ro || !m || !isActive(m);
+  ["memDel", "memSave"].forEach(function (id) { $(id).hidden = ro; });
+  $("memGive").hidden = !can("award");
+  $("memTerm").hidden = !can("terminate");
+  $("memHide").hidden = !canEdit();
+  $("memWarnAdd").hidden = !can("warn") || !m || !isActive(m);
   $("memCancel").textContent = ro ? "Close" : "Cancel";
 }
 function fillPos(cid, cur) {   // position dropdown in the member window, for the chosen committee
@@ -2372,10 +2412,11 @@ $("cmdin").addEventListener("keydown", function (e) {
     committees = d.committees || []; members = d.members || []; positions = d.positions || [];
     awards = d.awards || []; memberAwards = d.member_awards || [];
     events = d.events || []; eventParts = d.event_participants || [];
-    warnings = d.warnings || []; role = d.role === "member" ? "member" : "board";
+    warnings = d.warnings || []; role = d.role === "board" || d.role === "account" ? d.role : "member"; perms = d.perms || [];
     if (!sel || (sel !== "none" && sel !== "__board" && sel !== "__all" && !comById(sel))) sel = committees.length ? committees[0].id : "none";
     $("login").hidden = true; $("app").hidden = false; $("actions").hidden = false;
-    $("awBtn").hidden = !canEdit(); $("attBtn").hidden = !canEdit(); $("cmdBtn").hidden = !canEdit(); document.body.classList.toggle("view", !canEdit());
+   $("awBtn").hidden = !canEdit(); $("attBtn").hidden = !canEdit(); $("cmdBtn").hidden = !canEdit(); $("acctBtn").hidden = !canEdit();
+    document.body.classList.toggle("view", role === "member"); document.body.classList.toggle("acct", role === "account");
     render(); touch();
   }).catch(function (e) {
     if (/password/i.test(e.message)) lock("Wrong password. Try again.");
@@ -2384,11 +2425,11 @@ $("cmdin").addEventListener("keydown", function (e) {
   });
 }
 function lock(msg) {
-  pw = null; role = null; committees = []; members = []; positions = []; awards = []; memberAwards = []; warnings = []; events = []; eventParts = []; hlEvent = ""; sel = null; q = ""; picked = {}; ctxClose(); $("pickbar").hidden = true; clearTimeout(idle);
-  document.body.classList.remove("view"); cmdReset();
+  pw = null; role = null; perms = []; accounts = []; committees = []; members = []; positions = []; awards = []; memberAwards = []; warnings = []; events = []; eventParts = []; hlEvent = ""; sel = null; q = ""; picked = {}; ctxClose(); $("pickbar").hidden = true; clearTimeout(idle);
+   document.body.classList.remove("view", "acct"); cmdReset();
   $("q").value = ""; $("side").textContent = ""; $("main").textContent = "";
   $("app").hidden = true; $("actions").hidden = true; $("login").hidden = false; $("loginErr").textContent = msg || "";
-  ["comDlg", "memDlg", "posDlg", "awDlg", "giveDlg", "bulkDlg", "seatDlg", "attDlg", "pickDlg"].forEach(function (d) { if ($(d).open) $(d).close(); });
+  ["comDlg", "memDlg", "posDlg", "awDlg", "giveDlg", "bulkDlg", "seatDlg", "attDlg", "pickDlg", "acctDlg"].forEach(function (d) { if ($(d).open) $(d).close(); });
 }
 function touch() {
   clearTimeout(idle);
@@ -2513,6 +2554,8 @@ function menuItems(ms) {
   if (act.length || off) l.push({ sep: true });
   if (act.length) l.push({ label: "Terminate…", danger: true, run: function () { termSel(ms); } });
   if (off) l.push({ label: "Reinstate", run: function () { reinstateSel(ms); } });
+ if (ms.some(function (m) { return !m.hidden; })) l.push({ label: "Hide", run: function () { hideSel(ms, true); } });
+  if (ms.some(function (m) { return m.hidden; })) l.push({ label: "Unhide", run: function () { hideSel(ms, false); } });
   if (ms.length > 1) l.push({ sep: true }, { label: "Clear selection", run: pickClear });
   return l;
 }
@@ -2665,7 +2708,114 @@ $("memDel").addEventListener("click", function () {
   }).catch(fail);
 });
 
+  /* ---------- hide / unhide a member (editor only) ---------- */
+function hideStep(m, on) {
+  return {
+    run: function () { return op("member_hide", { id: m.id, hidden: on }).then(function (u) { Object.assign(m, u); return u; }); },
+    undo: function () { return [hideStep(m, !on)]; }
+  };
+}
+function hideSel(ms, on) {
+  var t = ms.filter(function (m) { return !!m.hidden !== on; });
+  if (!t.length) { toast("Already " + (on ? "hidden." : "visible.")); return; }
+  bulk(t.map(function (m) { return hideStep(m, on); }), (on ? "hide " : "unhide ") + t.length,
+    (on ? "Hid " : "Unhid ") + (t.length === 1 ? t[0].name : t.length + " members") + ".");
+}
+$("memHide").addEventListener("click", function () {
+  var m = memById(editId), to; if (!m) return;
+  to = !m.hidden;
+  if (!confirm((to ? "Hide " + m.name + "? Only you and accounts allowed to see hidden members will see them." : "Show " + m.name + " to everyone again?"))) return;
+  $("memErr").textContent = "";
+  op("member_hide", { id: m.id, hidden: to }).then(function (u) {
+    Object.assign(m, u); $("memDlg").close(); render(); toast(m.name + (to ? " is now hidden." : " is visible again."));
+  }).catch(merr);
+});
+
+/* ---------- accounts window (editor only) ---------- */
+var PERM_LABELS = [["see_hidden", "See hidden members"], ["terminate", "Terminate / reinstate"], ["warn", "Warn"], ["award", "Give awards"]];
+var acctEditId = null;
+function acctErr(e) {   // only a real "Wrong password" locks the page, the account messages mention passwords too
+  if (/^wrong password/i.test(e.message)) return fail(e);
+  $("acctErr").textContent = e.message;
+}
+function permText(a) {
+  var l = PERM_LABELS.filter(function (x) { return a.perms.indexOf(x[0]) >= 0; }).map(function (x) { return x[1]; });
+  return l.length ? l.join(", ") : "No features";
+}
+function fillPermBoxes(cur) {
+  var host = $("acctPerms"); host.textContent = "";
+  PERM_LABELS.forEach(function (x) {
+    var cb = el("input", { type: "checkbox", value: x[0] }); cb.checked = cur.indexOf(x[0]) >= 0;
+    host.appendChild(el("label", null, cb, x[1]));
+  });
+}
+function pickedPerms() {
+  return Array.prototype.map.call($("acctPerms").querySelectorAll("input:checked"), function (c) { return c.value; });
+}
+function resetAcctForm() {
+  acctEditId = null; $("acctName").value = ""; $("acctPw").value = ""; $("acctPw").placeholder = "Password (6+ characters)";
+  fillPermBoxes(["see_hidden", "terminate", "warn", "award"]);   // starts as the HR preset
+  $("acctAdd").textContent = "Create"; $("acctCancel").hidden = true;
+}
+function openAccounts() {
+  resetAcctForm(); $("acctErr").textContent = ""; $("acctList").textContent = "";
+  $("acctDlg").showModal(); $("acctName").focus();
+  op("account_list", {}).then(function (l) { accounts = l || []; renderAccounts(); }).catch(acctErr);
+}
+function renderAccounts() {
+  var host = $("acctList"); host.textContent = "";
+  if (!accounts.length) { host.appendChild(el("p", { class: "empty", text: "No accounts yet. Create the first one above." })); return; }
+  accounts.forEach(function (a) {
+    host.appendChild(el("div", { class: "prow" + (a.active ? "" : " offacct") },
+      el("span", { class: "pn", text: a.name + (a.active ? "" : " (off)") }),
+      el("span", { class: "ps", title: permText(a), text: permText(a) }),
+      el("button", { class: "btn sec sm", type: "button", text: "Edit", on: { click: function () {
+        acctEditId = a.id; $("acctErr").textContent = "";
+        $("acctName").value = a.name; $("acctPw").value = ""; $("acctPw").placeholder = "New password (leave empty to keep)";
+        fillPermBoxes(a.perms); $("acctAdd").textContent = "Save"; $("acctCancel").hidden = false; $("acctName").focus();
+      } } }),
+      el("button", { class: "btn sec sm", type: "button", text: a.active ? "Turn off" : "Turn on", on: { click: function () {
+        $("acctErr").textContent = "";
+        op("account_edit", { id: a.id, active: !a.active }).then(function (u) { Object.assign(a, u); renderAccounts(); }).catch(acctErr);
+      } } }),
+      el("button", { class: "btn warn sm", type: "button", text: "Delete", on: { click: function () {
+        if (!confirm("Delete the account \u201C" + a.name + "\u201D? Its password stops working at once.")) return;
+        $("acctErr").textContent = "";
+        op("account_delete", { id: a.id }).then(function () {
+          accounts = accounts.filter(function (x) { return x.id !== a.id; });
+          if (acctEditId === a.id) resetAcctForm();
+          renderAccounts();
+        }).catch(acctErr);
+      } } })));
+  });
+}
+$("acctForm").addEventListener("submit", function (ev) {
+  ev.preventDefault();
+  if ($("acctAdd").disabled) return;
+  var name = $("acctName").value.trim(), pv = $("acctPw").value, k = null, p, body;
+  if (!name) { $("acctName").focus(); return; }
+  if (!acctEditId && !pv) { $("acctErr").textContent = "Set a password for the account."; $("acctPw").focus(); return; }
+  $("acctErr").textContent = ""; $("acctAdd").disabled = true;
+  if (acctEditId) {
+    body = { id: acctEditId, name: name, perms: pickedPerms() }; if (pv) body.password = pv;
+    p = op("account_edit", body);
+  } else {
+    k = "account|" + name.toLowerCase();
+    p = op("account_add", { rid: rid(k), name: name, password: pv, perms: pickedPerms() });
+  }
+  p.then(function (a) {
+    if (k) ridDone(k);
+    var x = accounts.filter(function (y) { return y.id === a.id; })[0];
+    if (x) Object.assign(x, a); else accounts.push(a);
+    resetAcctForm(); renderAccounts(); toast("Account saved.");
+  }).catch(acctErr).then(function () { $("acctAdd").disabled = false; });
+});
+$("acctBtn").addEventListener("click", openAccounts);
+$("acctCancel").addEventListener("click", function () { resetAcctForm(); $("acctErr").textContent = ""; });
+$("acctClose").addEventListener("click", function () { $("acctDlg").close(); });
+  
 ["click", "keydown", "input"].forEach(function (e) { document.addEventListener(e, touch); });
+  
 })();
 </script>
 </body>
