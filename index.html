@@ -8,7 +8,7 @@
 <link rel="icon" href="/favicon.svg" type="image/svg+xml" sizes="any">
 <link rel="icon" href="/icon-192.png" type="image/png" sizes="192x192">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-  <meta name="description" content="Stop fearing the question mark. Start chasing the exclamation point. 19.11.2026 · MSA University. Register now →">
+  <meta name="description" content="TEDxMSA University →">
 <meta name="theme-color" content="#e62b1e">
 <link rel="manifest" href="/manifest.webmanifest">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -1006,8 +1006,7 @@ function exportCrop(cb) {
   if (r >= 1) { W = m; H = Math.round(m / r); } else { H = m; W = Math.round(m * r); }
   var c = document.createElement("canvas"); c.width = W; c.height = H;
   clampPos(W, H); drawTo(c.getContext("2d"), W, H);
-  c.toBlob(function (b) { b ? cb(b) : toast("Could not process image", true); }, cs.png ? "image/png" : "image/jpeg", 0.97);
-}
+  c.toBlob(function (b) { b ? cb(b) : toast("Could not process image", true); }, cs.png ? "image/webp" : "image/jpeg", cs.png ? 0.85 : 0.97);
 function wireCropper() {
   var can = $id("ccan"), dlg = $id("crop"), drag = null;
   can.addEventListener("pointerdown", function (e) { if (!cs) return; drag = { x: e.clientX, y: e.clientY }; can.setPointerCapture(e.pointerId); can.classList.add("drag"); });
@@ -1049,10 +1048,10 @@ function upload(path, blob) {
   toast("Uploading photo…");
   var fd = new FormData();
   fd.append("password", password);
-   fd.append("file", blob, blob.type === "image/png" ? "photo.png" : "photo.jpg");
+   fd.append("file", blob, blob.type === "image/webp" ? "photo.webp" : blob.type === "image/png" ? "photo.png" : "photo.jpg");
   fetch(SB_URL + "/functions/v1/upload-media", { method: "POST", headers: { apikey: SB_KEY }, body: fd })
     .then(function (r) { return r.json().then(function (j) { if (!r.ok) throw new Error(j.error || "Upload failed"); return j; }); })
-    .then(function (j) { set(path, j.url); set(path + "Png", blob.type === "image/png"); render(); toast("Photo ready. Press Save to publish."); })
+    .then(function (j) { set(path, j.url); set(path + "Png", blob.type !== "image/jpeg"); render(); toast("Photo ready. Press Save to publish."); })
     .catch(function (e) { toast("Upload failed: " + e.message, true); });
 }
 
@@ -1494,7 +1493,7 @@ function finPic(path, a) {
   if (src) w.append(h("img", { src: cdn(src), alt: a.name, decoding: "async", on: { error: noPic } }));
   else w.append(h("span", { class: "ph" }, "No photo yet"));
   if (editing) {
-    var pc = picControls(path, 1200, "photo", 4 / 5);   // shown at max 420 CSS px; 1200 px covers 2-3x screens (was 2800 = 1.3-2.3 MB PNGs)
+    var pc = picControls(path, 900, "photo", 4 / 5);   // shown at max 420 CSS px; 1200 px covers 2-3x screens (was 2800 = 1.3-2.3 MB PNGs)
     if (isPng(a)) pngBgBtn(a, w).forEach(function (n) { if (n) pc.append(n); });
     w.append(pc);
   }
@@ -1565,7 +1564,7 @@ function finExtras() {
   i.addEventListener("input", function () { f.bg = i.value; dirty = true; markDirty(); $id("finale").style.background = i.value; });
   return [
     h("label", { class: "ck" }, "Background ", i),
-    h("button", { type: "button", class: "btn sm ghost", on: { click: function () { pick("site.finale.bgImage", 3840, 16 / 9); } } }, (f.bgImage ? "Change" : "Add") + " entry screen photo"),
+    h("button", { type: "button", class: "btn sm ghost", on: { click: function () { pick("site.finale.bgImage", 1920, 16 / 9); } } }, (f.bgImage ? "Change" : "Add") + " entry screen photo"),
     f.bgImage ? h("button", { type: "button", class: "btn sm ghost", on: { click: function () { f.bgImage = ""; touch(); } } }, "Remove entry photo") : null];
 }
 function closingSec() {
