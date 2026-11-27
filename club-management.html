@@ -178,10 +178,15 @@ dialog .meta{color:var(--mut);font-size:13px;margin:0 0 4px}
 #acctDlg form.posadd{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 10px;padding:0}
 #acctDlg .posadd input[type=text]{flex:1 1 150px;width:auto}
 #acctDlg .prow{flex-wrap:wrap}
-#acctDlg .prow .ps{max-width:none}
+#acctDlg .prow .ps{max-width:none;flex:1 1 0;min-width:0}
+#acctDlg .prow .pn{flex:0 0 auto;max-width:40%}
 #acctDlg .prow.offacct .pn{color:var(--mut);text-decoration:line-through}
 #acctList{max-height:40vh;overflow:auto}
-.aperms{display:flex;flex-wrap:wrap;gap:6px 16px;flex:1 1 100%}
+.aperms{display:flex;flex-direction:column;gap:8px;flex:1 1 100%}
+.apre{display:flex;align-items:center;flex-wrap:wrap;gap:6px;font-size:13px;color:var(--mut)}
+.agrp{border:1px solid var(--line);border-radius:6px;padding:8px 10px}
+.aperms label.agh{font-weight:800;margin-bottom:6px}
+.agl{display:flex;flex-wrap:wrap;gap:6px 16px}
 .aperms label{display:flex;align-items:center;gap:6px;margin:0;font-weight:600;font-size:14px;cursor:pointer}
 .aperms input{width:auto;accent-color:var(--red)}
 @media (min-width:1100px){#acctDlg{width:min(760px,94vw)}}
@@ -610,7 +615,7 @@ body.bwide .chan.add{margin:0;border-style:dashed}
 <dialog id="acctDlg">
   <div class="posbox">
     <h3>Accounts</h3>
-    <p class="meta">Each account has its own password and only the features ticked here. All four ticked is an HR account. Every password must be different.</p>
+    <p class="meta">Each account has its own password and only the features ticked here. Only the board password can manage accounts. Every password must be different.</p>
     <form id="acctForm" class="posadd" autocomplete="off">
       <input id="acctName" type="text" maxlength="40" placeholder="Account name, e.g. HR" aria-label="Account name">
       <input id="acctPw" type="text" maxlength="100" placeholder="Password (6+ characters)" aria-label="Password" autocomplete="off">
@@ -734,8 +739,10 @@ function fail(e) {
 
 /* ---------- data helpers ---------- */
 function isActive(m) { return m.status !== "terminated"; }
-function canEdit() { return role === "board"; }   // the server enforces this too, this only hides the buttons
-function can(p) { return perms.indexOf(p) >= 0; }   // features of a limited account: see_hidden, terminate, warn, award
+function canEdit() { return role === "board"; }   // the board password: the only one that manages accounts
+function can(p) { return perms.indexOf(p) >= 0; }   // the board has every feature, an account only the ones ticked for it (the server checks too)
+function canAny() { for (var i = 0; i < arguments.length; i++) if (can(arguments[i])) return true; return false; }
+function canPick() { return canAny("members_move", "members_edit", "award", "warn", "terminate", "hide"); }   // something to do with selected cards
 function warnsOf(mid) { return warnings.filter(function (w) { return w.member_id === mid; }); }
 function liveWarns(mid) { return warnsOf(mid).filter(function (w) { return !w.revoked_at; }); }
 function key(m) { return m.committee_id || "none"; }
@@ -816,17 +823,17 @@ function renderSide() {
   committees.forEach(function (c) { s.appendChild(chan(c.id, c.name, activeCount(c.id))); });
   s.appendChild(el("div", { class: "sep" }));
   s.appendChild(chan("none", "Unassigned", activeCount("none")));
-  if (canEdit()) s.appendChild(el("button", { class: "chan add", type: "button", on: { click: function () { openCommittee(null); } } },
+  if (can("committees_add")) s.appendChild(el("button", { class: "chan add", type: "button", on: { click: function () { openCommittee(null); } } },
     el("span", { class: "hash", text: "+" }), el("span", { class: "nm", text: "New committee" })));
 }
 
 function card(m, showCom) {
   var wn = liveWarns(m.id).length;
-  var c = el("div", { class: "card" + (isActive(m) ? "" : " off") + (hlEvent && attends(m.id, hlEvent) ? " att" : "") + (picked[m.id] ? " sel" : ""), draggable: canEdit() ? "true" : null, tabindex: "0", "data-id": m.id, on: {
-    click: function (e) { if (canEdit() && (e.shiftKey || e.ctrlKey || e.metaKey || pickedIds().length)) pickToggle(m.id); else openMember(m.id); },
+  var c = el("div", { class: "card" + (isActive(m) ? "" : " off") + (hlEvent && attends(m.id, hlEvent) ? " att" : "") + (picked[m.id] ? " sel" : ""), draggable: canAny("members_move", "members_edit") ? "true" : null, tabindex: "0", "data-id": m.id, on: {
+    click: function (e) { if (canPick() && (e.shiftKey || e.ctrlKey || e.metaKey || pickedIds().length)) pickToggle(m.id); else openMember(m.id); },
     keydown: function (e) {
-      if (e.key === " " && canEdit()) { e.preventDefault(); pickToggle(m.id); }
-      else if (e.key === "Enter") { if (canEdit() && pickedIds().length) pickToggle(m.id); else openMember(m.id); }
+      if (e.key === " " && canPick()) { e.preventDefault(); pickToggle(m.id); }
+      else if (e.key === "Enter") { if (canPick() && pickedIds().length) pickToggle(m.id); else openMember(m.id); }
     },
     contextmenu: function (e) { cardMenu(e, m, c); },
     dragstart: function (e) {
@@ -866,17 +873,17 @@ function renderMain() {
 
   var head = el("div", { class: "head" },
     el("h1", { text: c ? c.name : "Unassigned" }),
-    canEdit() ? el("div", { class: "tools" },
-      el("button", { class: "btn sec sm", type: "button", text: "Positions", on: { click: openPositions } }),
+    canAny("positions", "committees_edit", "committees_delete") ? el("div", { class: "tools" },
+      can("positions") ? el("button", { class: "btn sec sm", type: "button", text: "Positions", on: { click: openPositions } }) : null,
       c ? [
-        el("button", { class: "btn sec sm", type: "button", text: "Rename", on: { click: function () { openCommittee(c.id); } } }),
-        el("button", { class: "btn warn sm", type: "button", text: "Delete", on: { click: function () { deleteCommittee(c.id); } } })
+        can("committees_edit") ? el("button", { class: "btn sec sm", type: "button", text: "Rename", on: { click: function () { openCommittee(c.id); } } }) : null,
+        can("committees_delete") ? el("button", { class: "btn warn sm", type: "button", text: "Delete", on: { click: function () { deleteCommittee(c.id); } } }) : null
       ] : null) : null,
     el("p", { class: "sub", text: num(act.length) + " active member" + (act.length === 1 ? "" : "s") + (off.length ? " · " + num(off.length) + " terminated" : "") }));
   host.appendChild(head);
 
   if (!committees.length && !members.length) {
-    host.appendChild(el("p", { class: "empty", text: canEdit() ? "No committees yet. Use “New committee” on the left to create the first one." : "No committees yet." }));
+    host.appendChild(el("p", { class: "empty", text: can("committees_add") ? "No committees yet. Use “New committee” on the left to create the first one." : "No committees yet." }));
   }
 
   var nm = el("input", { class: "nm", placeholder: "Member name", maxlength: "80", "aria-label": "Member name" });
@@ -897,13 +904,13 @@ function renderMain() {
            var r2 = $("main").querySelector(".addrow .rl"); if (r2) r2.value = pid;
     }).catch(fail).then(function () { addBtn.disabled = false; });
   } } }, nm, rl, addBtn);
-  if (canEdit()) host.appendChild(form);
+  if (can("members_add")) host.appendChild(form);
 
   groupByRole(act.sort(byName)).forEach(function (g) {
     host.appendChild(el("div", { class: "grp", text: g.role + " — " + g.items.length }));
     host.appendChild(el("div", { class: "cards" }, g.items.map(function (m) { return card(m, false); })));
   });
-  if (!act.length && !off.length) host.appendChild(el("p", { class: "empty", text: canEdit() ? "No members here yet. Add the first one above, or drag a card onto this committee." : "No members here yet." }));
+  if (!act.length && !off.length) host.appendChild(el("p", { class: "empty", text: can("members_add") ? "No members here yet. Add the first one above, or drag a card onto this committee." : "No members here yet." }));
   if (off.length) {
     host.appendChild(el("div", { class: "grp off", text: "Terminated — " + off.length }));
     host.appendChild(el("div", { class: "cards" }, off.map(function (m) { return card(m, false); })));
@@ -933,7 +940,7 @@ function spChan(k, name, count) {   // sidebar entry for a view that is not a co
 }
 
 function posTools() {   // Positions window + one-click President / Vice President, for the Board and Everyone views
-  if (!canEdit()) return null;
+  if (!can("positions")) return null;
   var missing = ["President", "Vice President"].filter(function (n) {
     return !positions.some(function (p) { return p.name.toLowerCase() === n.toLowerCase(); });
   });
@@ -1012,7 +1019,7 @@ function seedSeats(list) {   // creates the missing positions one at a time; one
 
 /* board login only: put one person in a seat. The old holder is cleared first, then the new one is set. */
 function seatSet(o, m) {   // o = { title, pos, holders, com }
-  if (!canEdit() || !o.pos || selBusy || cmdBusy) return;
+  if (!can("members_edit") || !o.pos || selBusy || cmdBusy) return;
   var holders = o.holders.filter(function (x) { return x !== m; });
   var hasRole = !!m && roleLabel(m) !== "Member", moving = !!m && !!o.com && (m.committee_id || null) !== o.com.id;
   if (!m && !holders.length) return;
@@ -1037,7 +1044,7 @@ function seatPicker(o) {   // small "Change…" link under a filled seat; opens 
 }
 var pickO = null;
 function seatPick(o) {
-  if (!canEdit() || !o || !o.pos || selBusy || cmdBusy) return;
+  if (!can("members_edit") || !o || !o.pos || selBusy || cmdBusy) return;
   pickO = o;
   $("pickTitle").textContent = (o.holders.length ? "Change " : "Assign ") + o.title;
   $("pickMeta").textContent = o.holders.length ? "Now: " + nameList(o.holders) + ". Whoever is replaced keeps no position." : "Pick who holds this seat.";
@@ -1064,7 +1071,7 @@ $("pickQ").addEventListener("keydown", function (e) { if (e.key === "Enter") { e
 $("pickVac").addEventListener("click", function () { var o = pickO; $("pickDlg").close(); if (o) seatSet(o, null); });
 $("pickCancel").addEventListener("click", function () { $("pickDlg").close(); });
 function seatDrop(node, o) {   // drop a member card (from anywhere on the page) onto a seat to put them in it
-  if (!canEdit() || !o.pos) return node;
+  if (!can("members_edit") || !o.pos) return node;
   node.addEventListener("dragover", function (e) { if (dragId) { e.preventDefault(); node.classList.add("drop"); } });
   node.addEventListener("dragleave", function () { node.classList.remove("drop"); });
   node.addEventListener("drop", function (e) {
@@ -1110,7 +1117,7 @@ $("seatForm").addEventListener("submit", function (ev) {
 });
 function vacant(label, o) {   // with a seat (o) it is a button: click to assign, or drop a member on it
   var v = el("div", { class: "ovac" }, el("b", { text: "Vacant" }), el("span", { text: label }));
-  if (o && o.pos && canEdit()) {
+  if (o && o.pos && can("members_edit")) {
     v.className += " pick"; v.setAttribute("tabindex", "0"); v.setAttribute("role", "button"); v.title = "Click to assign, or drop a member here";
     v.addEventListener("click", function () { seatPick(o); });
     v.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); seatPick(o); } });
@@ -1157,7 +1164,7 @@ function renderBoard(host) {
   tools.appendChild(togBtn);
   tools.appendChild(el("button", { class: "btn sec sm", type: "button", text: bwide ? "Show sidebar" : "Full width", on: { click: function () { bwide = !bwide; render(); } } }));
   tools.appendChild(el("button", { class: "btn sec sm", type: "button", text: "Export PDF", on: { click: exportBoardPdf } }));
-  if (canEdit() && miss.length) tools.appendChild(el("button", { class: "btn sm", type: "button",
+  if (can("positions") && miss.length) tools.appendChild(el("button", { class: "btn sm", type: "button",
     text: "Add Curator / Head / Vice Head positions (" + miss.length + ")", on: { click: function () {
       var b = this; b.disabled = true;
       seedSeats(miss).then(function (bad) { toast(bad ? "Added, but " + bad + " could not be created." : "Positions added. Pick who holds each seat.", !!bad); render(); });
@@ -1174,7 +1181,7 @@ function renderBoard(host) {
     if (!st.list.length) { vac.push({ o: o, label: st.p.name }); if (hideVac) return null; }
     return seatDrop(el("div", { class: "oseatbox" },
       el("div", { class: "ocards" }, (st.list.length ? st.list : [null]).map(function (m) { return m ? card(m, false) : vacant(st.p.name, o); })),
-      canEdit() && st.list.length ? seatPicker(o) : null), o);
+      can("members_edit") && st.list.length ? seatPicker(o) : null), o);
   }
   function looseNode(list) {   // people whose title is plain text with no position behind it
     return list.length ? el("div", { class: "oseatbox" }, el("div", { class: "ocards" }, list.map(function (m) { return card(m, false); }))) : null;
@@ -1190,7 +1197,7 @@ function renderBoard(host) {
     tier.appendChild(el("div", { class: "orow" }, (list.length ? list : [null]).map(function (m) {
       return seatDrop(el("div", { class: "onode big" }, m ? card(m, false) : vacant(BOARD[i].title, o)), o);
     })));
-    if (canEdit()) {
+    if (can("members_edit")) {
       if (!pos) tier.appendChild(el("p", { class: "meta oseatw", text: "Add the “" + BOARD[i].title + "” position first (button at the top)." }));
       else if (list.length) tier.appendChild(seatPicker(o));
     }
@@ -1226,7 +1233,7 @@ function renderBoard(host) {
           var vn = seatNode(v, c);
           if (vn) { if (nodes.length) nodes.push(el("div", { class: "ospine xs" })); nodes.push(vn); }
         });
-        if (nodes.length && canEdit() && b.h && !b.v.length) {
+        if (nodes.length && can("positions") && b.h && !b.v.length) {
           var tail = b.h.p.name.replace(/^\s*head\b\s*(?:of\b)?\s*/i, "");
           nodes.push(el("button", { class: "oadd", type: "button", text: "+ Vice head", on: { click: function () { openSeatAdd(c, KINDS[2], tail === b.h.p.name ? "" : tail); } } }));
         }
@@ -1239,7 +1246,7 @@ function renderBoard(host) {
         if (col.querySelector(".oslot")) col.appendChild(el("div", { class: "ospine s" }));
         col.appendChild(el("div", { class: "oslot" }, el("div", { class: "ostitle", text: "Heads & vice heads" }), bn));
       }
-      if (canEdit()) col.appendChild(el("button", { class: "oadd", type: "button", text: "+ Head position", on: { click: function () { openSeatAdd(c, KINDS[1]); } } }));
+      if (can("positions")) col.appendChild(el("button", { class: "oadd", type: "button", text: "+ Head position", on: { click: function () { openSeatAdd(c, KINDS[1]); } } }));
       return el("div", { class: "onode" }, col);
     })));
   }
@@ -1257,7 +1264,7 @@ function renderBoard(host) {
   /* everything is built, so the numbers are known */
   var open = vac.length;
   subEl.textContent = num(all.length) + " active board member" + (all.length === 1 ? "" : "s") + " · " + (open ? num(open) + " open seat" + (open === 1 ? "" : "s") : "no open seats") +
-    (canEdit() ? " · click a seat or drop a member on it to assign" : "");
+    (can("members_edit") ? " · click a seat or drop a member on it to assign" : "");
   pdfEl.appendChild(el("b", { text: "TEDxMSAUniversity" }));
   pdfEl.appendChild(document.createTextNode(" · Board hierarchy · " + fmtDate(new Date().toISOString()) + " · " + num(all.length) + " board members" + (open ? " · " + num(open) + " open seat" + (open === 1 ? "" : "s") : "")));
   togBtn.textContent = hideVac ? "Show vacant seats" + (open ? " (" + open + ")" : "") : "Hide vacant seats";
@@ -1266,13 +1273,13 @@ function renderBoard(host) {
     strip.hidden = false;
     strip.appendChild(el("b", { text: "Open seats" }));
     vac.forEach(function (x) {
-      strip.appendChild(canEdit() && x.o.pos
+      strip.appendChild(can("members_edit") && x.o.pos
         ? el("button", { class: "ovchip", type: "button", text: x.label, title: "Click to assign", on: { click: function () { seatPick(x.o); } } })
         : el("span", { class: "ovchip", text: x.label }));
     });
   }
   host.appendChild(el("div", { class: "orgwrap" }, org));
-  if (canEdit() && miss.length) host.appendChild(el("p", { class: "meta", style: "text-align:center", text: "Some committees have no Curator, Head or Vice Head position yet. The button at the top creates them." }));
+  if (can("positions") && miss.length) host.appendChild(el("p", { class: "meta", style: "text-align:center", text: "Some committees have no Curator, Head or Vice Head position yet. The button at the top creates them." }));
 }
 
 /* Export PDF: opens the browser's print window with only the chart, scaled to one landscape page. Choose "Save as PDF". */
@@ -1364,7 +1371,7 @@ function renderSearch(host) {
 
 /* ---------- actions ---------- */
 function moveMember(id, cid) {
-  var m = memById(id); if (!canEdit() || !m || (m.committee_id || null) === cid) return;
+  var m = memById(id); if (!can("members_move") || !m || (m.committee_id || null) === cid) return;
   op("member_edit", { id: id, committee_id: cid }).then(function (u) {
     Object.assign(m, u); render(); toast(m.name + " moved to " + comName(cid) + ".");
   }).catch(fail);
@@ -1408,12 +1415,14 @@ function openMember(id) {
   $("memDlg").showModal();
 }
 function applyViewMode() {   // members: read-only. Limited accounts: only the buttons the board gave them.
-  var m = memById(editId), ro = !canEdit();
-  ["memName", "memCom", "memPos"].forEach(function (id) { $(id).disabled = ro; });
-  ["memDel", "memSave"].forEach(function (id) { $(id).hidden = ro; });
+  var m = memById(editId), ed = can("members_edit"), mv = can("members_move"), ro = !ed && !mv;
+  ["memName", "memPos"].forEach(function (id) { $(id).disabled = !ed; });
+  $("memCom").disabled = !mv;
+  $("memSave").hidden = ro;
+  $("memDel").hidden = !can("members_delete");
   $("memGive").hidden = !can("award");
   $("memTerm").hidden = !can("terminate");
-  $("memHide").hidden = !canEdit();
+  $("memHide").hidden = !can("hide");
   $("memWarnAdd").hidden = !can("warn") || !m || !isActive(m);
   $("memCancel").textContent = ro ? "Close" : "Cancel";
 }
@@ -1527,7 +1536,7 @@ function resetAwForm() {
   $("awSave").textContent = "Add"; $("awCancelEdit").hidden = true;
 }
 function openAwards() {
-  resetAwForm(); $("awErr").textContent = "";
+  resetAwForm(); $("awErr").textContent = ""; $("awForm").hidden = !can("awards_manage");
   renderAwards(); $("awDlg").showModal(); $("awName").focus();
 }
 function renderAwards() {
@@ -1541,13 +1550,13 @@ function renderAwards() {
       el("div", { class: "at" },
         el("b", { text: a.name }),
         el("small", { text: (a.description ? a.description + " \u00B7 " : "") + "given " + n + (n === 1 ? " time" : " times") })),
-      el("button", { class: "btn sm", type: "button", text: "Give", on: { click: function () { openGive(a); } } }),
-      el("button", { class: "btn sec sm", type: "button", text: "Edit", on: { click: function () {
+      can("award") ? el("button", { class: "btn sm", type: "button", text: "Give", on: { click: function () { openGive(a); } } }) : null,
+      !can("awards_manage") ? null : el("button", { class: "btn sec sm", type: "button", text: "Edit", on: { click: function () {
         awEditId = a.id; $("awErr").textContent = "";
         $("awIcon").value = a.icon; $("awName").value = a.name; $("awColor").value = safeColor(a.color); $("awDesc").value = a.description || "";
         $("awSave").textContent = "Save"; $("awCancelEdit").hidden = false; $("awName").focus();
       } } }),
-      el("button", { class: "btn warn sm", type: "button", text: "Delete", on: { click: function () { delAward(a, n); } } })));
+      can("awards_manage") ? el("button", { class: "btn warn sm", type: "button", text: "Delete", on: { click: function () { delAward(a, n); } } }) : null));
   });
 }
 function delAward(a, n) {
@@ -1613,7 +1622,7 @@ function renderMemAwards() {
       el("div", { class: "at" },
         el("b", { text: a.name }),
         el("small", { text: fmtDate(g.awarded_at) + (g.note ? " \u00B7 " + g.note : "") })),
-      !canEdit() ? null : el("button", { class: "btn warn sm", type: "button", text: "Revoke", on: { click: function () { revokeAward(g, a, this); } } })));
+      !can("award_revoke") ? null : el("button", { class: "btn warn sm", type: "button", text: "Revoke", on: { click: function () { revokeAward(g, a, this); } } })));
   });
   awards.slice().sort(byName).forEach(function (a) { s.appendChild(el("option", { value: a.id, text: a.icon + " " + a.name })); });
   if (!awards.length) s.appendChild(el("option", { value: "", text: "No awards created yet" }));
@@ -1638,7 +1647,7 @@ function renderMemWarns() {
     host.appendChild(el("div", { class: "wrow" + (rv ? " rv" : "") },
       el("div", { class: "wt", text: fmtDate(w.issued_at) + (rv ? " · withdrawn " + fmtDate(w.revoked_at) + (w.revoke_note ? " (" + w.revoke_note + ")" : "") : "") }),
       el("div", { class: "wr", text: w.reason }),
-      canEdit() ? el("div", { class: "wa" }, el("button", { class: "btn sec sm", type: "button", text: rv ? "Restore" : "Withdraw", on: { click: function () { toggleWarn(w, this); } } })) : null));
+      can("warn_revoke") ? el("div", { class: "wa" }, el("button", { class: "btn sec sm", type: "button", text: rv ? "Restore" : "Withdraw", on: { click: function () { toggleWarn(w, this); } } })) : null));
   });
 }
 function toggleWarn(w, btn) {
@@ -1758,21 +1767,21 @@ function openAttendance() {
 }
 function renderAtt() {
   var host = $("evList"); host.textContent = "";
-  $("evForm").hidden = !!attEv;
+  $("evForm").hidden = !!attEv || !can("events");
   if (attEv) return renderMark(host);
   if (!events.length) { host.appendChild(el("p", { class: "empty", text: "No events yet. Add the first one above." })); return; }
   events.forEach(function (e) {
     host.appendChild(el("div", { class: "prow" },
       el("span", { class: "pn", text: e.name }),
       el("span", { class: "ps", text: fmtDate(e.event_date) + " \u00B7 " + e.points + " pt" + (e.points === 1 ? "" : "s") + " \u00B7 " + evCount(e.id) + " here" }),
-      el("button", { class: "btn sm", type: "button", text: "Mark", on: { click: function () {
+      !can("attendance") ? null : el("button", { class: "btn sm", type: "button", text: "Mark", on: { click: function () {
         attEv = e.id; attSel = {};
         eventParts.forEach(function (p) { if (p.event_id === e.id) attSel[p.member_id] = true; });
         renderAtt();
       } } }),
       el("button", { class: "btn sec sm", type: "button", text: "Highlight", on: { click: function () { hlEvent = e.id; $("attDlg").close(); render(); } } }),
-      el("button", { class: "btn sec sm", type: "button", text: "Points", on: { click: function () { setPoints(e); } } }),
-      el("button", { class: "btn warn sm", type: "button", text: "Delete", on: { click: function () { delEvent(e); } } })));
+      can("events") ? el("button", { class: "btn sec sm", type: "button", text: "Points", on: { click: function () { setPoints(e); } } }) : null,
+      can("events") ? el("button", { class: "btn warn sm", type: "button", text: "Delete", on: { click: function () { delEvent(e); } } }) : null));
   });
 }
 function renderMark(host) {
@@ -2048,6 +2057,10 @@ function addStep(name, cid, pid) {
 }
 
 /* the commands. specs say what each word means; plan() turns them into a preview and steps */
+var CMD_PERM = { setaward: "award", unaward: "award_revoke", warn: "warn", warnall: "warn", terminate: "terminate", terminateall: "terminate",
+  reinstate: "terminate", move: "members_move", moveall: "members_move", role: "members_edit", add: "members_add" };
+function cmdOk(k) { return !CMD_PERM[k] || can(CMD_PERM[k]); }
+function cmdKeys() { return Object.keys(CMD).filter(cmdOk); }   // only the commands this login may use
 var ACTIVE = { filter: isActive, what: "active member" };
 var CMD = {
   setaward: {
@@ -2234,7 +2247,7 @@ var CMD = {
     plan: function (t) {
       var w = t.trim().toLowerCase(), pad = function (k) { return (k + "              ").slice(0, 14); };
       if (w && CMD[w]) return { out: [CMD[w].usage, "  " + CMD[w].what].concat(CMD[w].ex ? ["  e.g. " + CMD[w].ex] : []) };
-      return { out: Object.keys(CMD).map(function (k) { return pad(k) + CMD[k].what; }).concat([
+      return { out: cmdKeys().map(function (k) { return pad(k) + CMD[k].what; }).concat([
         "",
         "committee = a committee name or abbreviation of it, all = everyone, none = Unassigned.",
         "role = a position name, or Member for people with no position. Partial names work.",
@@ -2267,8 +2280,9 @@ function splitLines(text) {   // one command per line; lines after an add that a
 }
 function planLine(line) {
   var m = /^(\S+)\s*([\s\S]*)$/.exec(line.trim()), name = m[1].toLowerCase(), rest = m[2], c = CMD[name], note = "", nm, near, r, p;
+  if (c && !cmdOk(name)) return { error: "Your account can't use " + name + "." };
   if (!c) {
-    near = Object.keys(CMD).filter(function (k) { return k.indexOf(name) === 0 || lev(k, name) <= 2; });
+    near = cmdKeys().filter(function (k) { return k.indexOf(name) === 0 || lev(k, name) <= 2; });
     return { error: "Unknown command “" + m[1] + "”." + (near.length ? " Did you mean " + near.slice(0, 3).join(", ") + "?" : " Type help.") };
   }
   if (c.note) {
@@ -2370,11 +2384,11 @@ function cmdGrow() { $("cmdin").rows = Math.min(6, $("cmdin").value.split("\n").
 function cmdHint() {
   var w = $("cmdin").value.split("\n")[0].trim().split(/\s+/)[0].toLowerCase(), h = $("cmdhint"), ks;
   if (!w) { h.textContent = cmdPending ? "Waiting for you: y runs it, n cancels." : "help lists the commands · Enter runs · Shift+Enter adds a line (many commands at once) · Tab completes · Up arrow repeats"; return; }
-  ks = Object.keys(CMD).filter(function (k) { return k.indexOf(w) === 0; });
+  ks = cmdKeys().filter(function (k) { return k.indexOf(w) === 0; });
   h.textContent = CMD[w] ? CMD[w].usage : ks.length ? ks.join("   ") : "No command starts with “" + w + "”";
 }
 function cmdOpen() {
-  if (!canEdit() || $("app").hidden) return;
+  if (!can("command") || $("app").hidden) return;
   $("cmdbar").hidden = false; document.body.classList.add("cmdopen");
   if (!$("cmdout").childNodes.length) cmdPrint("Type help to see the commands. Esc or the ` key closes this bar.", "mu");
   cmdHint(); $("cmdin").focus();
@@ -2386,7 +2400,7 @@ document.addEventListener("keydown", function (e) {
   if (e.code !== "Backquote" || e.ctrlKey || e.metaKey || e.altKey) return;
   if (t && t.id === "cmdin") { e.preventDefault(); cmdClose(); return; }
   if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || (t && t.isContentEditable)) return;
-  if (!canEdit() || $("app").hidden || document.querySelector("dialog[open]")) return;
+  if (!can("command") || $("app").hidden || document.querySelector("dialog[open]")) return;
   e.preventDefault();
   if ($("cmdbar").hidden) cmdOpen(); else $("cmdin").focus();
 });
@@ -2401,7 +2415,7 @@ $("cmdin").addEventListener("keydown", function (e) {
   if (e.key === "ArrowUp" && v.indexOf("\n") < 0 && cmdHist.length) { e.preventDefault(); cmdHi = Math.max(0, cmdHi - 1); this.value = cmdHist[cmdHi]; cmdGrow(); return; }
   if (e.key === "ArrowDown" && v.indexOf("\n") < 0 && cmdHist.length) { e.preventDefault(); cmdHi = Math.min(cmdHist.length, cmdHi + 1); this.value = cmdHist[cmdHi] || ""; cmdGrow(); return; }
   if (e.key === "Tab" && /^\S*$/.test(v)) {
-    h = Object.keys(CMD).filter(function (k) { return k.indexOf(v.toLowerCase()) === 0; });
+    h = cmdKeys().filter(function (k) { return k.indexOf(v.toLowerCase()) === 0; });
     if (h.length === 1) { e.preventDefault(); this.value = h[0] + " "; cmdHint(); }
     else if (h.length > 1) { e.preventDefault(); cmdPrint(h.join("   "), "mu"); }
   }
@@ -2415,7 +2429,7 @@ $("cmdin").addEventListener("keydown", function (e) {
     warnings = d.warnings || []; role = d.role === "board" || d.role === "account" ? d.role : "member"; perms = d.perms || [];
     if (!sel || (sel !== "none" && sel !== "__board" && sel !== "__all" && !comById(sel))) sel = committees.length ? committees[0].id : "none";
     $("login").hidden = true; $("app").hidden = false; $("actions").hidden = false;
-   $("awBtn").hidden = !canEdit(); $("attBtn").hidden = !canEdit(); $("cmdBtn").hidden = !canEdit(); $("acctBtn").hidden = !canEdit();
+   $("awBtn").hidden = !canAny("awards_manage", "award"); $("attBtn").hidden = !canAny("events", "attendance"); $("cmdBtn").hidden = !can("command"); $("acctBtn").hidden = !canEdit();
     document.body.classList.toggle("view", role === "member"); document.body.classList.toggle("acct", role === "account");
     render(); touch();
   }).catch(function (e) {
@@ -2474,7 +2488,7 @@ function selUndo() {
 
 function moveMembers(ids, cid) {
   var ms = ids.map(memById).filter(function (m) { return m && (m.committee_id || null) !== cid; });
-  if (!canEdit() || !ms.length) return;
+  if (!can("members_move") || !ms.length) return;
   bulk(ms.map(function (m) { return editStep(m, { committee_id: cid }, restore(m, true)); }), "move " + ms.length,
     ms.length === 1 ? ms[0].name + " moved to " + comName(cid) + "." : "Moved " + ms.length + " to " + comName(cid) + ".", true);
 }
@@ -2549,13 +2563,15 @@ function awardItems(ms) {
 function menuItems(ms) {
   var act = ms.filter(isActive), off = ms.length - act.length, l = [];
   if (ms.length === 1) l.push({ label: "Open profile", run: function () { openMember(ms[0].id); } });
-  l.push({ label: "Move to", sub: moveItems(ms) });
-  if (act.length) l.push({ label: "Change role", sub: roleItems(ms) }, { label: "Give award", sub: awardItems(ms) }, { label: "Warn…", run: function () { warnSel(ms); } });
-  if (act.length || off) l.push({ sep: true });
-  if (act.length) l.push({ label: "Terminate…", danger: true, run: function () { termSel(ms); } });
-  if (off) l.push({ label: "Reinstate", run: function () { reinstateSel(ms); } });
- if (ms.some(function (m) { return !m.hidden; })) l.push({ label: "Hide", run: function () { hideSel(ms, true); } });
-  if (ms.some(function (m) { return m.hidden; })) l.push({ label: "Unhide", run: function () { hideSel(ms, false); } });
+  if (can("members_move")) l.push({ label: "Move to", sub: moveItems(ms) });
+  if (act.length && can("members_edit")) l.push({ label: "Change role", sub: roleItems(ms) });
+  if (act.length && can("award")) l.push({ label: "Give award", sub: awardItems(ms) });
+  if (act.length && can("warn")) l.push({ label: "Warn…", run: function () { warnSel(ms); } });
+  if ((act.length || off) && can("terminate")) l.push({ sep: true });
+  if (act.length && can("terminate")) l.push({ label: "Terminate…", danger: true, run: function () { termSel(ms); } });
+  if (off && can("terminate")) l.push({ label: "Reinstate", run: function () { reinstateSel(ms); } });
+  if (can("hide") && ms.some(function (m) { return !m.hidden; })) l.push({ label: "Hide", run: function () { hideSel(ms, true); } });
+  if (can("hide") && ms.some(function (m) { return m.hidden; })) l.push({ label: "Unhide", run: function () { hideSel(ms, false); } });
   if (ms.length > 1) l.push({ sep: true }, { label: "Clear selection", run: pickClear });
   return l;
 }
@@ -2590,7 +2606,7 @@ function openMenu(items, x, y, title) {
   if (left + w + 230 > innerWidth) box.classList.add("flip");
 }
 function cardMenu(e, m, c) {
-  if (!canEdit()) return;
+  if (!canPick()) return;
   e.preventDefault(); e.stopPropagation(); ctxClose();
   if (!picked[m.id]) { picked = {}; picked[m.id] = true; tempPick = true; syncPicks(); }
   var x = e.clientX, y = e.clientY, r, ms = pickedMembers();
@@ -2605,7 +2621,7 @@ function renderPickBar() {
   ms = pickedMembers(); n = ms.length;
   document.body.classList.toggle("picking", n > 0);
   bar.textContent = "";
-  bar.hidden = !canEdit() || $("app").hidden || (!n && !cmdUndo);
+  bar.hidden = !(canPick() || can("command")) || $("app").hidden || (!n && !cmdUndo);
   if (bar.hidden) return;
   function pb(text, fn, cls) {
     return el("button", { class: "btn sm" + (cls === undefined ? " sec" : cls), type: "button", text: text, disabled: selBusy ? "disabled" : null,
@@ -2614,11 +2630,11 @@ function renderPickBar() {
   function at(items) { return function (b) { var r = b.getBoundingClientRect(); openMenu(items, r.left, r.bottom + 4); }; }
   if (n) {
     bar.appendChild(el("b", { text: n + " selected" }));
-    bar.appendChild(pb("Move to \u25BE", function (b) { at(moveItems(pickedMembers()))(b); }));
+    if (can("members_move")) bar.appendChild(pb("Move to \u25BE", function (b) { at(moveItems(pickedMembers()))(b); }));
     if (ms.some(isActive)) {
-      bar.appendChild(pb("Role \u25BE", function (b) { at(roleItems(pickedMembers()))(b); }));
-      bar.appendChild(pb("Award \u25BE", function (b) { at(awardItems(pickedMembers()))(b); }));
-      bar.appendChild(pb("Warn", function () { warnSel(pickedMembers()); }, " warn"));
+      if (can("members_edit")) bar.appendChild(pb("Role \u25BE", function (b) { at(roleItems(pickedMembers()))(b); }));
+      if (can("award")) bar.appendChild(pb("Award \u25BE", function (b) { at(awardItems(pickedMembers()))(b); }));
+      if (can("warn")) bar.appendChild(pb("Warn", function () { warnSel(pickedMembers()); }, " warn"));
     }
     bar.appendChild(pb("All shown", pickShown));
     bar.appendChild(pb("Clear", pickClear));
@@ -2673,10 +2689,10 @@ $("memCom").addEventListener("change", function () {
 $("memCancel").addEventListener("click", function () { $("memDlg").close(); });
 $("memForm").addEventListener("submit", function (ev) {
   ev.preventDefault();
-  if (!canEdit()) return;
+  if (!canAny("members_edit", "members_move")) return;
   var m = memById(editId), name = $("memName").value.trim(); if (!m || !name) return;
   var pv = $("memPos").value, body = { id: editId, name: name, committee_id: $("memCom").value || null };
-  if (pv !== "__keep") body.position_id = pv || null;
+  if (pv !== "__keep" && can("members_edit")) body.position_id = pv || null;   // move-only: the server drops a position the new committee doesn't have
   op("member_edit", body).then(function (u) {
     Object.assign(m, u); $("memDlg").close(); render();
   }).catch(fail);
@@ -2732,7 +2748,17 @@ $("memHide").addEventListener("click", function () {
 });
 
 /* ---------- accounts window (editor only) ---------- */
-var PERM_LABELS = [["see_hidden", "See hidden members"], ["terminate", "Terminate / reinstate"], ["warn", "Warn"], ["award", "Give awards"]];
+var PERM_GROUPS = [   // must match club_perm_list() in Supabase
+  ["Members", [["members_add", "Add"], ["members_edit", "Rename / change position"], ["members_move", "Move between committees"], ["members_delete", "Delete"],
+               ["terminate", "Terminate / reinstate"], ["hide", "Hide / unhide"], ["see_hidden", "See hidden members"]]],
+  ["Committees", [["committees_add", "Create"], ["committees_edit", "Rename"], ["committees_delete", "Delete"], ["positions", "Manage positions"]]],
+  ["Awards", [["awards_manage", "Create / edit / delete awards"], ["award", "Give"], ["award_revoke", "Revoke"]]],
+  ["Events", [["events", "Create / delete events, points"], ["attendance", "Mark attendance"]]],
+  ["Warnings", [["warn", "Warn"], ["warn_revoke", "Withdraw / restore"]]],
+  ["Tools", [["command", "Command bar"]]]
+];
+var PERM_LABELS = [].concat.apply([], PERM_GROUPS.map(function (g) { return g[1].map(function (x) { return [x[0], g[0] + ": " + x[1]]; }); }));
+var PERM_HR = ["see_hidden", "terminate", "warn", "award"];
 var acctEditId = null;
 function acctErr(e) {   // only a real "Wrong password" locks the page, the account messages mention passwords too
   if (/^wrong password/i.test(e.message)) return fail(e);
@@ -2740,21 +2766,35 @@ function acctErr(e) {   // only a real "Wrong password" locks the page, the acco
 }
 function permText(a) {
   var l = PERM_LABELS.filter(function (x) { return a.perms.indexOf(x[0]) >= 0; }).map(function (x) { return x[1]; });
-  return l.length ? l.join(", ") : "No features";
+  return l.length === PERM_LABELS.length ? "Everything" : l.length ? l.join(", ") : "No features";
 }
 function fillPermBoxes(cur) {
   var host = $("acctPerms"); host.textContent = "";
-  PERM_LABELS.forEach(function (x) {
-    var cb = el("input", { type: "checkbox", value: x[0] }); cb.checked = cur.indexOf(x[0]) >= 0;
-    host.appendChild(el("label", null, cb, x[1]));
+  host.appendChild(el("div", { class: "apre" }, el("span", { text: "Quick pick:" }),
+    el("button", { class: "btn sec sm", type: "button", text: "HR", on: { click: function () { fillPermBoxes(PERM_HR); } } }),
+    el("button", { class: "btn sec sm", type: "button", text: "Everything", on: { click: function () { fillPermBoxes(PERM_LABELS.map(function (x) { return x[0]; })); } } }),
+    el("button", { class: "btn sec sm", type: "button", text: "Nothing", on: { click: function () { fillPermBoxes([]); } } })));
+  PERM_GROUPS.forEach(function (g) {   // each group has a box that ticks the whole group
+    var all = el("input", { type: "checkbox", "aria-label": "All of " + g[0] }), boxes = g[1].map(function (x) {
+      var cb = el("input", { type: "checkbox", value: x[0] }); cb.checked = cur.indexOf(x[0]) >= 0; return cb;
+    });
+    function sync() {
+      var n = boxes.filter(function (b) { return b.checked; }).length;
+      all.checked = n === boxes.length; all.indeterminate = n > 0 && n < boxes.length;
+    }
+    all.addEventListener("change", function () { boxes.forEach(function (b) { b.checked = all.checked; }); sync(); });
+    boxes.forEach(function (b) { b.addEventListener("change", sync); });
+    host.appendChild(el("div", { class: "agrp" }, el("label", { class: "agh" }, all, g[0]),
+      el("div", { class: "agl" }, boxes.map(function (b, i) { return el("label", null, b, g[1][i][1]); }))));
+    sync();
   });
 }
 function pickedPerms() {
-  return Array.prototype.map.call($("acctPerms").querySelectorAll("input:checked"), function (c) { return c.value; });
+  return Array.prototype.map.call($("acctPerms").querySelectorAll("input[value]:checked"), function (c) { return c.value; });
 }
 function resetAcctForm() {
   acctEditId = null; $("acctName").value = ""; $("acctPw").value = ""; $("acctPw").placeholder = "Password (6+ characters)";
-  fillPermBoxes(["see_hidden", "terminate", "warn", "award"]);   // starts as the HR preset
+  fillPermBoxes(PERM_HR);   // starts as the HR preset
   $("acctAdd").textContent = "Create"; $("acctCancel").hidden = true;
 }
 function openAccounts() {
