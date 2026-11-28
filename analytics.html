@@ -305,7 +305,7 @@ dialog .row{display:flex;gap:8px;justify-content:flex-end}
       <div id="filters" style="display:contents"></div>
       <div class="fld"><label for="formSel">Form</label><select id="formSel"><option value="">All forms</option></select></div>
       <div class="fld"><label for="stSel">Email</label>
-        <select id="stSel"><option value="">All</option><option value="sent">Sent</option><option value="failed">Failed or not sent</option></select></div>
+        <select id="stSel"><option value="">All</option><option value="sent">Sent</option><option value="failed">Failed or not sent</option><option value="saved">Saved only (no email)</option></select></div>
       <div class="fld"><label for="mkSel">Highlight</label>
         <select id="mkSel"><option value="">All</option><option value="yellow">Yellow</option><option value="red">Red</option><option value="green">Green</option><option value="blue">Blue</option><option value="black">Black</option><option value="any">Any highlight</option><option value="none">Not highlighted</option></select></div>
       <div class="fld"><label for="dFrom">From</label><input id="dFrom" type="date"></div>
@@ -805,7 +805,8 @@ function visibleRows() {
     if (from && r.day < from) return false;
     if (to && r.day > to) return false;
     if (st === "sent" && r.status !== "sent") return false;
-    if (st === "failed" && r.status === "sent") return false;
+    if (st === "failed" && (r.status === "sent" || r.status === "saved")) return false;
+    if (st === "saved" && r.status !== "saved") return false;
     if (mk === "any" ? !r.mark : mk === "none" ? r.mark : mk && r.mark !== mk) return false;
     if (fm && r.form !== fm) return false;
     for (var k in fsel) if (fsel[k] && r.by[k] !== fsel[k]) return false;
@@ -828,18 +829,15 @@ function fmtWhen(d) {
   return d.toLocaleString("en-GB", { timeZone: "Africa/Cairo", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", hour12: false });
 }
 
-function summary() {
   var total = 0, sent = 0, bad = 0, flagged = 0, oldDup = 0, red = 0, black = 0;
-  resRows.forEach(function (r) {
-    if (r.flags.length) flagged++;
-    if (r.dupOld) { oldDup++; return; }
+
     if (r.mark === "red") { red++; return; }  
     if (r.mark === "black") { black++; return; }
     total++;
     if (r.status === "sent") sent++; else bad++;
   });
   $("resKpis").innerHTML =
-    kpi("Registrations", num(total), (oldDup ? "Newest of each person · " + num(oldDup) + " old duplicate" + (oldDup === 1 ? "" : "s") + " not counted" : "All forms") + (red ? " · " + num(red) + " red: not counted, QR deactivated" : "") + (black ? " · " + num(black) + " black: not counted" : "")) +
+    kpi("Registrations", num(total), (oldDup ? "Newest of each person · " + num(oldDup) + " old duplicate" + (oldDup === 1 ? "" : "s") + " not counted" : "All forms") + (red ? " · " + num(red) + " red: not counted, QR deactivated" : "") + (black ? " · " + num(black) + " black: not counted" : "") + (savedOnly ? " · " + num(savedOnly) + " save-only response" + (savedOnly === 1 ? "" : "s") + " not counted" : "")) +
     kpi("Emails sent", num(sent), total ? Math.round(100 * sent / total) + "% of registrations" : "") +
     kpi("Emails failed or not sent", num(bad), bad ? "Use Resend on those rows" : "None", bad > 0) +
     kpi("Possible duplicates", num(flagged), flagged ? "Same ID number or phone" : "None found", flagged > 0);
@@ -889,8 +887,9 @@ var row = el("tr", { class: (r.mark ? "mk-" + r.mark : "") + (r.dupOld ? " dupol
     });
     var st = el("td", { class: "nw" });
         if (r.status === "sent") st.appendChild(document.createTextNode("Sent "));
+    else if (r.status === "saved") st.appendChild(document.createTextNode("Saved "));
     else st.appendChild(el("span", { class: "st-bad", text: "Not sent " }));
-    st.appendChild(el("button", { class: "btn line sm", type: "button", text: "Resend", on: { click: function () { resend(r, this); } } }));
+    if (r.status !== "saved") st.appendChild(el("button", { class: "btn line sm", type: "button", text: "Resend", on: { click: function () { resend(r, this); } } }));
     row.appendChild(st);
     var fl = r.flags.concat(r.note ? [r.note] : []);
     row.appendChild(el("td", { class: fl.length ? "flag" : "dim", text: fl.length ? fl.join("; ") : "–" }));
@@ -919,8 +918,8 @@ function downloadCsv() {
   var rows = visibleRows();
  var head = ["Registered", "Form"].concat(cols.map(function (c) { return c.name; })).concat(["Email status", "Flags"]);
   var lines = [head.map(csvCell).join(",")];
-  rows.forEach(function (r) {
-    lines.push([stamp(r.at), r.form].concat(cols.map(function (c) { return r.by[c.name] || ""; })).concat([r.status === "sent" ? "Sent" : "Not sent", r.flags.join("; ")]).map(csvCell).join(","));
+   rows.forEach(function (r) {
+    lines.push([stamp(r.at), r.form].concat(cols.map(function (c) { return r.by[c.name] || ""; })).concat([r.status === "sent" ? "Sent" : r.status === "saved" ? "Saved" : "Not sent", r.flags.join("; ")]).map(csvCell).join(","));
   });
   var blob = new Blob(["\ufeff" + lines.join("\r\n")], { type: "text/csv;charset=utf-8" });
   var a = el("a", { href: URL.createObjectURL(blob), download: "registrations-" + cairoToday() + ".csv" });
@@ -1344,8 +1343,8 @@ function buildGroups() {
   });
   var forms = {};
   resRows.forEach(function (r) { if (r.form) forms[r.form] = 1; });
-  if (Object.keys(forms).length > 1) Object.keys(forms).forEach(function (f) { add("Form: " + f, function (r) { return live(r) && r.form === f; }); });
-  add("Email failed or not sent", function (r) { return live(r) && r.status !== "sent"; });
+   if (Object.keys(forms).length > 1) Object.keys(forms).forEach(function (f) { add("Form: " + f, function (r) { return live(r) && r.form === f; }); });
+  add("Email failed or not sent", function (r) { return live(r) && r.status !== "sent" && r.status !== "saved"; });
 }
 function mailAudienceRefresh() {
   var unlocked = !!rpass;
