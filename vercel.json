@@ -1,17 +1,14 @@
 {
+  "redirects": [
+    { "source": "/m/:file", "destination": "https://tedx-media.mavxyh.workers.dev/:file", "permanent": true }
+  ],
   "rewrites": [
-{ "source": "/m/:file", "destination": "/api/m?file=:file" },
-   { "source": "/controlsh123", "destination": "/index.html" },
-{ "source": "/play", "destination": "/play.html" },
-{ "source": "/analytics", "destination": "/analytics.html" },
+    { "source": "/controlsh123", "destination": "/index.html" },
+    { "source": "/play", "destination": "/play.html" },
+    { "source": "/analytics", "destination": "/analytics.html" },
     { "source": "/club-management", "destination": "/club-management.html" }
   ],
   "headers": [
-    { "source": "/m/:file", "headers": [
-      { "key": "x-vercel-enable-rewrite-caching", "value": "1" },
-      { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" },
-      { "key": "Vercel-CDN-Cache-Control", "value": "public, s-maxage=31536000, immutable" }
-    ] },
     { "source": "/og-image.jpg", "headers": [{ "key": "Cache-Control", "value": "public, max-age=604800" }] }
   ]
 }
