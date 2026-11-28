@@ -2691,6 +2691,13 @@ function openReg(form, asBoard) {
   var cfBox = h("div", { class: "cfbox" }), cfId = null;
   var cfWait = null, cfTimer = null;
   var CF_KEY = "0x4AAAAAAF0ilVcudssnB2B4";
+  /* Instagram / Facebook / TikTok built-in browsers often break the human check */
+  var inApp = /Instagram|FBAN|FBAV|FB_IAB|TikTok|musical_ly|Snapchat|Line\//i.test(navigator.userAgent);
+  function copyLink() {
+    var u = location.origin + "/?form=" + form.id;
+    try { navigator.clipboard.writeText(u).then(function () { toast("Link copied. Paste it in Chrome or Safari."); }, function () { prompt("Copy this link:", u); }); }
+    catch (e) { prompt("Copy this link:", u); }
+  }
   /* Turnstile runs ONLY when Register is pressed, never while the person is typing
      (its challenge makes Instagram/Facebook in-app browsers laggy). */
   function cfDone(fn, arg) { clearTimeout(cfTimer); var w = cfWait; cfWait = null; if (w) w[fn](arg); }
@@ -2840,7 +2847,7 @@ function openReg(form, asBoard) {
     send.disabled = true; send.textContent = "Verifying…";
     fd.append("action", "submit"); fd.append("form", form.id); fd.append("answers", JSON.stringify(ans)); fd.append("hp", hp.value); fd.append("code", codeIn.value);
 if (asBoard) fd.append("password", password);
-Promise.all([Promise.all(jobs), asBoard ? Promise.resolve("") : getToken()]).then(function (res) {
+Promise.all([Promise.all(jobs), (asBoard || form.captcha === false) ? Promise.resolve("") : getToken()]).then(function (res) {
   send.textContent = "Sending…";
       fd.append("cf", res[1] || "");
       return fetch(SB_URL + "/functions/v1/register", { method: "POST", headers: { apikey: SB_KEY }, body: fd });
@@ -2868,7 +2875,7 @@ Promise.all([Promise.all(jobs), asBoard ? Promise.resolve("") : getToken()]).the
         h("div", { class: "cta" }, h("button", { class: "btn", type: "button", on: { click: function () { dlg.close(); } } }, "Close"))));
       
     }).catch(function (e) {
-      err.textContent = e.message; send.disabled = !!e.full; send.textContent = e.full ? "Registration full" : (form.button || "Register");
+      err.textContent = e.message + (inApp && /human check/i.test(e.message) ? " Please open this page in Chrome or Safari and try again." : ""); send.disabled = !!e.full; send.textContent = e.full ? "Registration full" : (form.button || "Register");
       if (e.full) { fullForms[form.id] = true; render(); }
       if (window.turnstile && cfId !== null) turnstile.reset(cfId);
     });
@@ -2883,6 +2890,10 @@ Promise.all([Promise.all(jobs), asBoard ? Promise.resolve("") : getToken()]).the
       h("p", { class: "pl" }, form.desc || ""),
                  form.hidden && !asBoard ? h("label", { class: "f" }, h("span", null, "Access code", h("span", { class: "req" }, " *")), codeIn) : null,
       wraps.map(function (w) { return w.el; }),
+      inApp && !asBoard && form.captcha !== false ? h("p", { class: "vip-note", role: "note" },
+        h("b", null, "Using Instagram, Facebook or TikTok? "),
+        "Their built-in browser can make the human check fail. If it does, open this page in Chrome or Safari. ",
+        h("button", { class: "idlink", type: "button", on: { click: copyLink } }, "Copy link")) : null,
       hp, cfBox, err,
       h("div", { class: "cta" }, send, h("button", { class: "btn line", type: "button", on: { click: function () { dlg.close(); } } }, "Cancel"))));
     sync();
@@ -3014,6 +3025,7 @@ h("button", { type: "button", class: "btn sm", on: { click: function () { openRe
 h("button", { type: "button", class: "btn sm line", on: { click: function () { dupReg(f, i); } } }, "Duplicate form"),
 h("a", { class: "btn sm line", href: "/analytics.html#responses", target: "_blank", rel: "noopener" }, "View responses")),
                          CK(f, "qr", "Connect to QR codes and Apps Script. Untick it and this form only saves the responses: no QR code, no email, no \"read this first\" pop-up.", true),
+                         CK(f, "captcha", "Human check (captcha). Untick to skip it, e.g. for people applying from Instagram. Only skip it on forms that send no QR email, because bots can abuse a form without it.", true),
                          INP(p + "button", "Button text", "Register"),
            INP(p + "thanks", "Message shown after registering", ""),
       CDI(p + "closes", "Registration closes automatically at (Cairo time). Clear it to reopen."),
