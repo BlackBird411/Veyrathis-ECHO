@@ -869,9 +869,14 @@ var SB_URL = "https://fdiounclxvaescxfkcnt.supabase.co";
 var SB_KEY = "sb_publishable_pTmK9ZuSQHh915Ke4IAhIA_ib2ip80H";
 var MAP = "https://maps.google.com/maps?q=26%20July%20Mehwar%20Road%20intersection%20with%20Wahat%20Road%2C%206th%20of%20October&t=m&z=15&output=embed";
 var MSA = "https://msa.edu.eg/msauniversity/wp-content/uploads/2024/09/";
-var MEDIA_BASE = "/m/"; // set to "" to switch off
+var MEDIA_BASE = "https://tedx-media.mavxyh.workers.dev/"; // Cloudflare R2 (via the media Worker). Set to "" to load straight from Supabase again
 var MEDIA_FROM = SB_URL + "/storage/v1/object/public/site-media/";
-function cdn(u) { return (MEDIA_BASE && typeof u === "string" && u.indexOf(MEDIA_FROM) === 0) ? MEDIA_BASE + u.slice(MEDIA_FROM.length) : u; }
+function cdn(u) {
+  if (!MEDIA_BASE || typeof u !== "string") return u;
+  if (u.indexOf(MEDIA_FROM) === 0) return MEDIA_BASE + u.slice(MEDIA_FROM.length); // old full Supabase links
+  if (u.indexOf("/m/") === 0) return MEDIA_BASE + u.slice(3);                      // saved "/m/<file>" links
+  return u;
+}
 var DEFAULTS = {
   hero: {
     kicker: "TEDxMSAUniversity · MSA University, 6th of October City",
@@ -1373,13 +1378,10 @@ function uploadVideo(v, file) {
     return r.json().then(function (j) { if (!r.ok) throw new Error(j.error || "Could not start upload"); return j; });
   }).then(function (j) {
     return new Promise(function (resolve, reject) {
-      var fd = new FormData();
-      fd.append("cacheControl", "31536000");
-      fd.append("", new Blob([file], { type: type }), file.name);
+      // R2 presigned URL: send the raw file, not a form
       var x = new XMLHttpRequest();
       x.open("PUT", j.uploadUrl);
-      x.setRequestHeader("apikey", SB_KEY);
-      x.setRequestHeader("x-upsert", "false");
+      x.setRequestHeader("Content-Type", type);
       x.upload.onprogress = function (e) {
         if (!e.lengthComputable) return;
         var p = Math.round(e.loaded / e.total * 100);
@@ -1392,7 +1394,7 @@ function uploadVideo(v, file) {
       };
       x.onerror = function () { reject(new Error("Network error during upload")); };
       x.onabort = function () { reject(new Error("Upload cancelled")); };
-      x.send(fd);
+      x.send(file);
     });
   }).then(function (url) {
     vidBusy.delete(v); vidCount--;
