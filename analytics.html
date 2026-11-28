@@ -829,9 +829,13 @@ function fmtWhen(d) {
   return d.toLocaleString("en-GB", { timeZone: "Africa/Cairo", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", hour12: false });
 }
 
-  var total = 0, sent = 0, bad = 0, flagged = 0, oldDup = 0, red = 0, black = 0;
-
-    if (r.mark === "red") { red++; return; }  
+function summary() {
+  var total = 0, sent = 0, bad = 0, flagged = 0, oldDup = 0, red = 0, black = 0, savedOnly = 0;
+  resRows.forEach(function (r) {
+    if (r.flags.length) flagged++;
+    if (r.status === "saved") { savedOnly++; return; }   /* save-only forms: no QR, no email, not an event registration */
+    if (r.dupOld) { oldDup++; return; }
+    if (r.mark === "red") { red++; return; }
     if (r.mark === "black") { black++; return; }
     total++;
     if (r.status === "sent") sent++; else bad++;
